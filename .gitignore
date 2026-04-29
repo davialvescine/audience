@@ -12,4 +12,3 @@ coverage/
 playwright-report/
 test-results/
 .cloudflared/
-~/.ucob-h2r-bridge/
