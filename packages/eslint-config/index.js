@@ -9,7 +9,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'prettier',
   ],
-  parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
+  parserOptions: { ecmaVersion: 2022, sourceType: 'module', project: true },
   rules: {
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
