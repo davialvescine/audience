@@ -12,7 +12,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "format": "prettier --write \"**/*.{ts,tsx,json}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,json}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,json}\"",
+    "db:types": "supabase gen types typescript --linked > packages/shared-types/src/database.ts"
   },
   "devDependencies": {
     "prettier": "^3.3.0",
