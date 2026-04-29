@@ -12,3 +12,6 @@ coverage/
 playwright-report/
 test-results/
 .cloudflared/
+supabase/.branches/
+supabase/.temp/
+supabase/.env
