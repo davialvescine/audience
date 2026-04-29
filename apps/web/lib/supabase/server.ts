@@ -1,9 +1,9 @@
 import type { Database } from '@audience/shared-types';
-import type { CookieOptions } from '@supabase/ssr';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-export async function getSupabaseServerClient() {
+export async function getSupabaseServerClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,5 +18,6 @@ export async function getSupabaseServerClient() {
         },
       },
     },
-  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) as any as SupabaseClient<Database>;
 }
