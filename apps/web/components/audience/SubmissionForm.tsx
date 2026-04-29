@@ -18,9 +18,37 @@ export function SubmissionForm({ slug }: Props) {
 
   if (success) {
     return (
-      <div role="status" className="text-center p-6 bg-paper rounded-lg shadow-sm">
-        <h2 className="text-2xl font-display text-primary">Recebido!</h2>
-        <p className="mt-2 text-ink/70">Seu comentário foi enviado e pode aparecer no telão.</p>
+      <div role="status" className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-success/15 flex items-center justify-center">
+          <svg
+            className="h-8 w-8 text-success"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="3"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-display text-primary mb-2">Recebido!</h2>
+        <p className="text-ink/70 mb-6">
+          Sua mensagem foi enviada. Pode aparecer no telão a qualquer momento.
+        </p>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setSuccess(false);
+            setName('');
+            setComment('');
+          }}
+        >
+          Mandar outra
+        </Button>
       </div>
     );
   }
@@ -50,6 +78,7 @@ export function SubmissionForm({ slug }: Props) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Como você quer aparecer no telão"
+        autoComplete="given-name"
       />
       <Textarea
         label="Sua mensagem"
@@ -60,14 +89,21 @@ export function SubmissionForm({ slug }: Props) {
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="Escreva aqui…"
+        rows={4}
       />
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <div role="alert" className="p-3 rounded-md bg-danger/10 text-danger text-sm">
           {error}
-        </p>
+        </div>
       ) : null}
-      <Button type="submit" size="lg" loading={pending} className="w-full">
-        Enviar
+      <Button
+        type="submit"
+        variant="accent"
+        size="lg"
+        loading={pending}
+        className="w-full text-lg h-14"
+      >
+        Enviar mensagem
       </Button>
     </form>
   );

@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { SubmissionForm } from '@/components/audience/SubmissionForm';
-import { BrandHeader } from '@/components/ui/BrandHeader';
-import { Card } from '@/components/ui/Card';
+import { PublicEventShell } from '@/components/audience/PublicEventShell';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { loadTheme } from '@/lib/themes/loadTheme';
@@ -21,18 +19,11 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
 
   return (
     <ThemeProvider tokens={theme}>
-      <div className="min-h-screen bg-surface">
-        <BrandHeader title={event.name} subtitle="Mande sua mensagem para o telão" />
-        <main className="max-w-md mx-auto px-4 py-8 -mt-8 relative z-10">
-          <Card>
-            {event.submissions_open ? (
-              <SubmissionForm slug={event.slug} />
-            ) : (
-              <p className="text-center text-ink/60">Submissões encerradas.</p>
-            )}
-          </Card>
-        </main>
-      </div>
+      <PublicEventShell
+        eventName={event.name}
+        slug={event.slug}
+        submissionsOpen={event.submissions_open}
+      />
     </ThemeProvider>
   );
 }
