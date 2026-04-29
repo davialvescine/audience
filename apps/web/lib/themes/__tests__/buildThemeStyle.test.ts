@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import type { ThemeTokens } from '@audience/shared-types';
+import { describe, expect, it } from 'vitest';
 
 import { buildThemeStyle } from '../buildThemeStyle';
-import type { ThemeTokens } from '@audience/shared-types';
 
 const tokens: ThemeTokens = {
   colors: {

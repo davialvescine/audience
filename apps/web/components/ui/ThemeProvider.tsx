@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import type { ThemeTokens } from '@audience/shared-types';
+import type { ReactNode } from 'react';
 
 import { buildThemeStyle } from '@/lib/themes/buildThemeStyle';
 
