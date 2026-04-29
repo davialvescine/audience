@@ -4,15 +4,31 @@ Custom Supabase Auth email templates with UCOB branding.
 
 ## How to apply
 
-1. Go to <https://supabase.com/dashboard/project/ogfalobvfofcrazaeydr/auth/templates>
-2. Select **"Magic Link"** from the template dropdown
-3. Replace the **Subject** with: `Seu link de acesso ao Audience`
-4. Replace the **HTML** content with the contents of `magic_link.html`
-5. Click **Save**
+Go to <https://supabase.com/dashboard/project/ogfalobvfofcrazaeydr/auth/templates>
 
-The template uses the Supabase variable `{{ .ConfirmationURL }}` which is automatically replaced when the email is sent.
+### Magic Link template
+1. Select **"Magic Link"** from the template dropdown
+2. Subject: `Seu link de acesso ao Audience`
+3. HTML: paste contents of `magic_link.html`
+4. Save
 
-## Variables available
-- `{{ .ConfirmationURL }}` — the magic link URL
-- `{{ .SiteURL }}` — your configured site URL
+### Invite User template
+1. Select **"Invite user"** from the template dropdown
+2. Subject: `Você foi convidado pro Audience`
+3. HTML: paste contents of `invite.html`
+4. Save
+
+## How to disable public signup
+
+To make the system invite-only:
+1. Authentication → Providers → Email
+2. Set **"Enable email signups"** to OFF
+3. Save
+
+After this, only `supabase.auth.admin.inviteUserByEmail` can create users.
+
+## Variables
+
+- `{{ .ConfirmationURL }}` — magic link / invite URL
+- `{{ .SiteURL }}` — configured site URL
 - `{{ .Email }}` — recipient email

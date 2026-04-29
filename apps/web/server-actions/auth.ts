@@ -4,6 +4,20 @@ import { redirect } from 'next/navigation';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
+export async function signInWithPassword(formData: FormData) {
+  const email = String(formData.get('email') ?? '').trim();
+  const password = String(formData.get('password') ?? '');
+  if (!email || !password) {
+    redirect('/admin?error=missing');
+  }
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    redirect('/admin?error=invalid');
+  }
+  redirect('/admin/events');
+}
+
 export async function signInWithEmail(formData: FormData) {
   const email = String(formData.get('email') ?? '').trim();
   if (!email) return;
