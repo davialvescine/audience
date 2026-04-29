@@ -17,6 +17,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@audience/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       next:
         specifier: 15.0.0
         version: 15.0.0(@babel/core@7.29.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
