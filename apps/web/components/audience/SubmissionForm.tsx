@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/Button';
@@ -18,27 +19,47 @@ export function SubmissionForm({ slug }: Props) {
 
   if (success) {
     return (
-      <div role="status" className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
-        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-success/15 flex items-center justify-center">
-          <svg
-            className="h-8 w-8 text-success"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
+      <motion.div
+        role="status"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="text-center py-6"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
+          className="mx-auto mb-4 h-16 w-16 rounded-full bg-success/15 flex items-center justify-center"
+        >
+          <svg className="h-8 w-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <motion.path
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="3"
               d="M5 13l4 4L19 7"
             />
           </svg>
-        </div>
-        <h2 className="text-2xl font-display text-primary mb-2">Recebido!</h2>
-        <p className="text-ink/70 mb-6">
+        </motion.div>
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-2xl font-display text-primary mb-2"
+        >
+          Recebido!
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="text-ink/70 mb-6"
+        >
           Sua mensagem foi enviada. Pode aparecer no telão a qualquer momento.
-        </p>
+        </motion.p>
         <Button
           variant="ghost"
           onClick={() => {
@@ -49,7 +70,7 @@ export function SubmissionForm({ slug }: Props) {
         >
           Mandar outra
         </Button>
-      </div>
+      </motion.div>
     );
   }
 
@@ -92,9 +113,14 @@ export function SubmissionForm({ slug }: Props) {
         rows={4}
       />
       {error ? (
-        <div role="alert" className="p-3 rounded-md bg-danger/10 text-danger text-sm">
+        <motion.div
+          role="alert"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 rounded-md bg-danger/10 text-danger text-sm"
+        >
           {error}
-        </div>
+        </motion.div>
       ) : null}
       <Button
         type="submit"

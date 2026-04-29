@@ -1,6 +1,7 @@
 'use client';
 
 import type { SubmissionStatus } from '@audience/shared-types';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import { SubmissionCard } from './SubmissionCard';
@@ -57,17 +58,27 @@ export function ModerationQueue({ eventId, initial }: Props) {
 
   return (
     <div className="grid gap-3">
-      {items.map((i) => (
-        <SubmissionCard
-          key={i.id}
-          id={i.id}
-          name={i.name}
-          comment={i.comment}
-          status={i.status}
-          createdAt={i.created_at}
-          errorMessage={i.error_message}
-        />
-      ))}
+      <AnimatePresence initial={false}>
+        {items.map((i) => (
+          <motion.div
+            key={i.id}
+            layout
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <SubmissionCard
+              id={i.id}
+              name={i.name}
+              comment={i.comment}
+              status={i.status}
+              createdAt={i.created_at}
+              errorMessage={i.error_message}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
