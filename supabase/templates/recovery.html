@@ -32,7 +32,7 @@
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
-                    <a href="{{ .ConfirmationURL }}"
+                    <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password"
                        style="display:inline-block;background-color:#F5C518;color:#0A2540;padding:16px 36px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;">
                       Definir nova senha
                     </a>
@@ -44,7 +44,7 @@
                 Ou cola este link no navegador:
               </p>
               <p style="font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#0E4C5E;word-break:break-all;background:#F8FAFC;padding:12px;border-radius:8px;margin:8px 0 0;">
-                {{ .ConfirmationURL }}
+                {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password
               </p>
             </td>
           </tr>
