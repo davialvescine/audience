@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
 export async function signInWithPassword(formData: FormData) {
   const email = String(formData.get('email') ?? '').trim();
@@ -18,26 +19,15 @@ export async function signInWithPassword(formData: FormData) {
   redirect('/admin/events');
 }
 
-export async function signInWithEmail(formData: FormData) {
-  const email = String(formData.get('email') ?? '').trim();
-  if (!email) return;
-  const supabase = await getSupabaseServerClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
-  });
-  redirect('/admin?sent=1');
-}
-
 export async function requestPasswordReset(formData: FormData) {
   const email = String(formData.get('email') ?? '').trim();
   if (!email) return;
-  const supabase = await getSupabaseServerClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/auth/reset-password`,
-  });
+  // Use the service client (non-PKCE) so the email link contains a regular OTP
+  // token_hash, not the pkce_-prefixed kind. PKCE tokens require a verifier
+  // stored in the originating browser's cookies — useless when the recovery
+  // email is opened in a different device or browser.
+  const supabase = getSupabaseServiceClient();
+  await supabase.auth.resetPasswordForEmail(email);
   redirect('/admin?sent=1&mode=forgot');
 }
 
