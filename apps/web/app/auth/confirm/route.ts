@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const next = url.searchParams.get('next');
 
   if (!tokenHash || !type) {
-    return NextResponse.redirect(new URL('/admin?error=invalid_link', url));
+    return NextResponse.redirect(new URL('/auth/expired', url));
   }
 
   // verifyOtp consumes the email-link token AND persists the session via the
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
 
   if (error) {
-    return NextResponse.redirect(new URL('/admin?error=invalid_link', url));
+    return NextResponse.redirect(new URL('/auth/expired', url));
   }
 
   // Honour the explicit destination if it's a known auth target.
