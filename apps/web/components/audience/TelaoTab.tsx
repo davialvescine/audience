@@ -178,7 +178,7 @@ export function TelaoTab({
         {modes.includes('browser_source') ? (
           <ModeCard
             title="Browser Source (OBS, vMix, Streamlabs, Wirecast)"
-            url={publicTelaoUrl}
+            url={`${publicTelaoUrl}?mode=browser_source`}
             instructions={[
               'Abra o software de transmissão (OBS Studio: obsproject.com — grátis).',
               'Crie uma nova cena e adicione "Browser Source" (ou "Web Browser" no vMix).',
@@ -196,7 +196,7 @@ export function TelaoTab({
         {modes.includes('chrome_pip') ? (
           <ModeCard
             title="Janela Flutuante Chrome"
-            url={publicTelaoUrl}
+            url={`${publicTelaoUrl}?mode=chrome_pip`}
             instructions={[
               'No computador da apresentação, abra o Google Chrome.',
               `Acesse: ${publicTelaoUrl}`,

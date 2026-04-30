@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation';
 
+import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
 type Params = { slug: string };
-type SearchParams = { preview?: string };
+type SearchParams = { preview?: string; mode?: string };
 
 export default async function TelaoPage({
   params,
@@ -15,7 +16,7 @@ export default async function TelaoPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { slug } = await params;
-  const { preview } = await searchParams;
+  const { preview, mode } = await searchParams;
   const supabase = getSupabaseServiceClient();
   const { data } = await supabase.rpc('get_telao_config', { p_slug: slug });
   const event = data?.[0];
@@ -26,14 +27,25 @@ export default async function TelaoPage({
     ...((event.config as Partial<TelaoConfig>) ?? {}),
   };
 
-  return (
+  const isPreview = preview === '1';
+  const isPip = mode === 'chrome_pip';
+
+  const telao = (
     <TelaoClient
       eventId={event.event_id}
       eventName={event.event_name}
       config={config}
-      preview={preview === '1'}
+      preview={isPreview}
     />
   );
+
+  // Only wrap with PipLauncher when:
+  // - mode=chrome_pip explicitly requested (URL came from "Janela Flutuante" in admin), OR
+  // - no mode at all (direct visit) AND not in preview iframe
+  // Browser Source URLs use ?mode=browser_source — no PiP overlay then.
+  if (isPreview) return telao;
+  if (isPip || !mode) return <PipLauncher>{telao}</PipLauncher>;
+  return telao;
 }
 
 // Force transparent background — overrides root layout
