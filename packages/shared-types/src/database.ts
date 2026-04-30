@@ -42,6 +42,7 @@ export type Database = {
       events: {
         Row: {
           created_at: string
+          dispatch_interval_seconds: number
           h2r_last_heartbeat: string | null
           h2r_paired_at: string | null
           h2r_source_id: string | null
@@ -55,6 +56,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dispatch_interval_seconds?: number
           h2r_last_heartbeat?: string | null
           h2r_paired_at?: string | null
           h2r_source_id?: string | null
@@ -68,6 +70,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dispatch_interval_seconds?: number
           h2r_last_heartbeat?: string | null
           h2r_paired_at?: string | null
           h2r_source_id?: string | null

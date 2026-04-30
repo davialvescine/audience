@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AdminShell } from '@/components/audience/AdminShell';
+import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm';
+import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
 import { ShareCard } from '@/components/audience/ShareCard';
@@ -21,7 +23,7 @@ export default async function EventModerationPage({
   const supabase = await getSupabaseServerClient();
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open')
+    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds')
     .eq('slug', slug)
     .single();
   if (!event) notFound();
@@ -40,6 +42,7 @@ export default async function EventModerationPage({
 
   const counts = {
     pending: subs?.filter((s) => s.status === 'pending').length ?? 0,
+    queued: subs?.filter((s) => s.status === 'approved').length ?? 0,
     sent: subs?.filter((s) => s.status === 'sent').length ?? 0,
     failed: subs?.filter((s) => s.status === 'failed').length ?? 0,
   };
@@ -53,11 +56,15 @@ export default async function EventModerationPage({
       id: 'moderation',
       label: `Moderação${counts.pending > 0 ? ` (${counts.pending})` : ''}`,
       content: (
-        <div>
-          <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card className="text-center">
               <p className="text-3xl font-display font-bold text-ink">{counts.pending}</p>
               <p className="text-xs text-ink/60 uppercase tracking-wide">Pendentes</p>
+            </Card>
+            <Card className="text-center">
+              <p className="text-3xl font-display font-bold text-accent">{counts.queued}</p>
+              <p className="text-xs text-ink/60 uppercase tracking-wide">Na fila</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-display font-bold text-success">{counts.sent}</p>
@@ -68,6 +75,11 @@ export default async function EventModerationPage({
               <p className="text-xs text-ink/60 uppercase tracking-wide">Falhas</p>
             </Card>
           </div>
+          <FlushQueueButton
+            eventId={event.id}
+            queuedCount={counts.queued}
+            intervalSeconds={event.dispatch_interval_seconds ?? 3}
+          />
           <ModerationQueue eventId={event.id} initial={subs ?? []} />
         </div>
       ),
@@ -117,12 +129,21 @@ export default async function EventModerationPage({
       id: 'settings',
       label: 'Configurações',
       content: (
-        <Card>
-          <h3 className="font-display text-lg mb-2">Configurações do evento</h3>
-          <p className="text-sm text-ink/70">
-            Em breve: pausar submissões, renomear, deletar evento.
-          </p>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <h3 className="font-display text-lg mb-4">Disparos pra H2R</h3>
+            <DispatchIntervalForm
+              eventId={event.id}
+              current={event.dispatch_interval_seconds ?? 3}
+            />
+          </Card>
+          <Card>
+            <h3 className="font-display text-lg mb-2">Outras configurações</h3>
+            <p className="text-sm text-ink/60">
+              Em breve: pausar submissões, renomear, deletar evento.
+            </p>
+          </Card>
+        </div>
       ),
     },
   ];
