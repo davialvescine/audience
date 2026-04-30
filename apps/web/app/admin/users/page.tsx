@@ -1,5 +1,6 @@
 import { AdminShell } from '@/components/audience/AdminShell';
 import { InviteUserForm } from '@/components/audience/InviteUserForm';
+import { ResendInviteButton } from '@/components/audience/ResendInviteButton';
 import { UsersList } from '@/components/audience/UsersList';
 import { Card } from '@/components/ui/Card';
 import { requireUser } from '@/lib/auth/requireUser';
@@ -47,29 +48,36 @@ export default async function AdminUsersPage() {
           <Card>
             <h2 className="text-xl font-display mb-4">Convites recentes</h2>
             <ul className="divide-y divide-ink/10 dark:divide-ink/15">
-              {invites.map((i) => (
-                <li key={i.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-ink truncate">{i.email}</p>
-                    <p className="text-xs text-ink/60">
-                      {new Date(i.created_at).toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                  {i.accepted_at ? (
-                    <span className="text-xs text-success bg-success/15 dark:bg-success/20 px-2 py-1 rounded-sm">
-                      Aceito
-                    </span>
-                  ) : new Date(i.expires_at) < new Date() ? (
-                    <span className="text-xs text-ink/60 bg-ink/5 dark:bg-ink/10 px-2 py-1 rounded-sm">
-                      Expirado
-                    </span>
-                  ) : (
-                    <span className="text-xs text-secondary bg-secondary/15 dark:bg-secondary/20 px-2 py-1 rounded-sm">
-                      Pendente
-                    </span>
-                  )}
-                </li>
-              ))}
+              {invites.map((i) => {
+                const expired = new Date(i.expires_at) < new Date();
+                const canResend = !i.accepted_at;
+                return (
+                  <li key={i.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-ink truncate">{i.email}</p>
+                      <p className="text-xs text-ink/60">
+                        {new Date(i.created_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {canResend ? <ResendInviteButton email={i.email} /> : null}
+                      {i.accepted_at ? (
+                        <span className="text-xs text-success bg-success/15 dark:bg-success/20 px-2 py-1 rounded-sm">
+                          Aceito
+                        </span>
+                      ) : expired ? (
+                        <span className="text-xs text-ink/60 bg-ink/5 dark:bg-ink/10 px-2 py-1 rounded-sm">
+                          Expirado
+                        </span>
+                      ) : (
+                        <span className="text-xs text-secondary bg-secondary/15 dark:bg-secondary/20 px-2 py-1 rounded-sm">
+                          Pendente
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </Card>
         ) : null}
