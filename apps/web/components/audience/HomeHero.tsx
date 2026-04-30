@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/Button';
 
 export function HomeHero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-deep text-paper">
+    <section className="relative overflow-hidden bg-[rgb(14_76_94)] dark:bg-[rgb(7_32_44)] text-white">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[rgb(14_76_94)] via-[rgb(10_44_61)] to-[rgb(7_32_44)] dark:from-[rgb(11_18_28)] dark:via-[rgb(7_32_44)] dark:to-[rgb(0_0_0)]"
+      />
       <motion.div
         aria-hidden="true"
         className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-accent/20 blur-3xl"
@@ -32,7 +36,7 @@ export function HomeHero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
-            className="inline-block px-3 py-1 rounded-full bg-paper/10 backdrop-blur text-xs font-medium uppercase tracking-wider mb-6"
+            className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur text-xs font-medium uppercase tracking-wider mb-6 text-white"
           >
             Para eventos ao vivo
           </motion.span>

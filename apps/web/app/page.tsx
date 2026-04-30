@@ -32,12 +32,12 @@ export default function HomePage() {
         <FeatureGrid />
       </section>
 
-      <section className="bg-gradient-to-r from-primary to-primary-deep text-paper">
+      <section className="bg-gradient-to-r from-[rgb(14_76_94)] to-[rgb(7_32_44)] dark:from-[rgb(7_32_44)] dark:to-[rgb(0_0_0)] text-white">
         <div className="max-w-4xl mx-auto px-6 py-16 md:py-20 text-center">
-          <h2 className="text-3xl md:text-4xl font-display font-bold">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
             Pronto pro próximo evento?
           </h2>
-          <p className="mt-4 text-lg opacity-85 max-w-xl mx-auto">
+          <p className="mt-4 text-lg opacity-85 max-w-xl mx-auto text-white/85">
             Acesse o painel e crie um evento em menos de um minuto.
           </p>
           <div className="mt-8">
