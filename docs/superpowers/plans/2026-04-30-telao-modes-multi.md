@@ -521,3 +521,84 @@ Renderizada na aba Telão como referência rápida:
 ---
 
 **Próximo passo:** sua revisão. Confirme os 6 itens em "Decisões em aberto" e eu inicio Phase 1.
+
+---
+
+## Phase 9 (futuro) — NDI (Network Device Interface)
+
+**Adicionado em 2026-04-30 a pedido do Davi.** Não é prioridade imediata — só faz sentido depois que o Audience Desktop estiver maduro e se aparecer demanda real (estúdios profissionais, multi-câmera).
+
+### Por que adicionar NDI
+
+NDI é o padrão de transporte de vídeo em redes locais (Newtek). Vantagens:
+- Estúdios profissionais já têm receptores NDI (vMix, Wirecast, Tricaster)
+- Funciona em LAN — operador da apresentação roda nosso Audience Desktop, NDI source aparece na rede, vMix/Tricaster captura e mixa
+- Suporte a alpha channel (transparência) — overlay puro
+- Latência baixa (~30-100ms LAN)
+
+### Caminhos técnicos avaliados
+
+**A. node-ndi nativo no Tauri sidecar** (recomendado se for adiante)
+- Tauri spawna um sidecar Node que usa `node-ndi` (binding nativo do NDI SDK)
+- Audience Desktop renderiza overlay transparente offscreen (canvas ou OffscreenCanvas) e empurra frames via NDI
+- Pro: integrado ao app desktop; sem dependência externa
+- Contra: NDI SDK precisa ser baixado/incluído no bundle (licença NDI permite redistribuição mas é grande); empacotamento complica
+
+**B. OBS-NDI plugin (free) como bridge** (mais simples, depende do operador)
+- Operador instala plugin obs-ndi (https://github.com/Palakis/obs-ndi)
+- Configura nossa Browser Source como cena
+- Plugin exporta a cena como NDI source automaticamente
+- Pro: zero código nosso; funciona já hoje
+- Contra: depende de OBS — não é "produto único"
+
+**C. Web → NDI via Sienna NDI Webcam Input** (pago)
+- Software de terceiro que captura janela do browser e exporta como NDI
+- ~$60 licença
+- Descartado pelo custo
+
+### Implementação proposta (caminho A, quando for hora)
+
+```
+packages/audience-desktop/
+├── src-tauri/
+│   ├── src/
+│   │   ├── ndi.rs              # FFI Rust ↔ NDI SDK
+│   │   └── ndi_sender.rs       # Spawns sender thread, accepts frames from webview
+│   └── ndi/
+│       └── (NDI SDK headers + libs por plataforma)
+└── src/
+    └── ndi-bridge.ts           # Captura canvas do telão, envia frames pro sender Rust via Tauri command
+```
+
+**Fluxo:**
+1. Usuário liga toggle "Exportar via NDI" no app desktop
+2. Audience Desktop captura o overlay frame-a-frame (60fps) usando `OffscreenCanvas` + `ImageBitmap`
+3. Frames vão pro Rust via `invoke('ndi_send_frame', { rgba: ... })`
+4. Rust feeds frames pro NDI SDK
+5. Receptor (vMix etc.) detecta source `Audience — <evento>` na rede
+
+**Tempo estimado:** 5-7 dias adicionais ao Audience Desktop base.
+
+### Tarefas
+
+- **Task 9.1:** Pesquisar empacotamento do NDI SDK (Mac universal binary + Win .dll), licença de redistribuição
+- **Task 9.2:** Adicionar dependência Rust `cidre` ou crate equivalente que faça FFI pro NDI
+- **Task 9.3:** Toggle "NDI Out" na UI do Audience Desktop + persistência local
+- **Task 9.4:** Loop de captura do canvas → ImageBitmap → Uint8Array RGBA
+- **Task 9.5:** Teste com vMix e OBS-NDI receivers em LAN
+- **Task 9.6:** Documentação `/admin/help/ndi.md` com setup vMix
+- **Task 9.7:** Adicionar `ndi` como 5º modo em `enabled_display_modes` enum (migration)
+
+### Riscos
+
+- Empacotamento do NDI SDK aumenta o `.dmg` em ~30-50MB
+- Licença NDI redistributable exige incluir aviso e link Newtek
+- Performance: 60fps de canvas grande pode estourar CPU em máquinas modestas (Apple M1 base aguenta tranquilo, mas operador igreja pode ter MacBook Air 2017)
+- Sincronização de frame com a animação Framer Motion: pode haver jitter se não capturar via `requestAnimationFrame`
+
+### Quando ativar
+
+Não antes de:
+1. Audience Desktop base funcionando em produção
+2. Pelo menos 3 eventos rodando o app desktop sem bugs
+3. Pedido explícito de cliente com setup NDI
