@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm';
 import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
@@ -50,14 +50,15 @@ export function TelaoTab({
 }: Props) {
   const [config, setConfig] = useState<TelaoConfig>(initialConfig);
   const [modes, setModes] = useState<TelaoDisplayMode[]>(initialModes);
-  const [pending, start] = useTransition();
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sample, setSample] = useState({
     name: 'João da Silva',
     comment: 'Que evento incrível! Deus abençoe todos vocês.',
   });
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeReady, setIframeReady] = useState(false);
+  // Snapshot of last-saved values so we don't loop on the same data
+  const lastSavedRef = useRef({ config: initialConfig, modes: initialModes });
 
   // Listen for iframe "ready" signal so we can send initial config
   useEffect(() => {
@@ -90,9 +91,36 @@ export function TelaoTab({
     );
   }, [sample, iframeReady]);
 
+  // Debounced autosave: fires 600ms after the last config / modes change
+  useEffect(() => {
+    const cfgUnchanged = JSON.stringify(config) === JSON.stringify(lastSavedRef.current.config);
+    const modesUnchanged =
+      JSON.stringify([...modes].sort()) === JSON.stringify([...lastSavedRef.current.modes].sort());
+    if (cfgUnchanged && modesUnchanged) return;
+
+    const t = setTimeout(() => {
+      setAutoSaveStatus('saving');
+      void Promise.all([
+        cfgUnchanged ? Promise.resolve({ ok: true } as const) : updateTelaoConfig(eventId, config),
+        modesUnchanged ? Promise.resolve({ ok: true } as const) : updateDisplayModes(eventId, modes),
+      ]).then(([r1, r2]) => {
+        if (r1.ok && r2.ok) {
+          lastSavedRef.current = { config, modes };
+          setAutoSaveStatus('saved');
+          setTimeout(() => setAutoSaveStatus('idle'), 1500);
+        } else {
+          setAutoSaveStatus('error');
+          setTimeout(() => setAutoSaveStatus('idle'), 3000);
+        }
+      });
+    }, 600);
+
+    return () => clearTimeout(t);
+  }, [config, modes, eventId]);
+
   const dirty =
-    JSON.stringify(config) !== JSON.stringify(initialConfig) ||
-    JSON.stringify([...modes].sort()) !== JSON.stringify([...initialModes].sort());
+    JSON.stringify(config) !== JSON.stringify(lastSavedRef.current.config) ||
+    JSON.stringify([...modes].sort()) !== JSON.stringify([...lastSavedRef.current.modes].sort());
 
   const updateField = <K extends keyof TelaoConfig>(key: K, value: TelaoConfig[K]) => {
     setConfig((c) => ({ ...c, [key]: value }));
@@ -100,19 +128,6 @@ export function TelaoTab({
 
   const toggleMode = (mode: TelaoDisplayMode) => {
     setModes((cur) => (cur.includes(mode) ? cur.filter((m) => m !== mode) : [...cur, mode]));
-  };
-
-  const save = () => {
-    start(async () => {
-      const r1 = await updateTelaoConfig(eventId, config);
-      const r2 = await updateDisplayModes(eventId, modes);
-      if (r1.ok && r2.ok) {
-        setFeedback('✓ Salvo');
-      } else {
-        setFeedback('✗ Erro ao salvar');
-      }
-      setTimeout(() => setFeedback(null), 3000);
-    });
   };
 
   const reset = () => setConfig(DEFAULT_TELAO_CONFIG);
@@ -303,15 +318,27 @@ export function TelaoTab({
             </div>
           </div>
 
-          {/* Sticky save bar */}
-          <div className="flex items-center gap-3 pt-4 border-t border-ink/10">
-            <Button loading={pending} disabled={!dirty} onClick={save}>
-              Salvar alterações
-            </Button>
+          {/* Auto-save status bar */}
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-ink/10">
+            <div className="text-sm text-ink/60 flex items-center gap-2">
+              {autoSaveStatus === 'saving' ? (
+                <>
+                  <span className="inline-block h-3 w-3 rounded-full border-2 border-ink/40 border-t-transparent animate-spin" />
+                  <span>Salvando...</span>
+                </>
+              ) : autoSaveStatus === 'saved' ? (
+                <span className="text-success">✓ Salvo automaticamente</span>
+              ) : autoSaveStatus === 'error' ? (
+                <span className="text-danger">✗ Erro ao salvar — verifique a conexão</span>
+              ) : dirty ? (
+                <span className="text-ink/50">Mudanças não salvas — salvarão em 1s</span>
+              ) : (
+                <span className="text-ink/45">Tudo salvo</span>
+              )}
+            </div>
             <Button variant="ghost" size="sm" onClick={reset}>
               Resetar pro padrão
             </Button>
-            {feedback ? <span className="text-sm text-ink/70">{feedback}</span> : null}
           </div>
         </Card>
       </div>

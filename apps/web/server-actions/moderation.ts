@@ -26,7 +26,13 @@ async function deliverToH2R(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
   data: DeliveryRow,
 ): Promise<'sent' | 'queued' | 'failed'> {
-  if (!data.webhook_url) return 'queued';
+  // No H2R webhook configured → other display modes (Browser Source, Chrome PiP, Desktop App)
+  // pick the message up via Supabase Realtime as soon as status flips to 'sent'.
+  // Mark as sent immediately so the /telao subscription fires.
+  if (!data.webhook_url) {
+    await supabase.rpc('mark_submission_sent', { p_submission_id: data.submission_id });
+    return 'sent';
+  }
 
   const payload = buildH2RPayload({
     submissionId: data.submission_id,
@@ -62,6 +68,7 @@ async function deliverToH2R(
       msg.includes('UND_ERR') ||
       msg.includes('TypeError')
     ) {
+      // H2R unreachable — keep as approved (queued) so user can flush later when bridge reconnects.
       return 'queued';
     }
     await supabase.rpc('mark_submission_failed', {
