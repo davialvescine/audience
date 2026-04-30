@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { signInWithEmail, signInWithPassword } from '@/server-actions/auth';
+import { requestPasswordReset, signInWithPassword } from '@/server-actions/auth';
 
 const errorMessages: Record<string, string> = {
   missing: 'Preencha email e senha.',
@@ -57,7 +57,7 @@ export function LoginForm({ errorParam, sentParam, initialMode }: Props) {
             </button>
             <h1 className="text-2xl font-display font-semibold text-ink">Recuperar acesso</h1>
             <p className="text-sm text-ink/60 mt-1 mb-6">
-              Enviamos um link mágico pra você entrar sem senha.
+              Enviamos um link pra você criar uma senha nova.
             </p>
             {sent ? (
               <motion.div
@@ -66,11 +66,11 @@ export function LoginForm({ errorParam, sentParam, initialMode }: Props) {
                 animate={{ opacity: 1, scale: 1 }}
                 className="p-4 rounded-lg bg-success/10 text-success text-sm"
               >
-                ✓ Link enviado! Verifique seu email.
+                ✓ Email enviado! Verifique sua caixa de entrada.
               </motion.div>
             ) : (
               <form
-                action={(formData: FormData) => start(async () => signInWithEmail(formData))}
+                action={(formData: FormData) => start(async () => requestPasswordReset(formData))}
                 className="space-y-4"
               >
                 <Input
@@ -83,7 +83,7 @@ export function LoginForm({ errorParam, sentParam, initialMode }: Props) {
                   placeholder="exemplo@email.com"
                 />
                 <Button type="submit" loading={pending} className="w-full" size="lg">
-                  Enviar link mágico
+                  Enviar email de recuperação
                 </Button>
               </form>
             )}

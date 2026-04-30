@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuperar acesso ao Audience</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFC;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0A2540;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F8FAFC;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(10,44,61,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0E4C5E 0%,#F5C518 100%);padding:48px 32px;text-align:center;">
+              <h1 style="color:#FFFFFF;font-size:32px;font-weight:700;margin:0;letter-spacing:-0.02em;">
+                Recuperar acesso
+              </h1>
+              <p style="color:rgba(255,255,255,0.92);font-size:15px;margin:8px 0 0;">
+                Audience
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px 32px 24px;">
+              <h2 style="font-size:22px;font-weight:600;margin:0 0 12px;color:#0A2540;">
+                Crie uma senha nova
+              </h2>
+              <p style="font-size:15px;line-height:1.6;color:#0A2540;opacity:0.75;margin:0 0 32px;">
+                Recebemos um pedido pra redefinir sua senha. Clica no botão abaixo pra escolher uma nova. Se não foi você, ignore este email — sua senha atual continua valendo.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;background-color:#F5C518;color:#0A2540;padding:16px 36px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;">
+                      Definir nova senha
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:13px;line-height:1.6;color:#0A2540;opacity:0.55;margin:32px 0 0;">
+                Ou cola este link no navegador:
+              </p>
+              <p style="font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#0E4C5E;word-break:break-all;background:#F8FAFC;padding:12px;border-radius:8px;margin:8px 0 0;">
+                {{ .ConfirmationURL }}
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px;">
+              <div style="height:1px;background:#E5E7EB;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 32px;">
+              <p style="font-size:12px;line-height:1.6;color:#0A2540;opacity:0.5;margin:0;">
+                O link expira em 1 hora e funciona uma única vez.
+              </p>
+              <p style="font-size:12px;line-height:1.6;color:#0A2540;opacity:0.5;margin:12px 0 0;">
+                <strong style="color:#0E4C5E;">União Centro-Oeste Brasileira</strong><br>
+                Geração 2026 — O Nascer de Uma Geração
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

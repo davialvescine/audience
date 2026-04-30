@@ -30,6 +30,17 @@ export async function signInWithEmail(formData: FormData) {
   redirect('/admin?sent=1');
 }
 
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get('email') ?? '').trim();
+  if (!email) return;
+  const supabase = await getSupabaseServerClient();
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/reset-password`,
+  });
+  redirect('/admin?sent=1&mode=forgot');
+}
+
 export async function signOut() {
   const supabase = await getSupabaseServerClient();
   await supabase.auth.signOut();

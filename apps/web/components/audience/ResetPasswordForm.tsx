@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
-export function AcceptInviteForm() {
+export function ResetPasswordForm() {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [password, setPassword] = useState('');
@@ -67,7 +67,7 @@ export function AcceptInviteForm() {
         </p>
       ) : null}
       <Button type="submit" loading={pending} className="w-full">
-        Definir senha e entrar
+        Salvar nova senha
       </Button>
     </form>
   );
