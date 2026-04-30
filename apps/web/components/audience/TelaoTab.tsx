@@ -6,6 +6,7 @@ import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm
 import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { CopyableField } from '@/components/ui/CopyButton';
 import {
   DEFAULT_TELAO_CONFIG,
   DISPLAY_MODE_LABELS,
@@ -253,7 +254,7 @@ export function TelaoTab({
           {/* Width / Font */}
           <div className="grid sm:grid-cols-2 gap-4">
             <Slider label="Largura" suffix="%" min={20} max={100} value={config.widthPct} onChange={(v) => updateField('widthPct', v)} />
-            <Slider label="Tamanho da fonte" suffix="px" min={14} max={80} value={config.fontSizePx} onChange={(v) => updateField('fontSizePx', v)} />
+            <Slider label="Tamanho da fonte" suffix="px" min={5} max={120} value={config.fontSizePx} onChange={(v) => updateField('fontSizePx', v)} />
           </div>
 
           {/* Colors */}
@@ -283,14 +284,14 @@ export function TelaoTab({
           {/* Extras */}
           <div>
             <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Mostrar no card</p>
-            <div className="flex gap-3 flex-wrap text-sm text-ink/80">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={config.showTimestamp} onChange={(e) => updateField('showTimestamp', e.target.checked)} />
-                Hora
+            <div className="flex gap-4 flex-wrap text-sm text-ink/80">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={config.showTimestamp} onChange={(e) => updateField('showTimestamp', e.target.checked)} className="h-4 w-4" />
+                <span>Hora do envio</span>
               </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={config.showEventName} onChange={(e) => updateField('showEventName', e.target.checked)} />
-                Nome do evento
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={config.showEventName} onChange={(e) => updateField('showEventName', e.target.checked)} className="h-4 w-4" />
+                <span>Nome do evento</span>
               </label>
             </div>
           </div>
@@ -311,9 +312,21 @@ export function TelaoTab({
       {/* RIGHT: sticky live preview */}
       <div className="lg:sticky lg:top-4 self-start">
         <Card>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 gap-2">
             <h3 className="font-display text-lg">Preview ao vivo</h3>
-            <span className="text-xs text-ink/50">atualiza em tempo real</span>
+            <button
+              type="button"
+              onClick={() =>
+                iframeRef.current?.contentWindow?.postMessage(
+                  { type: 'telao-play-cycle' },
+                  window.location.origin,
+                )
+              }
+              className="text-xs px-3 h-8 inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary transition"
+              title="Tocar animação de entrada e saída"
+            >
+              ▶ Tocar entrada e saída
+            </button>
           </div>
           <div className="aspect-video bg-gradient-to-br from-ink/80 via-primary-deep to-ink rounded-lg overflow-hidden relative">
             <div className="absolute inset-0 flex items-center justify-center text-white/25 text-xs uppercase tracking-wider pointer-events-none select-none">
@@ -506,36 +519,38 @@ function ModeCard({
   return (
     <Card>
       <h4 className="font-display text-base text-ink mb-3">{title}</h4>
+
+      <div className="mb-4">
+        <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">URL pra colar no software</p>
+        <CopyableField value={url} label="URL do telão" />
+      </div>
+
       <ol className="list-decimal list-inside space-y-1 text-sm text-ink/75">
         {instructions.map((step, i) => (
           <li key={i}>{step}</li>
         ))}
       </ol>
-      <div className="mt-4 flex flex-wrap gap-2 items-center">
-        <button
-          type="button"
-          onClick={() => void navigator.clipboard.writeText(url)}
-          className="text-xs px-3 h-9 rounded-md border border-ink/20 hover:border-primary/50 transition text-ink"
-        >
-          📋 Copiar URL
-        </button>
-        {extraButtons?.map((b) =>
-          b.disabled ? (
-            <span key={b.label} className="text-xs px-3 h-9 inline-flex items-center rounded-md bg-ink/5 text-ink/40">
-              {b.label}
-            </span>
-          ) : (
-            <a
-              key={b.label}
-              href={b.href}
-              download
-              className="text-xs px-3 h-9 inline-flex items-center rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary"
-            >
-              📥 {b.label}
-            </a>
-          ),
-        )}
-      </div>
+
+      {extraButtons && extraButtons.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2 items-center">
+          {extraButtons.map((b) =>
+            b.disabled ? (
+              <span key={b.label} className="text-xs px-3 h-9 inline-flex items-center rounded-md bg-ink/5 text-ink/40">
+                {b.label}
+              </span>
+            ) : (
+              <a
+                key={b.label}
+                href={b.href}
+                download
+                className="text-xs px-3 h-9 inline-flex items-center rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary"
+              >
+                📥 {b.label}
+              </a>
+            ),
+          )}
+        </div>
+      ) : null}
     </Card>
   );
 }

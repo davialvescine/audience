@@ -54,6 +54,7 @@ export type Database = {
           slug: string
           submissions_open: boolean
           telao_config: Json
+          telao_configs: Json
           theme_id: string
         }
         Insert: {
@@ -70,6 +71,7 @@ export type Database = {
           slug: string
           submissions_open?: boolean
           telao_config?: Json
+          telao_configs?: Json
           theme_id: string
         }
         Update: {
@@ -86,6 +88,7 @@ export type Database = {
           slug?: string
           submissions_open?: boolean
           telao_config?: Json
+          telao_configs?: Json
           theme_id?: string
         }
         Relationships: [
@@ -262,6 +265,7 @@ export type Database = {
         Args: { p_slug: string }
         Returns: {
           config: Json
+          configs: Json
           event_id: string
           event_name: string
           theme_id: string

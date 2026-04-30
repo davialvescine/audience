@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   animationVariants,
   positionStyles,
-  shadowClass,
+  shadowStyle,
   type TelaoConfig,
 } from '@/lib/telao/config';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
@@ -36,6 +36,8 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
     comment: 'Que evento incrível! Deus abençoe todos vocês.',
   });
 
+  const [playCycleId, setPlayCycleId] = useState(0);
+
   // Listen for live config updates via postMessage when in preview mode
   useEffect(() => {
     if (!preview) return;
@@ -51,6 +53,9 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       }
       if (data.type === 'telao-sample-update' && data.sample) {
         setPreviewSample(data.sample);
+      }
+      if (data.type === 'telao-play-cycle') {
+        setPlayCycleId((id) => id + 1);
       }
     };
     window.addEventListener('message', handler);
@@ -90,7 +95,31 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
   // Display loop — pulls from queue, respects maxConcurrent and displaySeconds
   useEffect(() => {
     if (preview) {
-      // Show one demo message — re-render whenever sample changes
+      // If a play cycle was triggered, clear, wait, show, then exit after displaySeconds
+      if (playCycleId > 0) {
+        setVisible([]);
+        const enterTimer = setTimeout(() => {
+          setVisible([
+            {
+              id: `cycle-${playCycleId}`,
+              name: previewSample.name || 'Nome de exemplo',
+              comment: previewSample.comment || 'Mensagem de exemplo aparece aqui.',
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        }, 200);
+        const exitTimer = setTimeout(
+          () => {
+            setVisible([]);
+          },
+          200 + config.displaySeconds * 1000,
+        );
+        return () => {
+          clearTimeout(enterTimer);
+          clearTimeout(exitTimer);
+        };
+      }
+      // Default: show static preview that re-renders when config/sample changes
       setVisible([
         {
           id: `preview-${previewSample.name}-${previewSample.comment}`,
@@ -115,7 +144,7 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
     }, 500);
 
     return () => clearInterval(tick);
-  }, [config.maxConcurrent, config.displaySeconds, visible.length, preview, previewSample]);
+  }, [config.maxConcurrent, config.displaySeconds, visible.length, preview, previewSample, playCycleId]);
 
   const variants = animationVariants(config.animation);
 
@@ -132,16 +161,17 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       <AnimatePresence>
         {visible.map((m) => (
           <motion.div
-            key={m.id}
+            key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}`}
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className={`mb-3 ${shadowClass(config.shadow)}`}
+            className="mb-3"
             style={{
               background: config.cardBg,
               color: config.cardText,
               borderRadius: `${config.borderRadius}px`,
+              boxShadow: shadowStyle(config.shadow),
               backdropFilter: config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
               WebkitBackdropFilter: config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,

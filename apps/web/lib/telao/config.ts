@@ -83,12 +83,12 @@ export function positionStyles(position: TelaoPosition): React.CSSProperties {
   }
 }
 
-export function shadowClass(shadow: TelaoShadow): string {
+export function shadowStyle(shadow: TelaoShadow): string {
   switch (shadow) {
-    case 'none': return '';
-    case 'subtle': return 'shadow-md';
-    case 'medium': return 'shadow-xl';
-    case 'dramatic': return 'shadow-2xl';
+    case 'none': return 'none';
+    case 'subtle': return '0 4px 12px -2px rgba(0,0,0,0.18), 0 2px 4px -1px rgba(0,0,0,0.10)';
+    case 'medium': return '0 18px 38px -8px rgba(0,0,0,0.32), 0 8px 14px -6px rgba(0,0,0,0.18)';
+    case 'dramatic': return '0 30px 60px -12px rgba(0,0,0,0.55), 0 18px 30px -10px rgba(0,0,0,0.30)';
   }
 }
 
