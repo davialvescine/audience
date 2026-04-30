@@ -31,12 +31,7 @@ export function PipLauncher({ children }: Props) {
     const main = window.document;
     const pip = pipWindow.document;
 
-    pip.body.style.margin = '0';
-    pip.body.style.background = 'transparent';
-    pip.documentElement.style.background = 'transparent';
     pip.documentElement.lang = 'pt-BR';
-
-    // Title for the PiP window
     pip.title = 'Audience — Telão';
 
     // Copy <link rel=stylesheet> tags
@@ -59,6 +54,26 @@ export function PipLauncher({ children }: Props) {
         // Cross-origin stylesheet — already linked above via <link>
       }
     });
+
+    // Final override: force transparency regardless of what got cloned. This must be the LAST
+    // stylesheet in <head> so it wins the cascade over any Tailwind body bg, theme tokens, etc.
+    const transparencyOverride = pip.createElement('style');
+    transparencyOverride.textContent = `
+      html, body {
+        background: transparent !important;
+        background-color: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        height: 100vh !important;
+      }
+      :root, html { color-scheme: only light !important; }
+    `;
+    pip.head.appendChild(transparencyOverride);
+
+    // Inline styles too, for engines that ignore the !important cascade in PiP
+    pip.documentElement.style.cssText += '; background: transparent !important;';
+    pip.body.style.cssText += '; background: transparent !important; margin: 0 !important;';
   }, [pipWindow]);
 
   const openPip = async () => {
