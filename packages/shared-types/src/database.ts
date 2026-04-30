@@ -43,6 +43,7 @@ export type Database = {
         Row: {
           created_at: string
           dispatch_interval_seconds: number
+          enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
           h2r_last_heartbeat: string | null
           h2r_paired_at: string | null
           h2r_source_id: string | null
@@ -52,11 +53,13 @@ export type Database = {
           owner_id: string
           slug: string
           submissions_open: boolean
+          telao_config: Json
           theme_id: string
         }
         Insert: {
           created_at?: string
           dispatch_interval_seconds?: number
+          enabled_display_modes?: Database["public"]["Enums"]["telao_display_mode"][]
           h2r_last_heartbeat?: string | null
           h2r_paired_at?: string | null
           h2r_source_id?: string | null
@@ -66,11 +69,13 @@ export type Database = {
           owner_id: string
           slug: string
           submissions_open?: boolean
+          telao_config?: Json
           theme_id: string
         }
         Update: {
           created_at?: string
           dispatch_interval_seconds?: number
+          enabled_display_modes?: Database["public"]["Enums"]["telao_display_mode"][]
           h2r_last_heartbeat?: string | null
           h2r_paired_at?: string | null
           h2r_source_id?: string | null
@@ -80,6 +85,7 @@ export type Database = {
           owner_id?: string
           slug?: string
           submissions_open?: boolean
+          telao_config?: Json
           theme_id?: string
         }
         Relationships: [
@@ -252,6 +258,15 @@ export type Database = {
           theme_id: string
         }[]
       }
+      get_telao_config: {
+        Args: { p_slug: string }
+        Returns: {
+          config: Json
+          event_id: string
+          event_name: string
+          theme_id: string
+        }[]
+      }
       mark_submission_failed: {
         Args: { p_error: string; p_submission_id: string }
         Returns: undefined
@@ -292,6 +307,11 @@ export type Database = {
     }
     Enums: {
       submission_status: "pending" | "approved" | "rejected" | "sent" | "failed"
+      telao_display_mode:
+        | "h2r"
+        | "browser_source"
+        | "chrome_pip"
+        | "desktop_app"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -423,6 +443,12 @@ export const Constants = {
   public: {
     Enums: {
       submission_status: ["pending", "approved", "rejected", "sent", "failed"],
+      telao_display_mode: [
+        "h2r",
+        "browser_source",
+        "chrome_pip",
+        "desktop_app",
+      ],
     },
   },
 } as const

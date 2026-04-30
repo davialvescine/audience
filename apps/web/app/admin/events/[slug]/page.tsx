@@ -8,6 +8,8 @@ import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
 import { ShareCard } from '@/components/audience/ShareCard';
+import { TelaoTab } from '@/components/audience/TelaoTab';
+import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import { requireUser } from '@/lib/auth/requireUser';
@@ -23,7 +25,7 @@ export default async function EventModerationPage({
   const supabase = await getSupabaseServerClient();
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds')
+    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, enabled_display_modes')
     .eq('slug', slug)
     .single();
   if (!event) notFound();
@@ -82,6 +84,22 @@ export default async function EventModerationPage({
           />
           <ModerationQueue eventId={event.id} initial={subs ?? []} />
         </div>
+      ),
+    },
+    {
+      id: 'telao',
+      label: 'Telão',
+      content: (
+        <TelaoTab
+          eventId={event.id}
+          slug={event.slug}
+          initialConfig={{
+            ...DEFAULT_TELAO_CONFIG,
+            ...((event.telao_config as Partial<TelaoConfig>) ?? {}),
+          }}
+          initialModes={(event.enabled_display_modes as TelaoDisplayMode[] | null) ?? ['h2r']}
+          publicTelaoUrl={`${proto}://${host}/telao/${event.slug}`}
+        />
       ),
     },
     {
