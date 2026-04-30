@@ -12,8 +12,13 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient<Database
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (toSet: { name: string; value: string; options: CookieOptions }[]) => {
-          for (const { name, value, options } of toSet) {
-            cookieStore.set(name, value, options);
+          try {
+            for (const { name, value, options } of toSet) {
+              cookieStore.set(name, value, options);
+            }
+          } catch {
+            // Called from a Server Component — cookies are read-only here.
+            // Session refresh is handled by Server Actions / Route Handlers.
           }
         },
       },
