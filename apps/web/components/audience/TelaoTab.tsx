@@ -176,21 +176,7 @@ export function TelaoTab({
         ) : null}
 
         {modes.includes('browser_source') ? (
-          <ModeCard
-            title="Browser Source (OBS, vMix, Streamlabs, Wirecast)"
-            url={`${publicTelaoUrl}?mode=browser_source`}
-            instructions={[
-              'Abra o software de transmissão (OBS Studio: obsproject.com — grátis).',
-              'Crie uma nova cena e adicione "Browser Source" (ou "Web Browser" no vMix).',
-              `Cole esta URL: ${publicTelaoUrl}`,
-              'Defina largura 1920 e altura 1080.',
-              'Adicione sua apresentação como Captura de Janela (PowerPoint/Keynote).',
-              'Direito no preview → "Projetor de Tela Cheia" → escolha o monitor do projetor.',
-            ]}
-            extraButtons={[
-              { label: 'Baixar cena pro OBS', href: `/api/scene/obs/${slug}` },
-            ]}
-          />
+          <BrowserSourceCard slug={slug} url={`${publicTelaoUrl}?mode=browser_source`} />
         ) : null}
 
         {modes.includes('chrome_pip') ? (
@@ -524,6 +510,101 @@ function positionIcon(p: TelaoPosition): string {
     'bottom-right': '↘',
   };
   return map[p];
+}
+
+function BrowserSourceCard({ slug, url }: { slug: string; url: string }) {
+  return (
+    <Card>
+      <h4 className="font-display text-base text-ink mb-1">Browser Source</h4>
+      <p className="text-sm text-ink/60 mb-4">
+        Funciona em qualquer software com suporte a "Browser Source": OBS, vMix, Streamlabs, Wirecast, Ecamm, mimoLive.
+      </p>
+
+      <div className="mb-4">
+        <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">URL pra colar no software</p>
+        <CopyableField value={url} label="URL do telão" />
+      </div>
+
+      <div className="grid sm:grid-cols-3 gap-3 mb-4">
+        <SoftwareCell
+          name="OBS Studio"
+          downloadHref="https://obsproject.com/download"
+          sceneHref={`/api/scene/obs/${slug}`}
+          sceneLabel="Cena pronta (.json)"
+        />
+        <SoftwareCell
+          name="vMix"
+          downloadHref="https://www.vmix.com/software/download.aspx"
+          sceneHref={`/api/scene/vmix/${slug}`}
+          sceneLabel="Preset (.vmix)"
+        />
+        <SoftwareCell
+          name="Streamlabs"
+          downloadHref="https://streamlabs.com/streamlabs-desktop"
+          sceneHref={`/api/scene/streamlabs/${slug}`}
+          sceneLabel="Cena pronta (.json)"
+        />
+      </div>
+
+      <details className="text-sm text-ink/75">
+        <summary className="cursor-pointer text-ink/80 font-medium mb-2 hover:text-primary">
+          Como configurar no OBS (passo a passo)
+        </summary>
+        <ol className="list-decimal list-inside space-y-1 mt-2 pl-2">
+          <li>Baixe o OBS Studio acima e instale.</li>
+          <li>Abra o OBS, vá em <strong>Cena → Importar Coleção de Cenas</strong> e escolha o arquivo de cena baixado acima.</li>
+          <li>Adicione sua apresentação como <strong>Captura de Janela</strong> (PowerPoint/Keynote/Chrome).</li>
+          <li>Coloque a apresentação <strong>abaixo</strong> da fonte "Audience Comentários" na lista de fontes.</li>
+          <li>Clique direito no preview → <strong>Projetor de Tela Cheia (Programa)</strong> → escolha o monitor do projetor.</li>
+        </ol>
+      </details>
+
+      <details className="text-sm text-ink/75 mt-2">
+        <summary className="cursor-pointer text-ink/80 font-medium mb-2 hover:text-primary">
+          vMix · Streamlabs · Wirecast · Outros
+        </summary>
+        <div className="mt-2 pl-2 space-y-2">
+          <p><strong>vMix:</strong> Add Input → Web Browser → cole a URL acima · Width 1920 · Height 1080. Ou abra o preset .vmix.</p>
+          <p><strong>Streamlabs Desktop:</strong> Add Source → Browser Source → cole a URL · ou importe a cena .json acima.</p>
+          <p><strong>Wirecast:</strong> New Source → Web Page → cole a URL · adicione como Layer acima da apresentação.</p>
+          <p><strong>Ecamm Live (Mac):</strong> Source → Web Page → cole a URL.</p>
+        </div>
+      </details>
+    </Card>
+  );
+}
+
+function SoftwareCell({
+  name,
+  downloadHref,
+  sceneHref,
+  sceneLabel,
+}: {
+  name: string;
+  downloadHref: string;
+  sceneHref: string;
+  sceneLabel: string;
+}) {
+  return (
+    <div className="rounded-md border border-ink/10 bg-ink/5 p-3">
+      <p className="font-medium text-sm text-ink mb-2">{name}</p>
+      <a
+        href={downloadHref}
+        target="_blank"
+        rel="noreferrer"
+        className="block text-xs text-primary hover:underline mb-1.5"
+      >
+        ↗ Baixar {name}
+      </a>
+      <a
+        href={sceneHref}
+        download
+        className="block text-xs text-primary hover:underline"
+      >
+        📥 {sceneLabel}
+      </a>
+    </div>
+  );
 }
 
 function ModeCard({
