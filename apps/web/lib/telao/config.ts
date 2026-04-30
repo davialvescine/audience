@@ -16,6 +16,8 @@ export type TelaoShadow = 'none' | 'subtle' | 'medium' | 'dramatic';
 export type TelaoConfig = {
   position: TelaoPosition;
   widthPct: number;
+  /** Min-height in px. 0 = auto (fits content). */
+  heightPx: number;
   fontFamily: string;
   fontSizePx: number;
   cardBg: string;
@@ -34,6 +36,7 @@ export type TelaoConfig = {
 export const DEFAULT_TELAO_CONFIG: TelaoConfig = {
   position: 'bottom-center',
   widthPct: 90,
+  heightPx: 0,
   fontFamily: 'Inter',
   fontSizePx: 32,
   cardBg: 'rgba(10, 37, 64, 0.85)',

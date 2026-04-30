@@ -92,59 +92,65 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
     };
   }, [eventId, preview]);
 
-  // Display loop — pulls from queue, respects maxConcurrent and displaySeconds
+  // Preview default state: render the sample message statically when no cycle is running
   useEffect(() => {
-    if (preview) {
-      // If a play cycle was triggered, clear, wait, show, then exit after displaySeconds
-      if (playCycleId > 0) {
-        setVisible([]);
-        const enterTimer = setTimeout(() => {
-          setVisible([
-            {
-              id: `cycle-${playCycleId}`,
-              name: previewSample.name || 'Nome de exemplo',
-              comment: previewSample.comment || 'Mensagem de exemplo aparece aqui.',
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        }, 200);
-        const exitTimer = setTimeout(
-          () => {
-            setVisible([]);
-          },
-          200 + config.displaySeconds * 1000,
-        );
-        return () => {
-          clearTimeout(enterTimer);
-          clearTimeout(exitTimer);
-        };
-      }
-      // Default: show static preview that re-renders when config/sample changes
+    if (!preview) return;
+    if (playCycleId > 0) return; // a cycle is in flight; don't override
+    setVisible([
+      {
+        id: `preview-${previewSample.name}-${previewSample.comment}`,
+        name: previewSample.name || 'Nome de exemplo',
+        comment: previewSample.comment || 'Mensagem de exemplo aparece aqui.',
+        created_at: new Date().toISOString(),
+      },
+    ]);
+  }, [preview, playCycleId, previewSample]);
+
+  // Preview enter/exit cycle: triggered by parent's "Tocar entrada e saída" button
+  useEffect(() => {
+    if (!preview) return;
+    if (playCycleId === 0) return; // not triggered yet
+    setVisible([]); // clear so AnimatePresence registers the next push as a fresh enter
+    const enterTimer = setTimeout(() => {
       setVisible([
         {
-          id: `preview-${previewSample.name}-${previewSample.comment}`,
+          id: `cycle-${playCycleId}`,
           name: previewSample.name || 'Nome de exemplo',
           comment: previewSample.comment || 'Mensagem de exemplo aparece aqui.',
           created_at: new Date().toISOString(),
         },
       ]);
-      return;
-    }
+    }, 250);
+    const exitTimer = setTimeout(
+      () => {
+        setVisible([]);
+      },
+      250 + config.displaySeconds * 1000,
+    );
+    return () => {
+      clearTimeout(enterTimer);
+      clearTimeout(exitTimer);
+    };
+  }, [playCycleId, preview, previewSample, config.displaySeconds]);
 
+  // Live tick (non-preview): pull from queue, respect maxConcurrent and displaySeconds
+  useEffect(() => {
+    if (preview) return;
     const tick = setInterval(() => {
       if (queueRef.current.length === 0) return;
-      if (visible.length >= config.maxConcurrent) return;
-      const next = queueRef.current.shift();
-      if (!next) return;
-      setVisible((cur) => [...cur, next]);
-      const removeAfter = config.displaySeconds * 1000;
-      setTimeout(() => {
-        setVisible((cur) => cur.filter((m) => m.id !== next.id));
-      }, removeAfter);
+      setVisible((cur) => {
+        if (cur.length >= config.maxConcurrent) return cur;
+        const next = queueRef.current.shift();
+        if (!next) return cur;
+        const removeAfter = config.displaySeconds * 1000;
+        setTimeout(() => {
+          setVisible((cur2) => cur2.filter((m) => m.id !== next.id));
+        }, removeAfter);
+        return [...cur, next];
+      });
     }, 500);
-
     return () => clearInterval(tick);
-  }, [config.maxConcurrent, config.displaySeconds, visible.length, preview, previewSample, playCycleId]);
+  }, [preview, config.maxConcurrent, config.displaySeconds]);
 
   const variants = animationVariants(config.animation);
 
@@ -161,7 +167,7 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       <AnimatePresence>
         {visible.map((m) => (
           <motion.div
-            key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}`}
+            key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}-${config.heightPx}`}
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
@@ -177,6 +183,10 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
               fontSize: `${config.fontSizePx}px`,
               lineHeight: 1.3,
+              minHeight: config.heightPx > 0 ? `${config.heightPx}px` : undefined,
+              display: config.heightPx > 0 ? 'flex' : undefined,
+              flexDirection: config.heightPx > 0 ? 'column' : undefined,
+              justifyContent: config.heightPx > 0 ? 'center' : undefined,
             }}
           >
             <div

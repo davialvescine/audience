@@ -251,9 +251,30 @@ export function TelaoTab({
             </div>
           </div>
 
-          {/* Width / Font */}
+          {/* Width / Height */}
           <div className="grid sm:grid-cols-2 gap-4">
             <Slider label="Largura" suffix="%" min={20} max={100} value={config.widthPct} onChange={(v) => updateField('widthPct', v)} />
+            <div>
+              <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
+                <span>Altura</span>
+                <span className="text-ink font-medium">
+                  {config.heightPx === 0 ? 'Auto' : `${config.heightPx}px`}
+                </span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={500}
+                value={config.heightPx}
+                onChange={(e) => updateField('heightPx', Number(e.target.value))}
+                className="w-full"
+              />
+              <p className="text-xs text-ink/45 mt-1">0 = auto (encaixa no texto)</p>
+            </div>
+          </div>
+
+          {/* Font size */}
+          <div className="grid sm:grid-cols-2 gap-4">
             <Slider label="Tamanho da fonte" suffix="px" min={5} max={120} value={config.fontSizePx} onChange={(v) => updateField('fontSizePx', v)} />
           </div>
 
