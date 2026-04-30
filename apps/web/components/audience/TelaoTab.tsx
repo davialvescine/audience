@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
+import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm';
+import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -20,7 +22,6 @@ const POSITIONS: TelaoPosition[] = [
   'middle-left', 'center', 'middle-right',
   'bottom-left', 'bottom-center', 'bottom-right',
 ];
-
 const ANIMATIONS: TelaoAnimation[] = ['slide-up', 'slide-down', 'slide-left', 'slide-right', 'fade', 'scale', 'bounce'];
 const SHADOWS: TelaoShadow[] = ['none', 'subtle', 'medium', 'dramatic'];
 const ALL_MODES: TelaoDisplayMode[] = ['h2r', 'browser_source', 'chrome_pip', 'desktop_app'];
@@ -31,14 +32,62 @@ type Props = {
   initialConfig: TelaoConfig;
   initialModes: TelaoDisplayMode[];
   publicTelaoUrl: string;
+  h2r: {
+    alreadyPaired: boolean;
+    lastHeartbeat: string | null;
+    dispatchIntervalSeconds: number;
+  };
 };
 
-export function TelaoTab({ eventId, slug, initialConfig, initialModes, publicTelaoUrl }: Props) {
+export function TelaoTab({
+  eventId,
+  slug,
+  initialConfig,
+  initialModes,
+  publicTelaoUrl,
+  h2r,
+}: Props) {
   const [config, setConfig] = useState<TelaoConfig>(initialConfig);
   const [modes, setModes] = useState<TelaoDisplayMode[]>(initialModes);
   const [pending, start] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [previewKey, setPreviewKey] = useState(0);
+  const [sample, setSample] = useState({
+    name: 'João da Silva',
+    comment: 'Que evento incrível! Deus abençoe todos vocês.',
+  });
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeReady, setIframeReady] = useState(false);
+
+  // Listen for iframe "ready" signal so we can send initial config
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const data = e.data as { type?: string };
+      if (data.type === 'telao-preview-ready') {
+        setIframeReady(true);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // Push config updates to iframe in real time as user adjusts sliders
+  useEffect(() => {
+    if (!iframeReady) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'telao-config-update', config },
+      window.location.origin,
+    );
+  }, [config, iframeReady]);
+
+  // Push sample updates to iframe so user can see how their text looks
+  useEffect(() => {
+    if (!iframeReady) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'telao-sample-update', sample },
+      window.location.origin,
+    );
+  }, [sample, iframeReady]);
 
   const dirty =
     JSON.stringify(config) !== JSON.stringify(initialConfig) ||
@@ -58,7 +107,6 @@ export function TelaoTab({ eventId, slug, initialConfig, initialModes, publicTel
       const r2 = await updateDisplayModes(eventId, modes);
       if (r1.ok && r2.ok) {
         setFeedback('✓ Salvo');
-        setPreviewKey((k) => k + 1);
       } else {
         setFeedback('✗ Erro ao salvar');
       }
@@ -69,48 +117,121 @@ export function TelaoTab({ eventId, slug, initialConfig, initialModes, publicTel
   const reset = () => setConfig(DEFAULT_TELAO_CONFIG);
 
   return (
-    <div className="space-y-6">
-      {/* Modes selector */}
-      <Card>
-        <h3 className="font-display text-lg mb-1">Modos de exibição habilitados</h3>
-        <p className="text-sm text-ink/60 mb-4">
-          Escolha um ou mais modos. Pode usar todos em paralelo.
-        </p>
-        <div className="grid sm:grid-cols-2 gap-2">
-          {ALL_MODES.map((mode) => (
-            <label
-              key={mode}
-              className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition ${
-                modes.includes(mode)
-                  ? 'border-primary bg-primary/5'
-                  : 'border-ink/15 hover:border-ink/30'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={modes.includes(mode)}
-                onChange={() => toggleMode(mode)}
-                className="mt-1 h-4 w-4"
-              />
-              <div className="text-sm">
-                <p className="font-medium text-ink">{DISPLAY_MODE_LABELS[mode]}</p>
-                <p className="text-xs text-ink/55 mt-0.5">{describeMode(mode)}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-      </Card>
+    <div className="grid lg:grid-cols-[1fr_440px] gap-6">
+      {/* LEFT: settings stack */}
+      <div className="space-y-6 min-w-0">
+        {/* 1. Modes */}
+        <Card>
+          <h3 className="font-display text-lg mb-1">Modos de exibição habilitados</h3>
+          <p className="text-sm text-ink/60 mb-4">
+            Escolha um ou mais modos. Pode usar todos em paralelo. As configurações específicas de cada modo aparecem abaixo.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {ALL_MODES.map((mode) => (
+              <label
+                key={mode}
+                className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition ${
+                  modes.includes(mode)
+                    ? 'border-primary bg-primary/5'
+                    : 'border-ink/15 hover:border-ink/30'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={modes.includes(mode)}
+                  onChange={() => toggleMode(mode)}
+                  className="mt-1 h-4 w-4"
+                />
+                <div className="text-sm">
+                  <p className="font-medium text-ink">{DISPLAY_MODE_LABELS[mode]}</p>
+                  <p className="text-xs text-ink/55 mt-0.5">{describeMode(mode)}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </Card>
 
-      {/* Editor + Preview side-by-side */}
-      <div className="grid lg:grid-cols-[1fr_1fr] gap-6">
-        {/* Editor */}
+        {/* 2. Mode-specific settings + instructions */}
+        {modes.includes('h2r') ? (
+          <Card>
+            <div className="mb-3">
+              <h3 className="font-display text-lg">H2R Graphics</h3>
+              <p className="text-sm text-ink/60">Conexão e disparos pro app H2R.</p>
+            </div>
+            <div className="space-y-6">
+              <PairingCodeDisplay
+                eventId={eventId}
+                alreadyPaired={h2r.alreadyPaired}
+                lastHeartbeat={h2r.lastHeartbeat}
+              />
+              <div className="pt-6 border-t border-ink/10">
+                <DispatchIntervalForm
+                  eventId={eventId}
+                  current={h2r.dispatchIntervalSeconds}
+                />
+              </div>
+            </div>
+          </Card>
+        ) : null}
+
+        {modes.includes('browser_source') ? (
+          <ModeCard
+            title="Browser Source (OBS, vMix, Streamlabs, Wirecast)"
+            url={publicTelaoUrl}
+            instructions={[
+              'Abra o software de transmissão (OBS Studio: obsproject.com — grátis).',
+              'Crie uma nova cena e adicione "Browser Source" (ou "Web Browser" no vMix).',
+              `Cole esta URL: ${publicTelaoUrl}`,
+              'Defina largura 1920 e altura 1080.',
+              'Adicione sua apresentação como Captura de Janela (PowerPoint/Keynote).',
+              'Direito no preview → "Projetor de Tela Cheia" → escolha o monitor do projetor.',
+            ]}
+            extraButtons={[
+              { label: 'Baixar cena pro OBS', href: `/api/scene/obs/${slug}` },
+            ]}
+          />
+        ) : null}
+
+        {modes.includes('chrome_pip') ? (
+          <ModeCard
+            title="Janela Flutuante Chrome"
+            url={publicTelaoUrl}
+            instructions={[
+              'No computador da apresentação, abra o Google Chrome.',
+              `Acesse: ${publicTelaoUrl}`,
+              'Aparecerá um botão "Abrir como janela flutuante" — clique nele.',
+              'Arraste a janela pro canto da tela onde quer que apareça.',
+              'Inicie sua apresentação normalmente — a janela continua por cima.',
+            ]}
+          />
+        ) : null}
+
+        {modes.includes('desktop_app') ? (
+          <ModeCard
+            title="Audience Desktop"
+            url={publicTelaoUrl}
+            instructions={[
+              'Em breve: app nativo Mac/Windows pra exibir o telão sem precisar de OBS.',
+            ]}
+            extraButtons={[
+              { label: 'Em desenvolvimento', href: '#', disabled: true },
+            ]}
+          />
+        ) : null}
+
+        {/* 3. Visual editor */}
         <Card className="space-y-6">
-          <h3 className="font-display text-lg">Aparência do telão</h3>
+          <div>
+            <h3 className="font-display text-lg">Aparência do telão</h3>
+            <p className="text-sm text-ink/60 mt-1">
+              Tudo que você muda aqui aparece no preview ao lado em tempo real. Salve no final pra aplicar de verdade.
+            </p>
+          </div>
 
           {/* Position */}
           <div>
             <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Posição na tela</p>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5 max-w-xs">
               {POSITIONS.map((p) => (
                 <button
                   key={p}
@@ -129,169 +250,39 @@ export function TelaoTab({ eventId, slug, initialConfig, initialModes, publicTel
             </div>
           </div>
 
-          {/* Width */}
-          <div>
-            <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-              <span>Largura</span>
-              <span className="text-ink font-medium">{config.widthPct}%</span>
-            </label>
-            <input
-              type="range"
-              min={20}
-              max={100}
-              value={config.widthPct}
-              onChange={(e) => updateField('widthPct', Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-
-          {/* Font size */}
-          <div>
-            <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-              <span>Tamanho da fonte</span>
-              <span className="text-ink font-medium">{config.fontSizePx}px</span>
-            </label>
-            <input
-              type="range"
-              min={14}
-              max={80}
-              value={config.fontSizePx}
-              onChange={(e) => updateField('fontSizePx', Number(e.target.value))}
-              className="w-full"
-            />
+          {/* Width / Font */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Slider label="Largura" suffix="%" min={20} max={100} value={config.widthPct} onChange={(v) => updateField('widthPct', v)} />
+            <Slider label="Tamanho da fonte" suffix="px" min={14} max={80} value={config.fontSizePx} onChange={(v) => updateField('fontSizePx', v)} />
           </div>
 
           {/* Colors */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Fundo do card</p>
-              <input
-                type="text"
-                value={config.cardBg}
-                onChange={(e) => updateField('cardBg', e.target.value)}
-                className="w-full h-10 px-2 rounded-md border border-ink/20 bg-paper text-ink text-xs font-mono"
-              />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Cor do texto</p>
-              <input
-                type="text"
-                value={config.cardText}
-                onChange={(e) => updateField('cardText', e.target.value)}
-                className="w-full h-10 px-2 rounded-md border border-ink/20 bg-paper text-ink text-xs font-mono"
-              />
-            </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <ColorInput label="Fundo do card" value={config.cardBg} onChange={(v) => updateField('cardBg', v)} />
+            <ColorInput label="Cor do texto" value={config.cardText} onChange={(v) => updateField('cardText', v)} />
           </div>
 
-          {/* Radius + Blur */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-                <span>Cantos</span>
-                <span className="text-ink font-medium">{config.borderRadius}px</span>
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={40}
-                value={config.borderRadius}
-                onChange={(e) => updateField('borderRadius', Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-                <span>Blur</span>
-                <span className="text-ink font-medium">{config.backdropBlur}px</span>
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={30}
-                value={config.backdropBlur}
-                onChange={(e) => updateField('backdropBlur', Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
+          {/* Radius / Blur */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Slider label="Arredondamento" suffix="px" min={0} max={40} value={config.borderRadius} onChange={(v) => updateField('borderRadius', v)} />
+            <Slider label="Blur do fundo" suffix="px" min={0} max={30} value={config.backdropBlur} onChange={(v) => updateField('backdropBlur', v)} />
           </div>
 
           {/* Shadow */}
-          <div>
-            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Sombra</p>
-            <div className="flex gap-2 flex-wrap">
-              {SHADOWS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => updateField('shadow', s)}
-                  className={`px-3 h-9 rounded-md text-sm border transition ${
-                    config.shadow === s
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-ink/15 text-ink/60 hover:border-ink/30'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
+          <PresetGroup label="Sombra" options={SHADOWS} value={config.shadow} onChange={(v) => updateField('shadow', v)} />
 
           {/* Animation */}
-          <div>
-            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Animação de entrada</p>
-            <div className="flex gap-2 flex-wrap">
-              {ANIMATIONS.map((a) => (
-                <button
-                  key={a}
-                  type="button"
-                  onClick={() => updateField('animation', a)}
-                  className={`px-3 h-9 rounded-md text-sm border transition ${
-                    config.animation === a
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-ink/15 text-ink/60 hover:border-ink/30'
-                  }`}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-          </div>
+          <PresetGroup label="Animação de entrada" options={ANIMATIONS} value={config.animation} onChange={(v) => updateField('animation', v)} />
 
           {/* Timing */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-                <span>Tempo de exibição</span>
-                <span className="text-ink font-medium">{config.displaySeconds}s</span>
-              </label>
-              <input
-                type="range"
-                min={3}
-                max={30}
-                value={config.displaySeconds}
-                onChange={(e) => updateField('displaySeconds', Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-                <span>Mensagens visíveis</span>
-                <span className="text-ink font-medium">{config.maxConcurrent}</span>
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={config.maxConcurrent}
-                onChange={(e) => updateField('maxConcurrent', Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Slider label="Tempo de exibição" suffix="s" min={3} max={30} value={config.displaySeconds} onChange={(v) => updateField('displaySeconds', v)} />
+            <Slider label="Mensagens visíveis" suffix="" min={1} max={5} value={config.maxConcurrent} onChange={(v) => updateField('maxConcurrent', v)} />
           </div>
 
           {/* Extras */}
           <div>
-            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Mostrar</p>
+            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Mostrar no card</p>
             <div className="flex gap-3 flex-wrap text-sm text-ink/80">
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={config.showTimestamp} onChange={(e) => updateField('showTimestamp', e.target.checked)} />
@@ -304,95 +295,174 @@ export function TelaoTab({ eventId, slug, initialConfig, initialModes, publicTel
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-3 pt-2 border-t border-ink/10">
+          {/* Sticky save bar */}
+          <div className="flex items-center gap-3 pt-4 border-t border-ink/10">
             <Button loading={pending} disabled={!dirty} onClick={save}>
-              Salvar
+              Salvar alterações
             </Button>
             <Button variant="ghost" size="sm" onClick={reset}>
-              Resetar
+              Resetar pro padrão
             </Button>
             {feedback ? <span className="text-sm text-ink/70">{feedback}</span> : null}
           </div>
         </Card>
+      </div>
 
-        {/* Preview */}
-        <Card className="lg:sticky lg:top-4 self-start">
+      {/* RIGHT: sticky live preview */}
+      <div className="lg:sticky lg:top-4 self-start">
+        <Card>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-display text-lg">Preview ao vivo</h3>
-            <button
-              type="button"
-              onClick={() => setPreviewKey((k) => k + 1)}
-              className="text-xs text-primary hover:underline"
-            >
-              Recarregar
-            </button>
+            <span className="text-xs text-ink/50">atualiza em tempo real</span>
           </div>
           <div className="aspect-video bg-gradient-to-br from-ink/80 via-primary-deep to-ink rounded-lg overflow-hidden relative">
-            <div className="absolute inset-0 flex items-center justify-center text-white/30 text-xs">
+            <div className="absolute inset-0 flex items-center justify-center text-white/25 text-xs uppercase tracking-wider pointer-events-none select-none">
               [SUA APRESENTAÇÃO AQUI]
             </div>
             <iframe
-              key={previewKey}
+              ref={iframeRef}
               src={`/telao/${slug}?preview=1`}
               className="absolute inset-0 w-full h-full"
               title="Preview do telão"
             />
           </div>
           <p className="mt-3 text-xs text-ink/55">
-            Salve as alterações pra ver o resultado atualizado.
+            O preview reflete tudo que você muda nos controles. Salve pra aplicar no telão real.
           </p>
-        </Card>
-      </div>
 
-      {/* Mode-specific instructions */}
-      <div className="space-y-3">
-        {modes.includes('browser_source') ? (
-          <ModeCard
-            title="Browser Source (OBS, vMix, Streamlabs, Wirecast)"
-            url={publicTelaoUrl}
-            instructions={[
-              'Abra o software de transmissão (OBS Studio: obsproject.com — grátis).',
-              'Crie uma nova cena e adicione "Browser Source" (ou "Web Browser" no vMix).',
-              `Cole esta URL: ${publicTelaoUrl}`,
-              'Defina largura 1920 e altura 1080.',
-              'Adicione sua apresentação como Captura de Janela (PowerPoint/Keynote).',
-              'Direito no preview → "Projetor de Tela Cheia" → escolha o monitor do projetor.',
-            ]}
-            extraButtons={[
-              { label: 'Baixar cena pro OBS', href: `/api/scene/obs/${slug}` },
-            ]}
-          />
-        ) : null}
-        {modes.includes('chrome_pip') ? (
-          <ModeCard
-            title="Janela Flutuante Chrome"
-            url={publicTelaoUrl}
-            instructions={[
-              'No computador da apresentação, abra o Google Chrome.',
-              `Acesse: ${publicTelaoUrl}`,
-              'Aparecerá um botão "Abrir como janela flutuante" — clique nele.',
-              'Arraste a janela pro canto da tela onde quer que apareça.',
-              'Inicie sua apresentação normalmente — a janela continua por cima.',
-            ]}
-          />
-        ) : null}
-        {modes.includes('desktop_app') ? (
-          <ModeCard
-            title="Audience Desktop"
-            url={publicTelaoUrl}
-            instructions={[
-              'Em breve: app nativo Mac/Windows pra exibir o telão sem precisar de OBS.',
-            ]}
-            extraButtons={[
-              { label: 'Em desenvolvimento', href: '#', disabled: true },
-            ]}
-          />
-        ) : null}
+          <div className="mt-4 pt-4 border-t border-ink/10 space-y-3">
+            <p className="text-xs uppercase tracking-wide text-ink/60">Texto de teste</p>
+            <input
+              type="text"
+              value={sample.name}
+              onChange={(e) => setSample((s) => ({ ...s, name: e.target.value }))}
+              placeholder="Nome de quem envia"
+              className="w-full h-9 px-3 rounded-md border border-ink/20 bg-paper text-ink text-sm"
+            />
+            <textarea
+              value={sample.comment}
+              onChange={(e) => setSample((s) => ({ ...s, comment: e.target.value }))}
+              placeholder="Mensagem de teste"
+              rows={2}
+              className="w-full px-3 py-2 rounded-md border border-ink/20 bg-paper text-ink text-sm resize-none"
+            />
+            <p className="text-xs text-ink/50">
+              Use pra ver como mensagens reais ficam com a configuração escolhida.
+            </p>
+          </div>
+        </Card>
       </div>
     </div>
   );
 }
+
+// ── Helper inputs ────────────────────────────────────────────────
+
+function Slider({
+  label,
+  suffix,
+  min,
+  max,
+  value,
+  onChange,
+}: {
+  label: string;
+  suffix: string;
+  min: number;
+  max: number;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
+        <span>{label}</span>
+        <span className="text-ink font-medium">
+          {value}{suffix}
+        </span>
+      </label>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full"
+      />
+    </div>
+  );
+}
+
+function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">{label}</p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 h-10 px-2 rounded-md border border-ink/20 bg-paper text-ink text-xs font-mono"
+          placeholder="rgba(...) ou #..."
+        />
+        <input
+          type="color"
+          value={cssToHex(value)}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-10 w-12 rounded-md border border-ink/20 cursor-pointer"
+        />
+      </div>
+    </div>
+  );
+}
+
+function PresetGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly T[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">{label}</p>
+      <div className="flex gap-2 flex-wrap">
+        {options.map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => onChange(o)}
+            className={`px-3 h-9 rounded-md text-sm border transition ${
+              value === o
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-ink/15 text-ink/60 hover:border-ink/30'
+            }`}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Fallback: extract first hex/rgb from arbitrary css color into a hex picker can show
+function cssToHex(css: string): string {
+  if (css.startsWith('#') && (css.length === 7 || css.length === 4)) return css;
+  const rgbMatch = css.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (rgbMatch) {
+    const [, r, g, b] = rgbMatch;
+    const toHex = (n: string) => Number(n).toString(16).padStart(2, '0');
+    return `#${toHex(r!)}${toHex(g!)}${toHex(b!)}`;
+  }
+  return '#000000';
+}
+
+// ── Helpers (modes) ──────────────────────────────────────────────
 
 function describeMode(mode: TelaoDisplayMode): string {
   switch (mode) {
@@ -435,7 +505,7 @@ function ModeCard({
 }) {
   return (
     <Card>
-      <h4 className="font-display text-base text-ink mb-2">{title}</h4>
+      <h4 className="font-display text-base text-ink mb-3">{title}</h4>
       <ol className="list-decimal list-inside space-y-1 text-sm text-ink/75">
         {instructions.map((step, i) => (
           <li key={i}>{step}</li>

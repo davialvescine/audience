@@ -3,17 +3,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AdminShell } from '@/components/audience/AdminShell';
-import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
-import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
 import { ShareCard } from '@/components/audience/ShareCard';
 import { TelaoTab } from '@/components/audience/TelaoTab';
-import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import { requireUser } from '@/lib/auth/requireUser';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
 
 export default async function EventModerationPage({
   params,
@@ -99,17 +97,11 @@ export default async function EventModerationPage({
           }}
           initialModes={(event.enabled_display_modes as TelaoDisplayMode[] | null) ?? ['h2r']}
           publicTelaoUrl={`${proto}://${host}/telao/${event.slug}`}
-        />
-      ),
-    },
-    {
-      id: 'h2r',
-      label: 'Conexão H2R',
-      content: (
-        <PairingCodeDisplay
-          eventId={event.id}
-          alreadyPaired={Boolean(event.h2r_paired_at)}
-          lastHeartbeat={event.h2r_last_heartbeat}
+          h2r={{
+            alreadyPaired: Boolean(event.h2r_paired_at),
+            lastHeartbeat: event.h2r_last_heartbeat,
+            dispatchIntervalSeconds: event.dispatch_interval_seconds ?? 3,
+          }}
         />
       ),
     },
@@ -147,21 +139,15 @@ export default async function EventModerationPage({
       id: 'settings',
       label: 'Configurações',
       content: (
-        <div className="space-y-4">
-          <Card>
-            <h3 className="font-display text-lg mb-4">Disparos pra H2R</h3>
-            <DispatchIntervalForm
-              eventId={event.id}
-              current={event.dispatch_interval_seconds ?? 3}
-            />
-          </Card>
-          <Card>
-            <h3 className="font-display text-lg mb-2">Outras configurações</h3>
-            <p className="text-sm text-ink/60">
-              Em breve: pausar submissões, renomear, deletar evento.
-            </p>
-          </Card>
-        </div>
+        <Card>
+          <h3 className="font-display text-lg mb-2">Configurações do evento</h3>
+          <p className="text-sm text-ink/60">
+            Em breve: pausar submissões, renomear, deletar evento.
+          </p>
+          <p className="text-xs text-ink/50 mt-3">
+            Dica: configurações de exibição e disparos pra H2R agora ficam dentro da aba <strong>Telão</strong>.
+          </p>
+        </Card>
       ),
     },
   ];

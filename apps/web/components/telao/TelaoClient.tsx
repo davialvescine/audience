@@ -25,10 +25,39 @@ type Props = {
   preview?: boolean;
 };
 
-export function TelaoClient({ eventId, eventName, config, preview = false }: Props) {
+export function TelaoClient({ eventId, eventName, config: initialConfig, preview = false }: Props) {
+  const [config, setConfig] = useState<TelaoConfig>(initialConfig);
   const [visible, setVisible] = useState<Submission[]>([]);
   const queueRef = useRef<Submission[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
+
+  const [previewSample, setPreviewSample] = useState<{ name: string; comment: string }>({
+    name: 'João da Silva',
+    comment: 'Que evento incrível! Deus abençoe todos vocês.',
+  });
+
+  // Listen for live config updates via postMessage when in preview mode
+  useEffect(() => {
+    if (!preview) return;
+    const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      const data = e.data as {
+        type?: string;
+        config?: TelaoConfig;
+        sample?: { name: string; comment: string };
+      };
+      if (data.type === 'telao-config-update' && data.config) {
+        setConfig(data.config);
+      }
+      if (data.type === 'telao-sample-update' && data.sample) {
+        setPreviewSample(data.sample);
+      }
+    };
+    window.addEventListener('message', handler);
+    // Tell parent we're ready (parent then sends initial config)
+    window.parent.postMessage({ type: 'telao-preview-ready' }, window.location.origin);
+    return () => window.removeEventListener('message', handler);
+  }, [preview]);
 
   // Subscribe to new sent submissions
   useEffect(() => {
@@ -61,12 +90,12 @@ export function TelaoClient({ eventId, eventName, config, preview = false }: Pro
   // Display loop — pulls from queue, respects maxConcurrent and displaySeconds
   useEffect(() => {
     if (preview) {
-      // Show one demo message
+      // Show one demo message — re-render whenever sample changes
       setVisible([
         {
-          id: 'preview',
-          name: 'João da Silva',
-          comment: 'Que evento incrível! Deus abençoe todos vocês.',
+          id: `preview-${previewSample.name}-${previewSample.comment}`,
+          name: previewSample.name || 'Nome de exemplo',
+          comment: previewSample.comment || 'Mensagem de exemplo aparece aqui.',
           created_at: new Date().toISOString(),
         },
       ]);
@@ -86,7 +115,7 @@ export function TelaoClient({ eventId, eventName, config, preview = false }: Pro
     }, 500);
 
     return () => clearInterval(tick);
-  }, [config.maxConcurrent, config.displaySeconds, visible.length, preview]);
+  }, [config.maxConcurrent, config.displaySeconds, visible.length, preview, previewSample]);
 
   const variants = animationVariants(config.animation);
 
