@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
         id={id}
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={[errorId, helperId].filter(Boolean).join(' ') || undefined}
-        className={`mt-1 block w-full h-11 px-3 rounded-md border border-ink/20 bg-paper text-ink placeholder:text-ink/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary ${error ? 'border-danger' : ''} ${className}`}
+        className={`mt-1 block w-full h-11 px-3 rounded-md border border-ink/25 dark:border-ink/30 bg-paper text-ink placeholder:text-ink/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary ${error ? 'border-danger' : ''} ${className}`}
         {...rest}
       />
       {helper ? (

@@ -13,7 +13,7 @@ export function ShareCard({ publicUrl }: Props) {
   const [showQr, setShowQr] = useState(false);
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 dark:from-primary/10 dark:to-accent/10 dark:border-primary/30">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex-1 min-w-0">
           <p className="text-xs uppercase tracking-wide font-bold text-primary mb-1">

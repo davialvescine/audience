@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { LoginForm } from '@/components/audience/LoginForm';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function AdminLoginPage({
@@ -19,11 +20,12 @@ export default async function AdminLoginPage({
 
   return (
     <main className="min-h-screen bg-paper text-ink flex flex-col">
-      <header className="border-b border-ink/10">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center">
+      <header className="border-b border-ink/10 dark:border-ink/15">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="font-display text-xl font-bold text-primary">
             Audience
           </Link>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -37,7 +39,7 @@ export default async function AdminLoginPage({
         </div>
       </div>
 
-      <footer className="border-t border-ink/10 py-6 text-center text-xs text-ink/50">
+      <footer className="border-t border-ink/10 dark:border-ink/15 py-6 text-center text-xs text-ink/60">
         União Centro-Oeste Brasileira · Audience
       </footer>
     </main>

@@ -28,8 +28,8 @@ export function NewEventForm({ themes }: Props) {
         placeholder="Ex: O Nascer de Uma Geração"
       />
 
-      <div className="bg-surface rounded-md p-3 border border-ink/10">
-        <p className="text-xs text-ink/60 mb-1">URL pública</p>
+      <div className="bg-surface rounded-md p-3 border border-ink/10 dark:border-ink/15">
+        <p className="text-xs text-ink/70 mb-1">URL pública</p>
         <p className="font-mono text-sm text-primary break-all">
           audience.app/e/<span className="text-ink font-bold">{slugPreview}</span>
         </p>
@@ -41,7 +41,7 @@ export function NewEventForm({ themes }: Props) {
           id="themeId"
           name="themeId"
           required
-          className="mt-1 block w-full h-11 px-3 rounded-md border border-ink/20 bg-paper text-ink"
+          className="mt-1 block w-full h-11 px-3 rounded-md border border-ink/25 dark:border-ink/30 bg-paper text-ink"
           defaultValue={themes[0]?.id}
         >
           {themes.map((t) => (

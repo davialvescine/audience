@@ -2,11 +2,11 @@ import type { SubmissionStatus } from '@audience/shared-types';
 import type { ReactNode } from 'react';
 
 const map: Record<SubmissionStatus, { label: string; cls: string }> = {
-  pending: { label: 'Aguardando', cls: 'bg-surface text-ink' },
-  approved: { label: 'Aprovado', cls: 'bg-secondary/15 text-secondary' },
-  rejected: { label: 'Rejeitado', cls: 'bg-danger/15 text-danger' },
-  sent: { label: 'No telão', cls: 'bg-success/15 text-success' },
-  failed: { label: 'Falhou', cls: 'bg-danger/15 text-danger' },
+  pending: { label: 'Aguardando', cls: 'bg-ink/5 dark:bg-ink/10 text-ink' },
+  approved: { label: 'Aprovado', cls: 'bg-secondary/15 dark:bg-secondary/20 text-secondary' },
+  rejected: { label: 'Rejeitado', cls: 'bg-danger/15 dark:bg-danger/20 text-danger' },
+  sent: { label: 'No telão', cls: 'bg-success/15 dark:bg-success/20 text-success' },
+  failed: { label: 'Falhou', cls: 'bg-danger/15 dark:bg-danger/20 text-danger' },
 };
 
 export function Badge({ status }: { status: SubmissionStatus }) {

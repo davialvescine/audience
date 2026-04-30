@@ -140,9 +140,9 @@ export default async function EventModerationPage({
           ) : event.h2r_paired_at ? (
             <span className="text-danger font-medium">⚠ H2R offline</span>
           ) : (
-            <span className="text-ink/50">Não conectado ao H2R</span>
+            <span className="text-ink/60">Não conectado ao H2R</span>
           )}
-          <span className="text-ink/30">•</span>
+          <span className="text-ink/40">•</span>
           <a
             href={publicUrl}
             target="_blank"

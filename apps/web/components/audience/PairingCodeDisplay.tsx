@@ -32,11 +32,11 @@ export function PairingCodeDisplay({ eventId, alreadyPaired, lastHeartbeat }: Pr
       )}
 
       {code ? (
-        <div className="bg-surface p-4 rounded-md">
-          <p className="text-xs text-ink/60 mb-1">Código de pareamento (válido 15 min):</p>
+        <div className="bg-surface dark:bg-ink/5 p-4 rounded-md border border-ink/10 dark:border-ink/15">
+          <p className="text-xs text-ink/70 mb-1">Código de pareamento (válido 15 min):</p>
           <p className="font-mono text-2xl text-primary">{code}</p>
           <p className="mt-3 text-xs text-ink/70">Na máquina do H2R, rode no terminal:</p>
-          <code className="block mt-1 p-2 bg-ink/5 rounded text-sm break-all">
+          <code className="block mt-1 p-2 bg-ink/5 dark:bg-paper rounded text-sm break-all border border-ink/10 dark:border-ink/15">
             npx @ucob/h2r-bridge pair {code}
           </code>
         </div>

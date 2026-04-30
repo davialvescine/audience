@@ -11,7 +11,7 @@ export function Tabs({ tabs, defaultTabId }: Props) {
 
   return (
     <div>
-      <div role="tablist" className="flex border-b border-ink/10 mb-6 overflow-x-auto">
+      <div role="tablist" className="flex border-b border-ink/15 mb-6 overflow-x-auto">
         {tabs.map((t) => {
           const isActive = t.id === activeTab?.id;
           return (

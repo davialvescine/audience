@@ -24,8 +24,15 @@ export function HomeHero() {
         animate={{ x: [0, -30, 0], y: [0, -20, 0] }}
         transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
       />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-[0.06]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+      />
 
-      <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-32">
+      <div className="relative max-w-6xl mx-auto px-6 py-24 md:py-36">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -36,7 +43,7 @@ export function HomeHero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
-            className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur text-xs font-medium uppercase tracking-wider mb-6 text-white"
+            className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur text-xs font-medium uppercase tracking-[0.18em] mb-6 text-white"
           >
             Para eventos ao vivo
           </motion.span>
@@ -44,9 +51,10 @@ export function HomeHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-            className="text-4xl md:text-6xl font-display font-bold leading-[1.05] tracking-tight"
+            className="text-4xl md:text-7xl font-display font-bold leading-[1.02] tracking-tight"
           >
-            Comentários da audiência<br />direto no telão.
+            Comentários da audiência<br />
+            <span className="text-accent/95">direto no telão.</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}

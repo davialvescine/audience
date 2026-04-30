@@ -1,45 +1,80 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+
+import { useTheme, type ThemeMode } from '@/lib/theme/useTheme';
+
+const options: Array<{ value: ThemeMode; label: string; icon: ReactNode }> = [
+  {
+    value: 'light',
+    label: 'Claro',
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          strokeLinecap="round"
+          d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+        />
+      </svg>
+    ),
+  },
+  {
+    value: 'system',
+    label: 'Sistema',
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2" y="4" width="20" height="14" rx="2" />
+        <path strokeLinecap="round" d="M8 22h8M12 18v4" />
+      </svg>
+    ),
+  },
+  {
+    value: 'dark',
+    label: 'Escuro',
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+        />
+      </svg>
+    ),
+  },
+];
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const { mode, setMode } = useTheme();
 
-  useEffect(() => {
-    const saved = (localStorage.getItem('theme') as 'light' | 'dark' | null) ?? null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = saved ?? (prefersDark ? 'dark' : 'light');
-    setTheme(initial);
-    document.documentElement.classList.toggle('dark', initial === 'dark');
-  }, []);
-
-  if (theme === null) return null;
-
-  const toggle = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('theme', next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
-  };
+  if (mode === null) {
+    // Skeleton to avoid CLS while hydrating
+    return <div className="h-9 w-[7.5rem] rounded-full bg-ink/5" aria-hidden="true" />;
+  }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-      className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-paper border border-ink/20 shadow-lg flex items-center justify-center text-ink hover:bg-surface transition"
+    <div
+      role="radiogroup"
+      aria-label="Tema"
+      className="inline-flex items-center rounded-full border border-ink/15 bg-paper p-0.5"
     >
-      {theme === 'dark' ? (
-        // Sun icon
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ) : (
-        // Moon icon
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      )}
-    </button>
+      {options.map((opt) => {
+        const active = mode === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={opt.label}
+            onClick={() => setMode(opt.value)}
+            className={`relative inline-flex h-8 w-8 items-center justify-center rounded-full transition ${
+              active ? 'bg-ink text-paper' : 'text-ink/60 hover:text-ink'
+            }`}
+          >
+            {opt.icon}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-
 import './globals.css';
 
 export const metadata = {
@@ -12,10 +10,10 @@ export const metadata = {
 const themeScript = `
 (function() {
   try {
-    var saved = localStorage.getItem('theme');
+    var saved = localStorage.getItem('theme') || 'system';
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var theme = saved || (prefersDark ? 'dark' : 'light');
-    if (theme === 'dark') document.documentElement.classList.add('dark');
+    var resolved = saved === 'system' ? (prefersDark ? 'dark' : 'light') : saved;
+    if (resolved === 'dark') document.documentElement.classList.add('dark');
   } catch (e) {}
 })();
 `;
@@ -26,10 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>
-        {children}
-        <ThemeToggle />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

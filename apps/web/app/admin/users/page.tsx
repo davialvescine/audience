@@ -46,25 +46,25 @@ export default async function AdminUsersPage() {
         {invites && invites.length > 0 ? (
           <Card>
             <h2 className="text-xl font-display mb-4">Convites recentes</h2>
-            <ul className="divide-y divide-ink/10">
+            <ul className="divide-y divide-ink/10 dark:divide-ink/15">
               {invites.map((i) => (
                 <li key={i.id} className="py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-ink truncate">{i.email}</p>
-                    <p className="text-xs text-ink/50">
+                    <p className="text-xs text-ink/60">
                       {new Date(i.created_at).toLocaleString('pt-BR')}
                     </p>
                   </div>
                   {i.accepted_at ? (
-                    <span className="text-xs text-success bg-success/10 px-2 py-1 rounded-sm">
+                    <span className="text-xs text-success bg-success/15 dark:bg-success/20 px-2 py-1 rounded-sm">
                       Aceito
                     </span>
                   ) : new Date(i.expires_at) < new Date() ? (
-                    <span className="text-xs text-ink/40 bg-surface px-2 py-1 rounded-sm">
+                    <span className="text-xs text-ink/60 bg-ink/5 dark:bg-ink/10 px-2 py-1 rounded-sm">
                       Expirado
                     </span>
                   ) : (
-                    <span className="text-xs text-secondary bg-secondary/10 px-2 py-1 rounded-sm">
+                    <span className="text-xs text-secondary bg-secondary/15 dark:bg-secondary/20 px-2 py-1 rounded-sm">
                       Pendente
                     </span>
                   )}
