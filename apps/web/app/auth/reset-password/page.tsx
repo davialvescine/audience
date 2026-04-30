@@ -2,26 +2,10 @@ import { ResetPasswordForm } from '@/components/audience/ResetPasswordForm';
 import { Card } from '@/components/ui/Card';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
-type SearchParams = Promise<{ code?: string; token_hash?: string; type?: string }>;
-
-export default async function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = await searchParams;
+export default async function ResetPasswordPage() {
+  // Session is established by /auth/callback (Route Handler can write cookies).
+  // This page just reads the session and renders the form.
   const supabase = await getSupabaseServerClient();
-
-  if (params.code) {
-    await supabase.auth.exchangeCodeForSession(params.code);
-  }
-  if (!params.code && params.token_hash && params.type) {
-    await supabase.auth.verifyOtp({
-      token_hash: params.token_hash,
-      type: params.type as 'recovery',
-    });
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();

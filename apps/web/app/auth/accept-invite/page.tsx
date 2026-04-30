@@ -4,35 +4,10 @@ import { AcceptInviteForm } from '@/components/audience/AcceptInviteForm';
 import { Card } from '@/components/ui/Card';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
-type SearchParams = Promise<{
-  code?: string;
-  token_hash?: string;
-  type?: string;
-  error?: string;
-  error_description?: string;
-}>;
-
-export default async function AcceptInvitePage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = await searchParams;
+export default async function AcceptInvitePage() {
+  // Session is established by /auth/callback (Route Handler can write cookies).
+  // This page just reads the session and renders the form.
   const supabase = await getSupabaseServerClient();
-
-  // PKCE flow — invite link sends ?code=...
-  if (params.code) {
-    await supabase.auth.exchangeCodeForSession(params.code);
-  }
-
-  // OTP flow fallback — older tokens may use ?token_hash=&type=invite
-  if (!params.code && params.token_hash && params.type) {
-    await supabase.auth.verifyOtp({
-      token_hash: params.token_hash,
-      type: params.type as 'invite' | 'recovery' | 'email',
-    });
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -50,7 +25,6 @@ export default async function AcceptInvitePage({
     );
   }
 
-  // Already set their password — straight to dashboard.
   if (user.user_metadata?.password_set === true) {
     redirect('/admin/events');
   }

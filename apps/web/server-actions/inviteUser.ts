@@ -30,7 +30,7 @@ export async function inviteUser(email: string): Promise<Result> {
   // Send invite via Supabase Admin API
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(trimmed, {
-    redirectTo: `${origin}/auth/accept-invite`,
+    redirectTo: `${origin}/auth/callback?next=/auth/accept-invite`,
     data: { password_set: false },
   });
 

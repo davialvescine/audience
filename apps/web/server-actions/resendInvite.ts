@@ -22,13 +22,13 @@ export async function resendInvite(email: string): Promise<Result> {
   // password recovery — both flows funnel into the "set password" screen via
   // the auth callback.
   const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(trimmed, {
-    redirectTo: `${origin}/auth/accept-invite`,
+    redirectTo: `${origin}/auth/callback?next=/auth/accept-invite`,
     data: { password_set: false },
   });
 
   if (inviteErr && inviteErr.message.toLowerCase().includes('already')) {
     const { error: resetErr } = await supabase.auth.resetPasswordForEmail(trimmed, {
-      redirectTo: `${origin}/auth/reset-password`,
+      redirectTo: `${origin}/auth/callback?next=/auth/reset-password`,
     });
     if (resetErr) {
       return { ok: false, error: `Falha ao reenviar: ${resetErr.message}` };

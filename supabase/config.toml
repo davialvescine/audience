@@ -155,9 +155,11 @@ site_url = "https://audience-opal.vercel.app"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
   "https://audience-opal.vercel.app/auth/callback",
+  "https://audience-opal.vercel.app/auth/callback?**",
   "https://audience-opal.vercel.app/auth/accept-invite",
   "https://audience-opal.vercel.app/auth/reset-password",
   "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/callback?**",
   "http://localhost:3000/auth/accept-invite",
   "http://localhost:3000/auth/reset-password",
 ]
