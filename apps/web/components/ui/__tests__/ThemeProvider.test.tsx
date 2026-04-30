@@ -27,7 +27,7 @@ describe('ThemeProvider', () => {
       </ThemeProvider>,
     );
     const root = container.firstChild as HTMLElement;
-    expect(root.style.getPropertyValue('--color-primary')).toBe('14 76 94');
+    expect(root.style.getPropertyValue('--token-primary')).toBe('14 76 94');
     expect(root.style.getPropertyValue('--radius-md')).toBe('0.75rem');
   });
 });

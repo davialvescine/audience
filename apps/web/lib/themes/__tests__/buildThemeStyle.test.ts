@@ -22,9 +22,9 @@ const tokens: ThemeTokens = {
 describe('buildThemeStyle', () => {
   it('emits CSS custom properties for every color token', () => {
     const style = buildThemeStyle(tokens);
-    expect(style['--color-primary']).toBe('14 76 94');
-    expect(style['--color-accent']).toBe('245 197 24');
-    expect(style['--color-danger']).toBe('239 68 68');
+    expect(style['--token-primary']).toBe('14 76 94');
+    expect(style['--token-accent']).toBe('245 197 24');
+    expect(style['--token-danger']).toBe('239 68 68');
   });
 
   it('emits radius variables', () => {
@@ -40,6 +40,6 @@ describe('buildThemeStyle', () => {
 
   it('camelCase keys become kebab-case CSS vars', () => {
     const style = buildThemeStyle(tokens);
-    expect(style['--color-primary-deep']).toBe('10 44 61');
+    expect(style['--token-primary-deep']).toBe('10 44 61');
   });
 });

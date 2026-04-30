@@ -34,7 +34,7 @@ export function LoginForm({ errorParam, sentParam, initialMode }: Props) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="bg-paper rounded-2xl border border-ink/10 shadow-sm p-7"
+      className="bg-paper rounded-2xl border border-ink/10 shadow-xs p-7"
     >
       <AnimatePresence mode="wait">
         {mode === 'forgot' ? (

@@ -23,7 +23,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(function Textarea
         maxLength={maxLength}
         aria-invalid={Boolean(error) || undefined}
         aria-describedby={[errorId, helperId].filter(Boolean).join(' ') || undefined}
-        className={`mt-1 block w-full min-h-32 px-3 py-2 rounded-md border border-ink/20 bg-paper text-ink placeholder:text-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${error ? 'border-danger' : ''} ${className}`}
+        className={`mt-1 block w-full min-h-32 px-3 py-2 rounded-md border border-ink/20 bg-paper text-ink placeholder:text-ink/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary ${error ? 'border-danger' : ''} ${className}`}
         {...rest}
       />
       <div className="mt-1 flex justify-between text-xs">

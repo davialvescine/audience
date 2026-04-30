@@ -5,7 +5,7 @@ const camelToKebab = (s: string): string => s.replace(/[A-Z]/g, (m) => `-${m.toL
 export function buildThemeStyle(tokens: ThemeTokens): Record<string, string> {
   const style: Record<string, string> = {};
   for (const [key, value] of Object.entries(tokens.colors)) {
-    style[`--color-${camelToKebab(key)}`] = value;
+    style[`--token-${camelToKebab(key)}`] = value;
   }
   for (const [key, value] of Object.entries(tokens.radius)) {
     style[`--radius-${key}`] = value;

@@ -7,7 +7,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
-    coverage: { reporter: ['text', 'html'], exclude: ['node_modules', '.next'] },
   },
   resolve: { alias: { '@': '/' } },
 });
