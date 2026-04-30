@@ -525,6 +525,35 @@ function BrowserSourceCard({ slug, url }: { slug: string; url: string }) {
         <CopyableField value={url} label="URL do telão" />
       </div>
 
+      {/* Two-path explainer */}
+      <div className="mb-5 grid md:grid-cols-2 gap-3">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <p className="text-xs uppercase tracking-wide text-primary font-bold mb-2">Caminho rápido</p>
+          <p className="font-medium text-ink text-sm mb-1.5">📥 Baixar cena pronta</p>
+          <p className="text-xs text-ink/70 leading-relaxed mb-2">
+            Baixe o arquivo do software (OBS, vMix, Streamlabs) abaixo. Abra o programa, vá em
+            <strong> Cena → Importar Coleção de Cenas</strong> e escolha o arquivo. A cena já vem com URL,
+            tamanho e CSS configurados.
+          </p>
+          <p className="text-xs text-ink/55 italic">
+            ⚡ Pronto em 30s · Recomendado pra OBS e Streamlabs
+          </p>
+        </div>
+        <div className="rounded-lg border border-ink/15 bg-ink/[0.02] p-4">
+          <p className="text-xs uppercase tracking-wide text-ink/65 font-bold mb-2">Caminho manual</p>
+          <p className="font-medium text-ink text-sm mb-1.5">📋 Copiar URL e configurar</p>
+          <p className="text-xs text-ink/70 leading-relaxed mb-2">
+            Copie a URL acima. No software: <strong>Add Source → Browser Source</strong> · cola a URL ·
+            define <strong>Width 1920</strong> · <strong>Height 1080</strong> · Custom CSS:
+            <code className="block mt-1 text-[10px] bg-ink/10 px-2 py-1 rounded font-mono break-all">body {'{'} background: transparent !important; margin: 0; {'}'}</code>
+          </p>
+          <p className="text-xs text-ink/55 italic">
+            🔧 Funciona em qualquer software · Útil pra Wirecast, Ecamm, mimoLive
+          </p>
+        </div>
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Software de produção</p>
       <div className="grid sm:grid-cols-3 gap-3 mb-4">
         <SoftwareCell
           name="OBS Studio"
@@ -548,11 +577,12 @@ function BrowserSourceCard({ slug, url }: { slug: string; url: string }) {
 
       <details className="text-sm text-ink/75">
         <summary className="cursor-pointer text-ink/80 font-medium mb-2 hover:text-primary">
-          Como configurar no OBS (passo a passo)
+          Passo a passo no OBS (caminho rápido)
         </summary>
         <ol className="list-decimal list-inside space-y-1 mt-2 pl-2">
-          <li>Baixe o OBS Studio acima e instale.</li>
-          <li>Abra o OBS, vá em <strong>Cena → Importar Coleção de Cenas</strong> e escolha o arquivo de cena baixado acima.</li>
+          <li>Baixe o OBS Studio acima e instale (grátis).</li>
+          <li>Abra o OBS. Menu <strong>Cena → Importar Coleção de Cenas</strong>.</li>
+          <li>Escolha o arquivo <code className="text-xs">audience-{slug}-obs.json</code> que você baixou.</li>
           <li>Adicione sua apresentação como <strong>Captura de Janela</strong> (PowerPoint/Keynote/Chrome).</li>
           <li>Coloque a apresentação <strong>abaixo</strong> da fonte "Audience Comentários" na lista de fontes.</li>
           <li>Clique direito no preview → <strong>Projetor de Tela Cheia (Programa)</strong> → escolha o monitor do projetor.</li>
@@ -561,13 +591,14 @@ function BrowserSourceCard({ slug, url }: { slug: string; url: string }) {
 
       <details className="text-sm text-ink/75 mt-2">
         <summary className="cursor-pointer text-ink/80 font-medium mb-2 hover:text-primary">
-          vMix · Streamlabs · Wirecast · Outros
+          vMix · Streamlabs · Wirecast · Outros (caminho manual)
         </summary>
         <div className="mt-2 pl-2 space-y-2">
-          <p><strong>vMix:</strong> Add Input → Web Browser → cole a URL acima · Width 1920 · Height 1080. Ou abra o preset .vmix.</p>
-          <p><strong>Streamlabs Desktop:</strong> Add Source → Browser Source → cole a URL · ou importe a cena .json acima.</p>
-          <p><strong>Wirecast:</strong> New Source → Web Page → cole a URL · adicione como Layer acima da apresentação.</p>
-          <p><strong>Ecamm Live (Mac):</strong> Source → Web Page → cole a URL.</p>
+          <p><strong>vMix:</strong> Add Input → Web Browser → cola a URL · Width 1920 · Height 1080. Ou File → Open Preset com o <code className="text-xs">.vmix</code> baixado.</p>
+          <p><strong>Streamlabs Desktop:</strong> Add Source → Browser Source → cola a URL · ou importa a cena <code className="text-xs">.json</code> baixada.</p>
+          <p><strong>Wirecast:</strong> New Source → Web Page → cola a URL · adiciona como Layer acima da apresentação.</p>
+          <p><strong>Ecamm Live (Mac):</strong> Source → Web Page → cola a URL.</p>
+          <p><strong>mimoLive:</strong> Add Source → Web Page → cola a URL.</p>
         </div>
       </details>
     </Card>
