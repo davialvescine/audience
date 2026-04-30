@@ -475,10 +475,19 @@ Renderizada na aba Telão como referência rápida:
 - Persistência em `events.telao_config`
 
 ### Phase 5 (Audience Desktop — Tauri base) — 3 dias
-- Setup `packages/audience-desktop/` com Tauri 2 + React
-- Janela transparente always-on-top funcionando no Win
-- Form pra colar URL + abrir overlay
-- Build pipeline (Mac DMG + Win MSI) via GitHub Actions
+
+**MVP recommendation (decided 2026-04-29 with user):** ship Phase 5 + 7 first (~2 dias úteis), skip Phase 6 Swift workaround until real user demand. MVP covers:
+- ✅ Windows fullscreen presentations (Tauri alwaysOnTop just works)
+- ✅ Mac with PowerPoint/Keynote in window mode (not Play Slideshow)
+- ✅ Mac with presentations on second monitor while overlay on primary
+- ❌ Mac with Keynote/PowerPoint in fullscreen exclusive (needs Phase 6 — defer)
+
+Tasks for MVP:
+- Setup `packages/audience-desktop/` com Tauri 2 + React (`cargo create-tauri-app`)
+- tauri.conf.json: `transparent: true`, `decorations: false`, `alwaysOnTop: true`, `skipTaskbar: true`
+- Form UI pra colar URL do telão (input + botão "Abrir")
+- WebView carrega `/telao/<slug>?mode=desktop_app`
+- Build pipeline (Mac DMG Apple Silicon + Intel + Win MSI) via GitHub Actions, **sem assinatura** (user → Open Anyway no Mac, SmartScreen no Win)
 
 ### Phase 6 (Mac Swift workaround) — 2 dias
 - Implementar `overlay.swift` + Rust FFI

@@ -42,3 +42,27 @@ All commands run from the monorepo root: `/Users/davialves/development/Audience/
 - Don't commit `apps/web/.env.local`. The file holds Supabase service-role key.
 - Don't recreate the Vercel project unless the Root Directory metadata is wrong. Use the Vercel REST API (`PATCH /v9/projects/...`) to update settings in place when possible.
 - Don't use `--no-verify` on git or skip CI gates.
+
+## Session resume notes (last session: 2026-04-29 night)
+
+When you re-open this project, read in order:
+1. `MEMORY.md` index → start with `audience-pending.md` for the punch list
+2. `docs/superpowers/plans/2026-04-30-telao-modes-multi.md` for the master plan (telão multi-mode)
+3. `git log --oneline -10` to see recent commits
+
+**Where we stopped:** ~95% of the multi-mode telão work shipped. 4 modes implemented (H2R, Browser Source, Chrome PiP all 100%; Audience Desktop is the only remaining piece). Autosave + multi-mode broadcast just landed.
+
+**Next session must-do:** Start the Audience Desktop App. User picked MVP path (2 days, skip Mac Swift fullscreen workaround initially). Steps in `audience-pending.md` under "Recommended MVP path".
+
+**Prerequisites already installed:** Rust toolchain (rustc 1.95.0, cargo 1.95.0). Just `cargo install tauri-cli` to add Tauri scaffolder.
+
+**Production state:** Site live at https://audience-opal.vercel.app, Supabase hosted at ogfalobvfofcrazaeydr, all 13 migrations applied, first admin user already created. No outstanding production bugs as of last commit `29df6a5`.
+
+**Key working decisions (don't re-debate):**
+- Tailwind v4 with `@theme inline` + `--token-*` CSS vars (NOT classes for dynamic values; use inline style functions like `shadowStyle()`)
+- Next 16 with Turbopack (not webpack flag)
+- Inline `<script src="/theme-init.js">` in body (NOT `next/script` with `beforeInteractive` — that triggers React 19 + Turbopack errors)
+- Chrome PiP via createPortal (NOT appendChild)
+- Autosave 600ms debounce, no explicit save button
+- Multi-mode broadcasts simultaneously (H2R via fetch + others via Realtime `status='sent'`)
+- No Apple Developer Program — distribute desktop unsigned
