@@ -4512,6 +4512,63 @@ git commit -m "docs: add production deployment checklist"
 
 ---
 
+## Phase 11 — Invite + Password Auth (added 2026-04-29)
+
+**Goal:** Replace open magic-link signup with invite-only password auth. Admin invites by email; invited user sets password; logs in with email+password.
+
+### Tasks
+- **Task 45:** Migration `00100000_invitations.sql` — `invitations` table (id, email, token, invited_by, expires_at, accepted_at) + RLS (only admins read; service role insert/update).
+- **Task 46:** Server action `inviteUser(email)` — uses Supabase admin API `inviteUserByEmail`. Stores invite record. Returns ok/error.
+- **Task 47:** `/admin/users` page — list users + invite form. Owner-only.
+- **Task 48:** `/auth/accept-invite/[token]` page — set password form. Calls `supabase.auth.updateUser({ password })`.
+- **Task 49:** Update `/admin` login — email + password fields (primary). Keep "Receber link mágico" as secondary option.
+- **Task 50:** Disable public signup in Supabase Dashboard (manual step in runbook).
+- **Task 51:** Branded invite email template `supabase/templates/invite.html`.
+
+### Schema
+```sql
+create table public.invitations (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  token text not null unique,
+  invited_by uuid not null references auth.users(id),
+  expires_at timestamptz not null,
+  accepted_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table public.invitations enable row level security;
+create policy "invitations_owner_select" on public.invitations for select using (auth.uid() = invited_by);
+```
+
+## Phase 12 — Event admin tabs (added 2026-04-29)
+
+**Goal:** Inside `/admin/events/[slug]`, organize features into tabs instead of one long page.
+
+### Tasks
+- **Task 52:** Tabs component `components/ui/Tabs.tsx` — accessible, keyboard-navigable.
+- **Task 53:** Restructure `/admin/events/[slug]/page.tsx` with 4 tabs:
+  - **Moderação** (default) — fila realtime + counters
+  - **Conexão H2R** — pairing code + status (moves PairingCodeDisplay here)
+  - **Compartilhar** — ShareCard + QR + stats de submissões + link `/admin/users` para convidar moderadores
+  - **Configurações** — pause/reopen submissions, rename event, danger zone (delete)
+- **Task 54:** Move existing `/settings` content into the "Configurações" tab — keep route as alias/redirect.
+
+## Phase 13 — Public page redesign (added 2026-04-29)
+
+**Goal:** `/e/[slug]` becomes a beautiful, mobile-first experience for the audience.
+
+### Tasks
+- **Task 55:** Redesign `/e/[slug]` page:
+  - Full-bleed gradient background using event theme tokens
+  - Animated hero (subtle parallax / fade-in)
+  - Large touch-friendly inputs (h-14 minimum on mobile)
+  - Floating-label inputs with character counter inline
+  - Submit button = full-width, bold, accent color
+  - "Recebido" success state with celebratory animation (confetti or checkmark animation)
+  - Footer with brand line ("Powered by UCOB" or event-customizable)
+- **Task 56:** Mobile responsiveness pass — all touch targets ≥44px, readable at 375px width, no horizontal scroll, large fonts (18px body min on mobile).
+- **Task 57:** Lighthouse pass — Performance ≥ 90, Accessibility ≥ 95 on mobile.
+
 ## Self-review summary
 
 **Spec coverage check:** every section of the spec has at least one task implementing it:
