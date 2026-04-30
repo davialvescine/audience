@@ -1,10 +1,9 @@
+import { AuthFragmentRecover } from '@/components/audience/AuthFragmentRecover';
 import { ResetPasswordForm } from '@/components/audience/ResetPasswordForm';
 import { Card } from '@/components/ui/Card';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function ResetPasswordPage() {
-  // Session is established by /auth/callback (Route Handler can write cookies).
-  // This page just reads the session and renders the form.
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },
@@ -12,14 +11,10 @@ export default async function ResetPasswordPage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-surface px-4">
-        <Card className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-display mb-2">Link inválido</h1>
-          <p className="text-sm text-ink/60">
-            Esse link expirou ou já foi usado. Volte ao login e peça um novo email de recuperação.
-          </p>
-        </Card>
-      </main>
+      <AuthFragmentRecover
+        invalidTitle="Link inválido"
+        invalidMessage="Esse link expirou ou já foi usado. Volte ao login e peça um novo email de recuperação."
+      />
     );
   }
 
