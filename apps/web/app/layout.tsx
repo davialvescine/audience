@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import Script from 'next/script';
 
 import './globals.css';
 
@@ -11,10 +10,12 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body>
-        <Script src="/theme-init.js" strategy="beforeInteractive" />
-        {children}
-      </body>
+      <head>
+        {/* Plain <script src> is a resource declaration in React 19 — hoisted and not treated as a renderable child. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/theme-init.js" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
