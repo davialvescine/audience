@@ -64,10 +64,23 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
     return () => window.removeEventListener('message', handler);
   }, [preview]);
 
-  // Subscribe to new sent submissions
+  // Subscribe to new sent submissions (Realtime) + polling fallback every 3s.
+  // Belt-and-suspenders: if Realtime is blocked (corporate networks,
+  // CDN/proxy, expired subscription) the poll catches up.
   useEffect(() => {
     if (preview) return;
     const supabase = getSupabaseBrowserClient();
+    const enqueue = (row: Submission) => {
+      if (seenIdsRef.current.has(row.id)) return;
+      seenIdsRef.current.add(row.id);
+      queueRef.current.push({
+        id: row.id,
+        name: row.name,
+        comment: row.comment,
+        created_at: row.created_at,
+      });
+    };
+
     const channel = supabase
       .channel(`telao:${eventId}`)
       .on(
@@ -80,15 +93,48 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
         },
         (payload) => {
           const row = payload.new as Submission & { status: string };
+          // eslint-disable-next-line no-console
+          console.debug('[telao] RT update', row.id, row.status);
           if (row.status !== 'sent') return;
-          if (seenIdsRef.current.has(row.id)) return;
-          seenIdsRef.current.add(row.id);
-          queueRef.current.push({ id: row.id, name: row.name, comment: row.comment, created_at: row.created_at });
+          enqueue(row);
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // eslint-disable-next-line no-console
+        console.debug('[telao] RT status', status);
+      });
+
+    // Polling fallback — fetches recent sent submissions and enqueues new ones.
+    // The seenIds Set guarantees we never display duplicates regardless of source.
+    let lastSeenAt = new Date().toISOString();
+    const poll = async () => {
+      const { data, error } = await supabase
+        .from('submissions')
+        .select('id, name, comment, created_at, sent_at, status')
+        .eq('event_id', eventId)
+        .eq('status', 'sent')
+        .gt('sent_at', lastSeenAt)
+        .order('sent_at', { ascending: true })
+        .limit(20);
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.debug('[telao] poll error', error.message);
+        return;
+      }
+      if (data && data.length > 0) {
+        // eslint-disable-next-line no-console
+        console.debug('[telao] poll picked', data.length);
+        for (const row of data) {
+          if (row.sent_at && row.sent_at > lastSeenAt) lastSeenAt = row.sent_at;
+          enqueue(row as Submission);
+        }
+      }
+    };
+    const pollTimer = setInterval(() => { void poll(); }, 3000);
+
     return () => {
       void supabase.removeChannel(channel);
+      clearInterval(pollTimer);
     };
   }, [eventId, preview]);
 

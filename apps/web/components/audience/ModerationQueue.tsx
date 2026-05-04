@@ -31,6 +31,8 @@ export function ModerationQueue({ eventId, initial }: Props) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'submissions', filter: `event_id=eq.${eventId}` },
         (payload) => {
+          // eslint-disable-next-line no-console
+          console.debug('[moderation] RT', payload.eventType, (payload.new as Item)?.id);
           setItems((prev) => {
             if (payload.eventType === 'INSERT') return [payload.new as Item, ...prev];
             if (payload.eventType === 'UPDATE')
@@ -41,9 +43,38 @@ export function ModerationQueue({ eventId, initial }: Props) {
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // eslint-disable-next-line no-console
+        console.debug('[moderation] RT status', status);
+      });
+
+    // Polling fallback — refetches every 2s and merges. If Realtime delivers,
+    // this is a no-op (same data). If Realtime is blocked, we still get fresh state.
+    const refresh = async () => {
+      const { data } = await supabase
+        .from('submissions')
+        .select('id, name, comment, status, created_at, error_message')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!data) return;
+      setItems((prev) => {
+        if (prev.length !== data.length) return data as Item[];
+        for (let i = 0; i < data.length; i += 1) {
+          const a = prev[i];
+          const b = data[i] as Item;
+          if (!a || a.id !== b.id || a.status !== b.status || a.error_message !== b.error_message) {
+            return data as Item[];
+          }
+        }
+        return prev;
+      });
+    };
+    const t = setInterval(() => { void refresh(); }, 2000);
+
     return () => {
       void supabase.removeChannel(channel);
+      clearInterval(t);
     };
   }, [eventId]);
 
