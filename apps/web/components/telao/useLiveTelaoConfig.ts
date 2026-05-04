@@ -23,8 +23,12 @@ export function useLiveTelaoConfig(
   useEffect(() => {
     if (!enabled) return;
     const supabase = getSupabaseBrowserClient();
+    // Distinct channel name to avoid clashing with the `telao:${eventId}`
+    // used by TelaoClient for postgres_changes (submissions) — supabase-js
+    // reuses channels by name, and you can't add new .on() handlers after
+    // a channel is already subscribed.
     const channel = supabase
-      .channel(`telao:${eventId}`)
+      .channel(`telao-config:${eventId}`)
       .on(
         'broadcast',
         { event: 'config-updated' },

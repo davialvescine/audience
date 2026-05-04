@@ -133,7 +133,8 @@ export function TelaoTab({
           if (!cfgUnchanged) {
             try {
               const supabase = getSupabaseBrowserClient();
-              const channel = supabase.channel(`telao:${eventId}`);
+              // Same name as useLiveTelaoConfig — see comment there.
+              const channel = supabase.channel(`telao-config:${eventId}`);
               await channel.httpSend('config-updated', { config });
               await supabase.removeChannel(channel);
             } catch {
