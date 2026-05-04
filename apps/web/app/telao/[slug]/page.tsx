@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
+import { TelaoStage } from '@/components/telao/TelaoStage';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
@@ -43,9 +44,12 @@ export default async function TelaoPage({
   // - mode=chrome_pip explicitly requested (URL came from "Janela Flutuante" in admin), OR
   // - no mode at all (direct visit) AND not in preview iframe
   // Browser Source URLs use ?mode=browser_source — no PiP overlay then.
+  // In preview mode the iframe is already sized to 1920x1080, so we skip
+  // TelaoStage (which would double-scale).
   if (isPreview) return telao;
-  if (isPip || !mode) return <PipLauncher>{telao}</PipLauncher>;
-  return telao;
+  const staged = <TelaoStage>{telao}</TelaoStage>;
+  if (isPip || !mode) return <PipLauncher>{staged}</PipLauncher>;
+  return staged;
 }
 
 // Force transparent background — overrides root layout

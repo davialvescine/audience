@@ -15,6 +15,11 @@ export type TelaoShadow = 'none' | 'subtle' | 'medium' | 'dramatic';
 
 export type TelaoConfig = {
   position: TelaoPosition;
+  /** Custom X position (0–100, % of 1920 stage). When set together with
+   *  posYPct, overrides `position` and anchors the card's center to (X,Y). */
+  posXPct?: number | undefined;
+  /** Custom Y position (0–100, % of 1080 stage). See `posXPct`. */
+  posYPct?: number | undefined;
   widthPct: number;
   /** Min-height in px. 0 = auto (fits content). */
   heightPx: number;
@@ -60,6 +65,15 @@ export const DISPLAY_MODE_LABELS: Record<TelaoDisplayMode, string> = {
   chrome_pip: 'Janela Flutuante Chrome',
   desktop_app: 'Audience Desktop',
 };
+
+export function customPositionStyles(xPct: number, yPct: number): React.CSSProperties {
+  return {
+    position: 'fixed',
+    left: `${xPct}%`,
+    top: `${yPct}%`,
+    transform: 'translate(-50%, -50%)',
+  };
+}
 
 export function positionStyles(position: TelaoPosition): React.CSSProperties {
   const base: React.CSSProperties = { position: 'fixed' };

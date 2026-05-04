@@ -14,16 +14,10 @@ import {
   type TelaoAnimation,
   type TelaoConfig,
   type TelaoDisplayMode,
-  type TelaoPosition,
   type TelaoShadow,
 } from '@/lib/telao/config';
 import { updateDisplayModes, updateTelaoConfig } from '@/server-actions/telao';
 
-const POSITIONS: TelaoPosition[] = [
-  'top-left', 'top-center', 'top-right',
-  'middle-left', 'center', 'middle-right',
-  'bottom-left', 'bottom-center', 'bottom-right',
-];
 const ANIMATIONS: TelaoAnimation[] = ['slide-up', 'slide-down', 'slide-left', 'slide-right', 'fade', 'scale', 'bounce'];
 const SHADOWS: TelaoShadow[] = ['none', 'subtle', 'medium', 'dramatic'];
 const ALL_MODES: TelaoDisplayMode[] = ['h2r', 'browser_source', 'chrome_pip', 'desktop_app'];
@@ -57,7 +51,20 @@ export function TelaoTab({
     comment: 'Que evento incrível! Deus abençoe todos vocês.',
   });
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const previewBoxRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.3125);
   const [iframeReady, setIframeReady] = useState(false);
+
+  // Scale the 1920x1080 iframe to fit the preview box width.
+  useEffect(() => {
+    const el = previewBoxRef.current;
+    if (!el) return;
+    const update = () => setPreviewScale(el.clientWidth / 1920);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   // Snapshot of last-saved values so we don't loop on the same data
   const lastSavedRef = useRef({ config: initialConfig, modes: initialModes });
 
@@ -65,9 +72,20 @@ export function TelaoTab({
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return;
-      const data = e.data as { type?: string };
+      const data = e.data as {
+        type?: string;
+        posXPct?: number;
+        posYPct?: number;
+      };
       if (data.type === 'telao-preview-ready') {
         setIframeReady(true);
+      }
+      if (
+        data.type === 'telao-position-update' &&
+        typeof data.posXPct === 'number' &&
+        typeof data.posYPct === 'number'
+      ) {
+        setConfig((c) => ({ ...c, posXPct: data.posXPct, posYPct: data.posYPct }));
       }
     };
     window.addEventListener('message', handler);
@@ -234,28 +252,6 @@ export function TelaoTab({
             </p>
           </div>
 
-          {/* Position */}
-          <div>
-            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Posição na tela</p>
-            <div className="grid grid-cols-3 gap-1.5 max-w-xs">
-              {POSITIONS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => updateField('position', p)}
-                  className={`h-12 rounded border text-xs transition ${
-                    config.position === p
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-ink/15 text-ink/50 hover:border-ink/30'
-                  }`}
-                  title={p}
-                >
-                  {positionIcon(p)}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Width / Height */}
           <div className="grid sm:grid-cols-2 gap-4">
             <Slider label="Largura" suffix="%" min={20} max={100} value={config.widthPct} onChange={(v) => updateField('widthPct', v)} />
@@ -299,7 +295,16 @@ export function TelaoTab({
           <PresetGroup label="Sombra" options={SHADOWS} value={config.shadow} onChange={(v) => updateField('shadow', v)} />
 
           {/* Animation */}
-          <PresetGroup label="Animação de entrada" options={ANIMATIONS} value={config.animation} onChange={(v) => updateField('animation', v)} />
+          <PresetGroup
+            label="Animação de entrada"
+            options={ANIMATIONS}
+            value={config.animation}
+            onChange={(v) => updateField('animation', v)}
+            iconFor={(o) => ANIMATION_ICON[o]}
+          />
+          <p className="text-xs text-ink/50 -mt-3">
+            Passe o mouse em <strong>▶ Tocar entrada e saída</strong> no preview pra ver a animação completa.
+          </p>
 
           {/* Timing */}
           <div className="grid sm:grid-cols-2 gap-4">
@@ -352,28 +357,60 @@ export function TelaoTab({
         <Card>
           <div className="flex items-center justify-between mb-3 gap-2">
             <h3 className="font-display text-lg">Preview ao vivo</h3>
-            <button
-              type="button"
-              onClick={() =>
-                iframeRef.current?.contentWindow?.postMessage(
-                  { type: 'telao-play-cycle' },
-                  window.location.origin,
-                )
-              }
-              className="text-xs px-3 h-8 inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary transition"
-              title="Tocar animação de entrada e saída"
-            >
-              ▶ Tocar entrada e saída
-            </button>
+            <div className="flex items-center gap-2">
+              {(typeof config.posXPct === 'number' ||
+                typeof config.posYPct === 'number') && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setConfig((c) => ({ ...c, posXPct: undefined, posYPct: undefined }))
+                  }
+                  className="text-xs px-3 h-8 inline-flex items-center rounded-md border border-ink/15 text-ink/70 hover:border-ink/30 transition"
+                  title="Volta pra posição padrão (centro inferior)"
+                >
+                  Resetar posição
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() =>
+                  iframeRef.current?.contentWindow?.postMessage(
+                    { type: 'telao-play-cycle' },
+                    window.location.origin,
+                  )
+                }
+                className="text-xs px-3 h-8 inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary transition"
+                title="Tocar animação de entrada e saída"
+              >
+                ▶ Tocar entrada e saída
+              </button>
+            </div>
           </div>
-          <div className="aspect-video bg-gradient-to-br from-ink/80 via-primary-deep to-ink rounded-lg overflow-hidden relative">
-            <div className="absolute inset-0 flex items-center justify-center text-white/25 text-xs uppercase tracking-wider pointer-events-none select-none">
+          <p className="text-xs text-ink/55 mb-3">
+            🖱️ <strong>Arraste o card</strong> dentro do preview pra posicionar onde quiser. A
+            posição é em coordenadas reais de 1920×1080, então o que você vê aqui é exatamente
+            o que vai pro OBS / vMix / projetor.
+          </p>
+          <div
+            ref={previewBoxRef}
+            className="aspect-video bg-gradient-to-br from-slate-100 via-white to-slate-200 rounded-lg overflow-hidden relative ring-1 ring-ink/10"
+          >
+            <div className="absolute inset-0 flex items-center justify-center text-ink/30 text-xs uppercase tracking-wider pointer-events-none select-none">
               [SUA APRESENTAÇÃO AQUI]
             </div>
+            {/* Render iframe at 1920x1080 so the preview matches OBS/vMix
+                output exactly, then CSS-scale to fit the container width. */}
             <iframe
               ref={iframeRef}
               src={`/telao/${slug}?preview=1`}
-              className="absolute inset-0 w-full h-full"
+              width={1920}
+              height={1080}
+              className="absolute top-0 left-0 origin-top-left border-0"
+              style={{
+                width: 1920,
+                height: 1080,
+                transform: `scale(${previewScale})`,
+              }}
               title="Preview do telão"
             />
           </div>
@@ -418,31 +455,20 @@ function DiagnosticTestCard({ eventId }: { eventId: string }) {
     setMessage(null);
     try {
       const supabase = getSupabaseBrowserClient();
+      // httpSend() posts to /realtime/v1/api/broadcast directly — no WebSocket
+      // subscribe required. Avoids CHANNEL_ERROR from the WS path while still
+      // delivering to subscribed listeners on the same topic.
       const channel = supabase.channel(`telao:${eventId}`, {
         config: { broadcast: { self: false } },
       });
-      // Wait for SUBSCRIBED before sending
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('timeout')), 8000);
-        channel.subscribe((s) => {
-          if (s === 'SUBSCRIBED') {
-            clearTimeout(timeout);
-            resolve();
-          } else if (s === 'CHANNEL_ERROR' || s === 'CLOSED') {
-            clearTimeout(timeout);
-            reject(new Error(s));
-          }
-        });
-      });
-      await channel.send({
-        type: 'broadcast',
-        event: 'test_message',
-        payload: {
-          name: 'TESTE DE DIAGNÓSTICO',
-          comment: `Telão funcionando — ${new Date().toLocaleTimeString('pt-BR')}`,
-        },
+      const result = await channel.httpSend('test_message', {
+        name: 'TESTE DE DIAGNÓSTICO',
+        comment: `Telão funcionando — ${new Date().toLocaleTimeString('pt-BR')}`,
       });
       await supabase.removeChannel(channel);
+      if (!result.success) {
+        throw new Error(`broadcast falhou (${result.status}): ${result.error}`);
+      }
       setStatus('sent');
       setMessage('Disparado. Se aparecer no telão, o canal Realtime tá ok.');
     } catch (err) {
@@ -543,11 +569,13 @@ function PresetGroup<T extends string>({
   options,
   value,
   onChange,
+  iconFor,
 }: {
   label: string;
   options: readonly T[];
   value: T;
   onChange: (v: T) => void;
+  iconFor?: (o: T) => string;
 }) {
   return (
     <div>
@@ -558,19 +586,30 @@ function PresetGroup<T extends string>({
             key={o}
             type="button"
             onClick={() => onChange(o)}
-            className={`px-3 h-9 rounded-md text-sm border transition ${
+            className={`px-3 h-9 rounded-md text-sm border transition inline-flex items-center gap-1.5 ${
               value === o
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-ink/15 text-ink/60 hover:border-ink/30'
             }`}
           >
-            {o}
+            {iconFor && <span aria-hidden className="text-base leading-none">{iconFor(o)}</span>}
+            <span>{o}</span>
           </button>
         ))}
       </div>
     </div>
   );
 }
+
+const ANIMATION_ICON: Record<TelaoAnimation, string> = {
+  'slide-up': '↑',
+  'slide-down': '↓',
+  'slide-left': '←',
+  'slide-right': '→',
+  'fade': '◐',
+  'scale': '⊕',
+  'bounce': '↕',
+};
 
 // Fallback: extract first hex/rgb from arbitrary css color into a hex picker can show
 function cssToHex(css: string): string {
@@ -597,21 +636,6 @@ function describeMode(mode: TelaoDisplayMode): string {
     case 'desktop_app':
       return 'App proprietário Audience Desktop com janela transparente. Em desenvolvimento.';
   }
-}
-
-function positionIcon(p: TelaoPosition): string {
-  const map: Record<TelaoPosition, string> = {
-    'top-left': '↖',
-    'top-center': '↑',
-    'top-right': '↗',
-    'middle-left': '←',
-    'center': '·',
-    'middle-right': '→',
-    'bottom-left': '↙',
-    'bottom-center': '↓',
-    'bottom-right': '↘',
-  };
-  return map[p];
 }
 
 function BrowserSourceCard({ slug, url }: { slug: string; url: string }) {

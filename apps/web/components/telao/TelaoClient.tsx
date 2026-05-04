@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import {
   animationVariants,
+  customPositionStyles,
   positionStyles,
   shadowStyle,
   type TelaoConfig,
@@ -93,8 +94,6 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
         },
         (payload) => {
           const row = payload.new as Submission & { status: string };
-          // eslint-disable-next-line no-console
-          console.debug('[telao] RT update', row.id, row.status);
           if (row.status !== 'sent') return;
           enqueue(row);
         },
@@ -104,8 +103,6 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       // If this works but postgres_changes doesn't, the issue is in WAL/RLS path.
       .on('broadcast', { event: 'test_message' }, ({ payload }) => {
         const p = payload as { name?: string; comment?: string };
-        // eslint-disable-next-line no-console
-        console.debug('[telao] broadcast test', p);
         enqueue({
           id: `test-${Date.now()}`,
           name: p.name ?? 'TESTE',
@@ -113,10 +110,7 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
           created_at: new Date().toISOString(),
         });
       })
-      .subscribe((status) => {
-        // eslint-disable-next-line no-console
-        console.debug('[telao] RT status', status);
-      });
+      .subscribe();
 
     // Polling fallback — fetches recent sent submissions and enqueues new ones.
     // The seenIds Set guarantees we never display duplicates regardless of source.
@@ -130,14 +124,8 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
         .gt('sent_at', lastSeenAt)
         .order('sent_at', { ascending: true })
         .limit(20);
-      if (error) {
-        // eslint-disable-next-line no-console
-        console.debug('[telao] poll error', error.message);
-        return;
-      }
+      if (error) return;
       if (data && data.length > 0) {
-        // eslint-disable-next-line no-console
-        console.debug('[telao] poll picked', data.length);
         for (const row of data) {
           if (row.sent_at && row.sent_at > lastSeenAt) lastSeenAt = row.sent_at;
           enqueue(row as Submission);
@@ -213,15 +201,92 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
   }, [preview, config.maxConcurrent, config.displaySeconds]);
 
   const variants = animationVariants(config.animation);
+  const hasCustomPos =
+    typeof config.posXPct === 'number' && typeof config.posYPct === 'number';
+  const positionStyle = hasCustomPos
+    ? customPositionStyles(config.posXPct as number, config.posYPct as number)
+    : positionStyles(config.position);
+
+  // Drag-to-position (preview only). The preview iframe runs at 1920x1080
+  // native, so pointer.clientX/Y are already in stage coords — no scale math.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    lastX: number;
+    lastY: number;
+  } | null>(null);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!preview) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const baseX = ((rect.left + rect.width / 2) / 1920) * 100;
+    const baseY = ((rect.top + rect.height / 2) / 1080) * 100;
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      baseX,
+      baseY,
+      lastX: baseX,
+      lastY: baseY,
+    };
+    el.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = ((e.clientX - d.startX) / 1920) * 100;
+    const dy = ((e.clientY - d.startY) / 1080) * 100;
+    // Clamp only the card's center to the stage. The card may extend
+    // past the edge if widthPct/height are large — user can shrink the
+    // card via the Largura/Altura sliders if they don't want overflow.
+    const nx = Math.max(0, Math.min(100, d.baseX + dx));
+    const ny = Math.max(0, Math.min(100, d.baseY + dy));
+    d.lastX = nx;
+    d.lastY = ny;
+    setConfig((c) => ({ ...c, posXPct: nx, posYPct: ny }));
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    rootRef.current?.releasePointerCapture(e.pointerId);
+    dragRef.current = null;
+    // Tell parent so autosave persists the new coords.
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: 'telao-position-update',
+          posXPct: d.lastX,
+          posYPct: d.lastY,
+        },
+        window.location.origin,
+      );
+    }
+  };
 
   return (
     <div
       id="telao-root"
+      ref={rootRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
       style={{
-        ...positionStyles(config.position),
+        ...positionStyle,
         width: `${config.widthPct}%`,
         maxWidth: '100vw',
         fontFamily: config.fontFamily,
+        cursor: preview ? (dragRef.current ? 'grabbing' : 'grab') : undefined,
+        userSelect: preview ? 'none' : undefined,
+        touchAction: preview ? 'none' : undefined,
       }}
     >
       <AnimatePresence>
