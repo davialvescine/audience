@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/audience/AdminShell';
 import { EventSettings } from '@/components/audience/EventSettings';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { H2RStatusBadge } from '@/components/audience/H2RStatusBadge';
+import { QueueControls } from '@/components/audience/QueueControls';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { ShareCard } from '@/components/audience/ShareCard';
 import { TelaoTab } from '@/components/audience/TelaoTab';
@@ -76,6 +77,11 @@ export default async function EventModerationPage({
             eventId={event.id}
             queuedCount={counts.queued}
             intervalSeconds={event.dispatch_interval_seconds ?? 3}
+          />
+          <QueueControls
+            eventId={event.id}
+            initialSubmissionsOpen={event.submissions_open}
+            pendingCount={counts.pending}
           />
           <ModerationQueue eventId={event.id} initial={subs ?? []} />
         </div>
