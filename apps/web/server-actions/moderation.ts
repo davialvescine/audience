@@ -14,6 +14,10 @@ type Result =
 const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
 const FLUSH_BATCH_LIMIT = 20; // hard cap per call to avoid serverless timeouts
+// Soft time budget per flush call. Vercel Pro lambdas timeout at 60s;
+// leaving 10s of headroom keeps response time predictable. The loop
+// breaks early when this is exceeded and the caller re-clicks flush.
+const FLUSH_TIME_BUDGET_MS = 50_000;
 
 type DeliveryRow = {
   submission_id: string;
@@ -173,8 +177,13 @@ export async function flushApprovedForEvent(eventId: string): Promise<{
   let sent = 0;
   let queued = 0;
   let failed = 0;
+  const startedAt = Date.now();
 
   for (let i = 0; i < (rows?.length ?? 0); i += 1) {
+    // Stop early if we're close to the serverless timeout. The unflushed
+    // rows stay 'approved' and a follow-up flush call picks them up.
+    if (Date.now() - startedAt > FLUSH_TIME_BUDGET_MS) break;
+
     const row = rows![i]!;
     const outcome = await deliverToH2R(supabase, {
       submission_id: row.id,
@@ -187,8 +196,11 @@ export async function flushApprovedForEvent(eventId: string): Promise<{
     else if (outcome === 'queued') queued += 1;
     else failed += 1;
 
-    // Pause between consecutive sends (don't sleep after the last one)
-    if (i < (rows?.length ?? 0) - 1 && outcome === 'sent') {
+    // Pause between consecutive sends (don't sleep after the last one
+    // OR if the remaining time budget can't fit another full interval).
+    const isLast = i === (rows?.length ?? 0) - 1;
+    const enoughBudget = Date.now() - startedAt + intervalMs < FLUSH_TIME_BUDGET_MS;
+    if (!isLast && outcome === 'sent' && enoughBudget) {
       await sleep(intervalMs);
     }
 
