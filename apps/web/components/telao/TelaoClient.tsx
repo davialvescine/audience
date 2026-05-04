@@ -12,8 +12,6 @@ import {
 } from '@/lib/telao/config';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
-import { useLiveTelaoConfig } from './useLiveTelaoConfig';
-
 type Submission = {
   id: string;
   name: string;
@@ -22,21 +20,18 @@ type Submission = {
 };
 
 type Props = {
-  slug: string;
   eventId: string;
   eventName: string;
   config: TelaoConfig;
   preview?: boolean;
 };
 
-export function TelaoClient({ slug, eventId, eventName, config: initialConfig, preview = false }: Props) {
-  // In preview, config is driven by postMessage from the admin TelaoTab.
-  // In live mode, the hook polls get_telao_config every few seconds and
-  // updates state — bypasses RLS issues that postgres_changes had.
-  const liveConfig = useLiveTelaoConfig(slug, initialConfig, !preview);
-  const [previewConfig, setPreviewConfig] = useState<TelaoConfig>(initialConfig);
-  const config = preview ? previewConfig : liveConfig;
-  const setConfig = setPreviewConfig;
+export function TelaoClient({ eventId, eventName, config: initialConfig, preview = false }: Props) {
+  // Config comes from SSR (page.tsx is force-dynamic so F5 always picks
+  // up DB changes). Preview mode receives live updates via postMessage
+  // from the admin TelaoTab. For non-preview /telao tabs, refresh after
+  // saving config in admin to see changes.
+  const [config, setConfig] = useState<TelaoConfig>(initialConfig);
   const [visible, setVisible] = useState<Submission[]>([]);
   const queueRef = useRef<Submission[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
