@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 
 import { buildH2RPayload } from '@/lib/h2r/buildPayload';
@@ -53,6 +54,11 @@ async function deliverToH2R(
       await supabase.rpc('mark_submission_sent', { p_submission_id: data.submission_id });
       return 'sent';
     }
+    Sentry.captureMessage(`H2R webhook non-OK status: ${res.status}`, {
+      level: 'warning',
+      tags: { area: 'h2r', kind: 'http_status' },
+      extra: { submission_id: data.submission_id, status: res.status },
+    });
     await supabase.rpc('mark_submission_failed', {
       p_submission_id: data.submission_id,
       p_error: `H2R retornou ${res.status}`,
@@ -71,6 +77,10 @@ async function deliverToH2R(
       // H2R unreachable — keep as approved (queued) so user can flush later when bridge reconnects.
       return 'queued';
     }
+    Sentry.captureException(err, {
+      tags: { area: 'h2r', kind: 'delivery_exception' },
+      extra: { submission_id: data.submission_id },
+    });
     await supabase.rpc('mark_submission_failed', {
       p_submission_id: data.submission_id,
       p_error: msg,
@@ -90,6 +100,7 @@ export async function approveSubmission(submissionId: string): Promise<Result> {
   if (error) return { ok: false, error: 'Falha ao aprovar.' };
   if (!data) return { ok: true, status: 'sent' };
 
+  Sentry.setTag('event_slug', data.event_slug);
   const outcome = await deliverToH2R(supabase, data);
   revalidatePath(`/admin/events/${data.event_slug}`);
 
@@ -138,6 +149,8 @@ export async function flushApprovedForEvent(eventId: string): Promise<{
     .eq('id', eventId)
     .single();
   if (!event) return { ok: true, sent: 0, queued: 0, failed: 0, total_remaining: 0 };
+
+  Sentry.setTag('event_slug', event.slug);
 
   // Count total queued (for "remaining" indicator)
   const { count: totalQueued } = await supabase
