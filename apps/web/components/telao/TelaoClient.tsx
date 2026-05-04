@@ -12,6 +12,8 @@ import {
 } from '@/lib/telao/config';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
+import { useLiveTelaoConfig } from './useLiveTelaoConfig';
+
 type Submission = {
   id: string;
   name: string;
@@ -27,7 +29,13 @@ type Props = {
 };
 
 export function TelaoClient({ eventId, eventName, config: initialConfig, preview = false }: Props) {
-  const [config, setConfig] = useState<TelaoConfig>(initialConfig);
+  // In preview, config is driven by postMessage from the admin TelaoTab.
+  // In live mode, we subscribe to events.telao_config so any save in the
+  // admin (autosave) propagates to all open /telao tabs without refresh.
+  const liveConfig = useLiveTelaoConfig(eventId, initialConfig, !preview);
+  const [previewConfig, setPreviewConfig] = useState<TelaoConfig>(initialConfig);
+  const config = preview ? previewConfig : liveConfig;
+  const setConfig = setPreviewConfig;
   const [visible, setVisible] = useState<Submission[]>([]);
   const queueRef = useRef<Submission[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
