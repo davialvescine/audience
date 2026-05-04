@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AdminShell } from '@/components/audience/AdminShell';
+import { EventSettings } from '@/components/audience/EventSettings';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { ShareCard } from '@/components/audience/ShareCard';
@@ -139,15 +140,15 @@ export default async function EventModerationPage({
       id: 'settings',
       label: 'Configurações',
       content: (
-        <Card>
-          <h3 className="font-display text-lg mb-2">Configurações do evento</h3>
-          <p className="text-sm text-ink/60">
-            Em breve: pausar submissões, renomear, deletar evento.
-          </p>
-          <p className="text-xs text-ink/50 mt-3">
-            Dica: configurações de exibição e disparos pra H2R agora ficam dentro da aba <strong>Telão</strong>.
-          </p>
-        </Card>
+        <div className="space-y-4">
+          <EventSettings eventId={event.id} initialName={event.name} />
+          <Card>
+            <p className="text-xs text-ink/50">
+              Dica: configurações de exibição e disparos pra H2R ficam na aba <strong>Telão</strong>.
+              Em breve: pausar submissões e deletar evento.
+            </p>
+          </Card>
+        </div>
       ),
     },
   ];

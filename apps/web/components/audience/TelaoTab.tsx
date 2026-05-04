@@ -67,6 +67,11 @@ export function TelaoTab({
   }, []);
   // Snapshot of last-saved values so we don't loop on the same data
   const lastSavedRef = useRef({ config: initialConfig, modes: initialModes });
+  // Monotonic version of the most recently dispatched save. When a save
+  // promise resolves, we only commit lastSavedRef if its version is still
+  // current — otherwise a slow request from earlier could overwrite a
+  // fresher state (autosave race protection — Sprint 1.5).
+  const saveVersionRef = useRef(0);
 
   // Listen for iframe "ready" signal so we can send initial config
   useEffect(() => {
@@ -118,17 +123,20 @@ export function TelaoTab({
     if (cfgUnchanged && modesUnchanged) return;
 
     const t = setTimeout(() => {
+      saveVersionRef.current += 1;
+      const myVersion = saveVersionRef.current;
       setAutoSaveStatus('saving');
       void Promise.all([
         cfgUnchanged ? Promise.resolve({ ok: true } as const) : updateTelaoConfig(eventId, config),
         modesUnchanged ? Promise.resolve({ ok: true } as const) : updateDisplayModes(eventId, modes),
       ]).then(([r1, r2]) => {
+        // If a newer save was dispatched while we were in flight, drop
+        // this result — the newer one is authoritative.
+        if (myVersion < saveVersionRef.current) return;
         if (r1.ok && r2.ok) {
           lastSavedRef.current = { config, modes };
           setAutoSaveStatus('saved');
           setTimeout(() => setAutoSaveStatus('idle'), 1500);
-          // /telao polls get_telao_config every 3s and picks up the new
-          // values automatically — no manual broadcast needed.
         } else {
           setAutoSaveStatus('error');
           setTimeout(() => setAutoSaveStatus('idle'), 3000);
