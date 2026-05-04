@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/audience/AdminShell';
 import { EventSettings } from '@/components/audience/EventSettings';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { H2RStatusBadge } from '@/components/audience/H2RStatusBadge';
+import { ModeratorLinks } from '@/components/audience/ModeratorLinks';
 import { QueueControls } from '@/components/audience/QueueControls';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { ShareCard } from '@/components/audience/ShareCard';
@@ -37,6 +38,12 @@ export default async function EventModerationPage({
     .eq('event_id', event.id)
     .order('created_at', { ascending: false })
     .limit(100);
+
+  const { data: modTokens } = await supabase
+    .from('moderator_tokens')
+    .select('id, token, display_name, expires_at, revoked_at, last_used_at, created_at')
+    .eq('event_id', event.id)
+    .order('created_at', { ascending: false });
 
   const reqHeaders = await headers();
   const host = reqHeaders.get('host') ?? 'localhost:3000';
@@ -151,10 +158,14 @@ export default async function EventModerationPage({
       content: (
         <div className="space-y-4">
           <EventSettings eventId={event.id} initialName={event.name} />
+          <ModeratorLinks
+            eventId={event.id}
+            baseUrl={`${proto}://${host}`}
+            existing={modTokens ?? []}
+          />
           <Card>
             <p className="text-xs text-ink/50">
               Dica: configurações de exibição e disparos pra H2R ficam na aba <strong>Telão</strong>.
-              Em breve: pausar submissões e deletar evento.
             </p>
           </Card>
         </div>

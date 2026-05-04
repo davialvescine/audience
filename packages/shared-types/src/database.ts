@@ -131,6 +131,50 @@ export type Database = {
         }
         Relationships: []
       }
+      moderator_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          display_name: string | null
+          event_id: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          display_name?: string | null
+          event_id: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          display_name?: string | null
+          event_id?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderator_tokens_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pairing_codes: {
         Row: {
           code: string
@@ -261,6 +305,17 @@ export type Database = {
           theme_id: string
         }[]
       }
+      get_submissions_via_token: {
+        Args: { p_status_filter?: string; p_token: string }
+        Returns: {
+          comment: string
+          created_at: string
+          error_message: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["submission_status"]
+        }[]
+      }
       get_telao_config: {
         Args: { p_slug: string }
         Returns: {
@@ -287,6 +342,10 @@ export type Database = {
       }
       mark_submission_sent: {
         Args: { p_submission_id: string }
+        Returns: undefined
+      }
+      moderate_with_token: {
+        Args: { p_action: string; p_submission_id: string; p_token: string }
         Returns: undefined
       }
       record_heartbeat: {
@@ -318,6 +377,7 @@ export type Database = {
         }
         Returns: string
       }
+      validate_moderator_token: { Args: { p_token: string }; Returns: string }
     }
     Enums: {
       submission_status: "pending" | "approved" | "rejected" | "sent" | "failed"
