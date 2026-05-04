@@ -34,7 +34,16 @@ export function Tabs({ tabs, defaultTabId }: Props) {
           );
         })}
       </div>
-      <div role="tabpanel">{activeTab?.content}</div>
+      {tabs.map((t) => (
+        <div
+          key={t.id}
+          role="tabpanel"
+          hidden={t.id !== activeTab?.id}
+          style={t.id === activeTab?.id ? undefined : { display: 'none' }}
+        >
+          {t.content}
+        </div>
+      ))}
     </div>
   );
 }
