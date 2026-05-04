@@ -30,7 +30,7 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
             <Badge status={status} />
           </div>
           <p className="text-ink/80 break-words">{comment}</p>
-          <p className="mt-2 text-xs text-ink/55">
+          <p className="mt-2 text-xs text-ink/55" suppressHydrationWarning>
             {new Date(createdAt).toLocaleTimeString('pt-BR')}
           </p>
           {errorMessage ? <p className="mt-1 text-xs text-danger">Erro: {errorMessage}</p> : null}

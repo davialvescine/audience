@@ -330,7 +330,7 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
               {config.showEventName ? <span style={{ marginRight: 8 }}>{eventName} ·</span> : null}
               {m.name}
               {config.showTimestamp ? (
-                <span style={{ marginLeft: 8, opacity: 0.6 }}>
+                <span style={{ marginLeft: 8, opacity: 0.6 }} suppressHydrationWarning>
                   {new Date(m.created_at).toLocaleTimeString('pt-BR', {
                     hour: '2-digit',
                     minute: '2-digit',

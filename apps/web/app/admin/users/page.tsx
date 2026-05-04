@@ -55,7 +55,7 @@ export default async function AdminUsersPage() {
                   <li key={i.id} className="py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-ink truncate">{i.email}</p>
-                      <p className="text-xs text-ink/60">
+                      <p className="text-xs text-ink/60" suppressHydrationWarning>
                         {new Date(i.created_at).toLocaleString('pt-BR')}
                       </p>
                     </div>
