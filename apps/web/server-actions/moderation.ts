@@ -122,6 +122,29 @@ export async function rejectSubmission(submissionId: string): Promise<Result> {
   return { ok: true, status: 'sent' };
 }
 
+// Reverts a moderation action by flipping the row back to 'pending'.
+// Reversible from approved/rejected/sent. RLS (submissions_owner_all)
+// enforces ownership.
+export async function undoModerationAction(submissionId: string): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('submissions')
+    .update({
+      status: 'pending',
+      error_message: null,
+      approved_at: null,
+      sent_at: null,
+    })
+    .eq('id', submissionId)
+    .in('status', ['approved', 'rejected', 'sent'])
+    .select('id')
+    .maybeSingle();
+  if (error) return { ok: false, error: 'Falha ao desfazer.' };
+  if (!data) return { ok: false, error: 'Não dá pra desfazer essa ação.' };
+  return { ok: true, status: 'sent' };
+}
+
 export async function retrySubmission(submissionId: string): Promise<Result> {
   await requireUser();
   const supabase = await getSupabaseServerClient();

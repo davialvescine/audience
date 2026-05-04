@@ -11,6 +11,7 @@ import { SubmissionCard } from './SubmissionCard';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
+import { approveSubmission, rejectSubmission, undoModerationAction } from '@/server-actions/moderation';
 
 type Item = {
   id: string;
@@ -41,6 +42,65 @@ export function ModerationQueue({ eventId, initial }: Props) {
   );
 
   const visible = useMemo(() => filterSubmissions(items, { tab, query }), [items, tab, query]);
+
+  // Keyboard navigation cursor (J/K) — index into `visible`
+  const [cursor, setCursor] = useState(0);
+  useEffect(() => {
+    // Clamp cursor when visible list shrinks/changes
+    if (cursor >= visible.length) setCursor(Math.max(0, visible.length - 1));
+  }, [visible.length, cursor]);
+
+  // Undo toast — last action with a 5s window
+  const [undo, setUndo] = useState<
+    | { id: string; action: 'approved' | 'rejected'; expiresAt: number }
+    | null
+  >(null);
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), Math.max(0, undo.expiresAt - Date.now()));
+    return () => clearTimeout(t);
+  }, [undo]);
+
+  // Keyboard handler: J/K navigate, A approve, R reject, U undo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Skip when typing in an input/textarea
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setCursor((c) => Math.min(visible.length - 1, c + 1));
+        return;
+      }
+      if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setCursor((c) => Math.max(0, c - 1));
+        return;
+      }
+      const item = visible[cursor];
+      if (!item) return;
+
+      if ((e.key === 'a' || e.key === 'A') && item.status === 'pending') {
+        e.preventDefault();
+        void approveSubmission(item.id).then((res) => {
+          if (res.ok) setUndo({ id: item.id, action: 'approved', expiresAt: Date.now() + 5000 });
+        });
+      } else if ((e.key === 'r' || e.key === 'R') && item.status === 'pending') {
+        e.preventDefault();
+        void rejectSubmission(item.id).then((res) => {
+          if (res.ok) setUndo({ id: item.id, action: 'rejected', expiresAt: Date.now() + 5000 });
+        });
+      } else if (e.key === 'u' || e.key === 'U') {
+        if (!undo) return;
+        e.preventDefault();
+        void undoModerationAction(undo.id).then(() => setUndo(null));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [cursor, visible, undo]);
 
   // Beep + title update on new pending items
   const seenIdsRef = useRef<string[]>(initial.filter((i) => i.status === 'pending').map((i) => i.id));
@@ -229,7 +289,7 @@ export function ModerationQueue({ eventId, initial }: Props) {
         />
       ) : (
         <AnimatePresence initial={false}>
-          {visible.map((i) => (
+          {visible.map((i, idx) => (
             <motion.div
               key={i.id}
               layout
@@ -237,6 +297,12 @@ export function ModerationQueue({ eventId, initial }: Props) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
+              className={
+                idx === cursor
+                  ? 'ring-2 ring-primary/60 rounded-xl transition'
+                  : 'transition'
+              }
+              onClick={() => setCursor(idx)}
             >
               <SubmissionCard
                 id={i.id}
@@ -250,6 +316,32 @@ export function ModerationQueue({ eventId, initial }: Props) {
           ))}
         </AnimatePresence>
       )}
+
+      {/* Atalhos hint + Undo toast (canto inferior, bem discreto) */}
+      <div className="text-[11px] text-ink/45 mt-2">
+        Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/<kbd className="px-1 rounded bg-ink/10">K</kbd> navegar ·{' '}
+        <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar ·{' '}
+        <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar ·{' '}
+        <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
+      </div>
+      {undo ? (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+          <div className="flex items-center gap-3 bg-ink text-paper px-4 py-2.5 rounded-lg shadow-lg">
+            <span className="text-sm">
+              {undo.action === 'approved' ? 'Aprovado' : 'Rejeitado'}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                void undoModerationAction(undo.id).then(() => setUndo(null));
+              }}
+              className="text-sm font-medium text-accent hover:underline"
+            >
+              Desfazer (U)
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
