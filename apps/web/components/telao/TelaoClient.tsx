@@ -20,13 +20,14 @@ type Submission = {
 };
 
 type Props = {
+  slug: string;
   eventId: string;
   eventName: string;
   config: TelaoConfig;
   preview?: boolean;
 };
 
-export function TelaoClient({ eventId, eventName, config: initialConfig, preview = false }: Props) {
+export function TelaoClient({ slug, eventId, eventName, config: initialConfig, preview = false }: Props) {
   // Config comes from SSR (page.tsx is force-dynamic so F5 always picks
   // up DB changes). Preview mode receives live updates via postMessage
   // from the admin TelaoTab. For non-preview /telao tabs, refresh after
@@ -86,25 +87,10 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       });
     };
 
+    // Broadcast channel — only used for the "Disparar teste" button in
+    // admin. Doesn't depend on RLS (broadcast bypasses table policies).
     const channel = supabase
       .channel(`telao:${eventId}`, { config: { broadcast: { self: false } } })
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'submissions',
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          const row = payload.new as Submission & { status: string };
-          if (row.status !== 'sent') return;
-          enqueue(row);
-        },
-      )
-      // Broadcast diagnostic — fired by the "Disparar teste" button in admin.
-      // Doesn't depend on postgres_changes / publication / RLS — pure WebSocket.
-      // If this works but postgres_changes doesn't, the issue is in WAL/RLS path.
       .on('broadcast', { event: 'test_message' }, ({ payload }) => {
         const p = payload as { name?: string; comment?: string };
         enqueue({
@@ -116,24 +102,24 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       })
       .subscribe();
 
-    // Polling fallback — fetches recent sent submissions and enqueues new ones.
-    // The seenIds Set guarantees we never display duplicates regardless of source.
+    // Polling via security-definer RPC. RLS sobre submissions e
+    // owner-only — anon nao pode SELECT direto. A RPC e scoped ao slug
+    // e seguramente expoe so os comentarios sent desse evento.
     let lastSeenAt = new Date().toISOString();
     const poll = async () => {
-      const { data, error } = await supabase
-        .from('submissions')
-        .select('id, name, comment, created_at, sent_at, status')
-        .eq('event_id', eventId)
-        .eq('status', 'sent')
-        .gt('sent_at', lastSeenAt)
-        .order('sent_at', { ascending: true })
-        .limit(20);
-      if (error) return;
-      if (data && data.length > 0) {
-        for (const row of data) {
-          if (row.sent_at && row.sent_at > lastSeenAt) lastSeenAt = row.sent_at;
-          enqueue(row as Submission);
-        }
+      const { data, error } = await supabase.rpc('get_telao_submissions_since', {
+        p_slug: slug,
+        p_since: lastSeenAt,
+      });
+      if (error || !data) return;
+      for (const row of data) {
+        if (row.sent_at && row.sent_at > lastSeenAt) lastSeenAt = row.sent_at;
+        enqueue({
+          id: row.id,
+          name: row.name,
+          comment: row.comment,
+          created_at: row.created_at,
+        });
       }
     };
     const pollTimer = setInterval(() => { void poll(); }, 3000);
@@ -142,7 +128,7 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
       void supabase.removeChannel(channel);
       clearInterval(pollTimer);
     };
-  }, [eventId, preview]);
+  }, [eventId, slug, preview]);
 
   // Preview default state: render the sample message statically when no cycle is running
   useEffect(() => {

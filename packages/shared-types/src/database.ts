@@ -271,6 +271,16 @@ export type Database = {
           theme_id: string
         }[]
       }
+      get_telao_submissions_since: {
+        Args: { p_since: string; p_slug: string }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          name: string
+          sent_at: string
+        }[]
+      }
       mark_submission_failed: {
         Args: { p_error: string; p_submission_id: string }
         Returns: undefined
