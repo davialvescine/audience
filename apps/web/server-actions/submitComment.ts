@@ -22,13 +22,12 @@ export async function submitComment(slug: string, formData: FormData): Promise<R
   const ipHash = hashIp(ip);
 
   const supabase = await getSupabaseServerClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc('submit_comment', {
+  const { data, error } = await supabase.rpc('submit_comment', {
     p_slug: slug,
     p_name: parsed.data.name,
     p_comment: parsed.data.comment,
     p_ip_hash: ipHash,
-  }) as Awaited<ReturnType<typeof supabase.rpc>>;
+  });
 
   if (error) {
     const code = error.message;
@@ -38,5 +37,5 @@ export async function submitComment(slug: string, formData: FormData): Promise<R
     return { ok: false, error: 'Não foi possível enviar. Tente novamente.' };
   }
 
-  return { ok: true, submissionId: data as string };
+  return { ok: true, submissionId: data };
 }

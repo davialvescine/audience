@@ -1,4 +1,4 @@
-const API = process.env.AUDIENCE_API_URL ?? 'https://audience.app';
+const API = process.env.AUDIENCE_API_URL ?? 'https://audience-opal.vercel.app';
 
 export async function redeemPairing(
   code: string,

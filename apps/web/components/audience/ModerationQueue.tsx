@@ -31,8 +31,6 @@ export function ModerationQueue({ eventId, initial }: Props) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'submissions', filter: `event_id=eq.${eventId}` },
         (payload) => {
-          // eslint-disable-next-line no-console
-          console.debug('[moderation] RT', payload.eventType, (payload.new as Item)?.id);
           setItems((prev) => {
             if (payload.eventType === 'INSERT') return [payload.new as Item, ...prev];
             if (payload.eventType === 'UPDATE')
@@ -43,10 +41,7 @@ export function ModerationQueue({ eventId, initial }: Props) {
           });
         },
       )
-      .subscribe((status) => {
-        // eslint-disable-next-line no-console
-        console.debug('[moderation] RT status', status);
-      });
+      .subscribe();
 
     // Polling fallback — refetches every 2s and merges. If Realtime delivers,
     // this is a no-op (same data). If Realtime is blocked, we still get fresh state.
