@@ -83,7 +83,14 @@ export default async function EventModerationPage({
             initialSubmissionsOpen={event.submissions_open}
             pendingCount={counts.pending}
           />
-          <ModerationQueue eventId={event.id} initial={subs ?? []} />
+          <ModerationQueue
+            eventId={event.id}
+            initial={subs ?? []}
+            telaoConfig={{
+              ...DEFAULT_TELAO_CONFIG,
+              ...((event.telao_config as Partial<TelaoConfig>) ?? {}),
+            }}
+          />
         </div>
       ),
     },
