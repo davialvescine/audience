@@ -7,6 +7,7 @@ import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CopyableField } from '@/components/ui/CopyButton';
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import {
   DEFAULT_TELAO_CONFIG,
   DISPLAY_MODE_LABELS,
@@ -136,6 +137,9 @@ export function TelaoTab({
     <div className="grid lg:grid-cols-[1fr_440px] gap-6">
       {/* LEFT: settings stack */}
       <div className="space-y-6 min-w-0">
+        {/* 0. Diagnostic test */}
+        <DiagnosticTestCard eventId={eventId} />
+
         {/* 1. Modes */}
         <Card>
           <h3 className="font-display text-lg mb-1">Modos de exibição habilitados</h3>
@@ -400,6 +404,77 @@ export function TelaoTab({
         </Card>
       </div>
     </div>
+  );
+}
+
+// ── Diagnostic test card ────────────────────────────────────────
+
+function DiagnosticTestCard({ eventId }: { eventId: string }) {
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+
+  const fire = async () => {
+    setStatus('sending');
+    setMessage(null);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const channel = supabase.channel(`telao:${eventId}`, {
+        config: { broadcast: { self: false } },
+      });
+      // Wait for SUBSCRIBED before sending
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('timeout')), 8000);
+        channel.subscribe((s) => {
+          if (s === 'SUBSCRIBED') {
+            clearTimeout(timeout);
+            resolve();
+          } else if (s === 'CHANNEL_ERROR' || s === 'CLOSED') {
+            clearTimeout(timeout);
+            reject(new Error(s));
+          }
+        });
+      });
+      await channel.send({
+        type: 'broadcast',
+        event: 'test_message',
+        payload: {
+          name: 'TESTE DE DIAGNÓSTICO',
+          comment: `Telão funcionando — ${new Date().toLocaleTimeString('pt-BR')}`,
+        },
+      });
+      await supabase.removeChannel(channel);
+      setStatus('sent');
+      setMessage('Disparado. Se aparecer no telão, o canal Realtime tá ok.');
+    } catch (err) {
+      setStatus('error');
+      setMessage(err instanceof Error ? err.message : 'erro desconhecido');
+    }
+  };
+
+  return (
+    <Card>
+      <h3 className="font-display text-lg mb-1">🔧 Teste de conexão</h3>
+      <p className="text-sm text-ink/60 mb-3">
+        Dispara uma mensagem fixa pelo canal Realtime — sem passar pelo banco. Se aparecer no
+        telão (OBS, vMix, PiP, qualquer modo aberto), a URL tá funcionando. Se não aparecer,
+        o problema é na conexão entre a tela e o servidor.
+      </p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button onClick={fire} loading={status === 'sending'}>
+          Disparar mensagem teste
+        </Button>
+        {status === 'sent' ? (
+          <span className="text-sm text-success">✓ {message}</span>
+        ) : status === 'error' ? (
+          <span className="text-sm text-danger">✗ {message}</span>
+        ) : null}
+      </div>
+      <p className="text-xs text-ink/50 mt-3">
+        Antes de clicar, abra a URL do telão (ex.:{' '}
+        <code className="font-mono text-[11px]">?mode=browser_source</code>) numa aba ou no
+        OBS. A mensagem deve sumir após uns segundos.
+      </p>
+    </Card>
   );
 }
 

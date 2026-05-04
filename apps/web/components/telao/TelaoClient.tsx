@@ -82,7 +82,7 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
     };
 
     const channel = supabase
-      .channel(`telao:${eventId}`)
+      .channel(`telao:${eventId}`, { config: { broadcast: { self: false } } })
       .on(
         'postgres_changes',
         {
@@ -99,6 +99,20 @@ export function TelaoClient({ eventId, eventName, config: initialConfig, preview
           enqueue(row);
         },
       )
+      // Broadcast diagnostic — fired by the "Disparar teste" button in admin.
+      // Doesn't depend on postgres_changes / publication / RLS — pure WebSocket.
+      // If this works but postgres_changes doesn't, the issue is in WAL/RLS path.
+      .on('broadcast', { event: 'test_message' }, ({ payload }) => {
+        const p = payload as { name?: string; comment?: string };
+        // eslint-disable-next-line no-console
+        console.debug('[telao] broadcast test', p);
+        enqueue({
+          id: `test-${Date.now()}`,
+          name: p.name ?? 'TESTE',
+          comment: p.comment ?? 'Mensagem de teste',
+          created_at: new Date().toISOString(),
+        });
+      })
       .subscribe((status) => {
         // eslint-disable-next-line no-console
         console.debug('[telao] RT status', status);
