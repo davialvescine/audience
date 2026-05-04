@@ -2,8 +2,9 @@
 
 import type { SubmissionStatus } from '@audience/shared-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { detectNewPending } from './detectNewPending';
 import { filterSubmissions, type SubmissionFilter } from './filterSubmissions';
 import { RealtimeStatusBadge } from './RealtimeStatusBadge';
 import { SubmissionCard } from './SubmissionCard';
@@ -40,6 +41,64 @@ export function ModerationQueue({ eventId, initial }: Props) {
   );
 
   const visible = useMemo(() => filterSubmissions(items, { tab, query }), [items, tab, query]);
+
+  // Beep + title update on new pending items
+  const seenIdsRef = useRef<string[]>(initial.filter((i) => i.status === 'pending').map((i) => i.id));
+  const [soundOn, setSoundOn] = useState<boolean>(() => {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('moderation-sound') === '1';
+  });
+
+  useEffect(() => {
+    const newCount = detectNewPending(seenIdsRef.current, items);
+    if (newCount > 0 && soundOn) {
+      try {
+        // Tiny synthesized beep — no asset required.
+        type WindowWithWebkit = Window & typeof globalThis & {
+          webkitAudioContext?: typeof AudioContext;
+        };
+        const w = window as WindowWithWebkit;
+        const Ctor = window.AudioContext ?? w.webkitAudioContext;
+        if (!Ctor) return;
+        const ctx = new Ctor();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = 880;
+        gain.gain.value = 0.08;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } catch {
+        // ignore — autoplay restrictions, user hasn't interacted yet, etc.
+      }
+    }
+    // Update seen set with current pending ids
+    seenIdsRef.current = items.filter((i) => i.status === 'pending').map((i) => i.id);
+  }, [items, soundOn]);
+
+  // Keep tab title reflecting pending count so operator notices new items
+  // even when the tab is in background.
+  useEffect(() => {
+    const original = document.title;
+    const pending = items.filter((i) => i.status === 'pending').length;
+    document.title = pending > 0 ? `(${pending}) ${original.replace(/^\(\d+\)\s*/, '')}` : original.replace(/^\(\d+\)\s*/, '');
+    return () => {
+      document.title = original.replace(/^\(\d+\)\s*/, '');
+    };
+  }, [items]);
+
+  const toggleSound = () => {
+    setSoundOn((on) => {
+      const next = !on;
+      try {
+        localStorage.setItem('moderation-sound', next ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -140,7 +199,21 @@ export function ModerationQueue({ eventId, initial }: Props) {
             </button>
           ))}
         </div>
-        <RealtimeStatusBadge status={rtStatus} />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggleSound}
+            className={`text-xs h-8 px-2.5 rounded-md border transition ${
+              soundOn
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-ink/15 text-ink/60 hover:border-ink/30'
+            }`}
+            title={soundOn ? 'Som ligado — beep em cada nova mensagem pendente' : 'Som desligado'}
+          >
+            {soundOn ? '🔔 Som' : '🔕 Som'}
+          </button>
+          <RealtimeStatusBadge status={rtStatus} />
+        </div>
       </div>
       <input
         type="search"
