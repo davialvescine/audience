@@ -1,93 +1,75 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 
 import { useLiveTelaoConfig } from '../useLiveTelaoConfig';
 
-// Captured by the supabase mock so tests can fire fake broadcast
-// payloads at the subscribed callback.
-let capturedHandler: ((payload: { payload: { config: TelaoConfig } }) => void) | null = null;
-const removeChannelSpy = vi.fn();
+let rpcResponses: Array<{ config: Partial<TelaoConfig> | null }> = [];
+const rpcCalls: Array<{ name: string; args: unknown }> = [];
 
 vi.mock('@/lib/supabase/browser', () => {
   return {
     getSupabaseBrowserClient: () => ({
-      channel: (_name: string) => {
-        const ch: {
-          on: (
-            type: string,
-            filter: object,
-            cb: (payload: { payload: { config: TelaoConfig } }) => void,
-          ) => typeof ch;
-          subscribe: () => typeof ch;
-        } = {
-          on: (_type, _filter, cb) => {
-            capturedHandler = cb;
-            return ch;
-          },
-          subscribe: () => ch,
-        };
-        return ch;
+      rpc: (name: string, args: unknown) => {
+        rpcCalls.push({ name, args });
+        const next = rpcResponses.shift() ?? rpcResponses[rpcResponses.length - 1] ?? { config: null };
+        return Promise.resolve({
+          data: next.config ? [{ event_id: 'evt-1', event_name: 'X', theme_id: 't', config: next.config }] : [],
+          error: null,
+        });
       },
-      removeChannel: removeChannelSpy,
     }),
   };
 });
 
 function Probe({
-  eventId,
+  slug,
   initial,
+  enabled = true,
 }: {
-  eventId: string;
+  slug: string;
   initial: TelaoConfig;
+  enabled?: boolean;
 }) {
-  const config = useLiveTelaoConfig(eventId, initial);
+  const config = useLiveTelaoConfig(slug, initial, enabled);
   return <span data-testid="bg">{config.cardBg}</span>;
 }
 
 describe('useLiveTelaoConfig', () => {
   beforeEach(() => {
-    capturedHandler = null;
-    removeChannelSpy.mockClear();
+    rpcResponses = [];
+    rpcCalls.length = 0;
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
-  it('returns the initial config on first render', () => {
-    render(<Probe eventId="evt-1" initial={DEFAULT_TELAO_CONFIG} />);
+  it('returns initial config on first render', () => {
+    render(<Probe slug="ev-1" initial={DEFAULT_TELAO_CONFIG} />);
     expect(screen.getByTestId('bg').textContent).toBe(DEFAULT_TELAO_CONFIG.cardBg);
   });
 
-  it('subscribes to a broadcast and updates when a config-updated event arrives', () => {
-    render(<Probe eventId="evt-1" initial={DEFAULT_TELAO_CONFIG} />);
-    expect(capturedHandler).not.toBeNull();
-
-    act(() => {
-      capturedHandler!({
-        payload: {
-          config: { ...DEFAULT_TELAO_CONFIG, cardBg: '#FFFFFF' },
-        },
-      });
+  it('polls get_telao_config and updates state when config changes', async () => {
+    rpcResponses = [{ config: { cardBg: '#FFFFFF' } }];
+    render(<Probe slug="ev-1" initial={DEFAULT_TELAO_CONFIG} />);
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
     });
-
-    expect(screen.getByTestId('bg').textContent).toBe('#FFFFFF');
+    await waitFor(() => {
+      expect(screen.getByTestId('bg').textContent).toBe('#FFFFFF');
+    });
+    expect(rpcCalls.some((c) => c.name === 'get_telao_config')).toBe(true);
   });
 
-  it('removes the channel on unmount', () => {
-    const { unmount } = render(<Probe eventId="evt-1" initial={DEFAULT_TELAO_CONFIG} />);
-    unmount();
-    expect(removeChannelSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not subscribe when enabled is false', () => {
-    function Disabled() {
-      const cfg = useLiveTelaoConfig('evt-1', DEFAULT_TELAO_CONFIG, false);
-      return <span data-testid="bg">{cfg.cardBg}</span>;
-    }
-    render(<Disabled />);
-    expect(capturedHandler).toBeNull();
+  it('does not poll when enabled is false', async () => {
+    render(<Probe slug="ev-1" initial={DEFAULT_TELAO_CONFIG} enabled={false} />);
+    await act(async () => {
+      vi.advanceTimersByTime(10000);
+    });
+    expect(rpcCalls.length).toBe(0);
   });
 });

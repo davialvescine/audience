@@ -3,18 +3,21 @@
 import { useEffect, useState } from 'react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
-import type { TelaoConfig } from '@/lib/telao/config';
+import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 
-// Subscribes to a Realtime broadcast on `telao:${eventId}` so the /telao
-// page (browser source / chrome PiP / desktop) re-renders with the new
-// visual config when the admin TelaoTab autosaves.
+const POLL_MS = 3000;
+
+// Polls get_telao_config every few seconds so /telao tabs (browser source,
+// PiP, desktop) re-render with the latest config without F5.
 //
-// We use broadcast instead of postgres_changes because RLS on `events`
-// only allows owner_id = auth.uid() — anon clients on /telao can't SELECT
-// the row, so postgres_changes never delivers. Broadcast bypasses that
-// since it doesn't read DB rows.
+// Polling beats Realtime here because:
+// - Realtime postgres_changes is blocked by RLS on `events` (anon can't
+//   SELECT, so updates never reach /telao).
+// - Realtime broadcast works but requires the admin tab to stay open and
+//   actively dispatch on every save — fragile and requires extra plumbing.
+// - 3s latency is fine for visual config changes (not for live messages).
 export function useLiveTelaoConfig(
-  eventId: string,
+  slug: string,
   initial: TelaoConfig,
   enabled = true,
 ): TelaoConfig {
@@ -22,28 +25,29 @@ export function useLiveTelaoConfig(
 
   useEffect(() => {
     if (!enabled) return;
+    let alive = true;
     const supabase = getSupabaseBrowserClient();
-    // Distinct channel name to avoid clashing with the `telao:${eventId}`
-    // used by TelaoClient for postgres_changes (submissions) — supabase-js
-    // reuses channels by name, and you can't add new .on() handlers after
-    // a channel is already subscribed.
-    const channel = supabase
-      .channel(`telao-config:${eventId}`)
-      .on(
-        'broadcast',
-        { event: 'config-updated' },
-        (payload: { payload: { config?: TelaoConfig } }) => {
-          if (payload.payload.config) {
-            setConfig(payload.payload.config);
-          }
-        },
-      )
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
+    const fetchOnce = async () => {
+      const { data, error } = await supabase.rpc('get_telao_config', {
+        p_slug: slug,
+      });
+      if (!alive || error) return;
+      const event = data?.[0];
+      if (event?.config) {
+        setConfig({
+          ...DEFAULT_TELAO_CONFIG,
+          ...(event.config as Partial<TelaoConfig>),
+        });
+      }
     };
-  }, [eventId, enabled]);
+
+    const interval = setInterval(fetchOnce, POLL_MS);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, [slug, enabled]);
 
   return config;
 }

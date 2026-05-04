@@ -22,17 +22,18 @@ type Submission = {
 };
 
 type Props = {
+  slug: string;
   eventId: string;
   eventName: string;
   config: TelaoConfig;
   preview?: boolean;
 };
 
-export function TelaoClient({ eventId, eventName, config: initialConfig, preview = false }: Props) {
+export function TelaoClient({ slug, eventId, eventName, config: initialConfig, preview = false }: Props) {
   // In preview, config is driven by postMessage from the admin TelaoTab.
-  // In live mode, we subscribe to events.telao_config so any save in the
-  // admin (autosave) propagates to all open /telao tabs without refresh.
-  const liveConfig = useLiveTelaoConfig(eventId, initialConfig, !preview);
+  // In live mode, the hook polls get_telao_config every few seconds and
+  // updates state — bypasses RLS issues that postgres_changes had.
+  const liveConfig = useLiveTelaoConfig(slug, initialConfig, !preview);
   const [previewConfig, setPreviewConfig] = useState<TelaoConfig>(initialConfig);
   const config = preview ? previewConfig : liveConfig;
   const setConfig = setPreviewConfig;

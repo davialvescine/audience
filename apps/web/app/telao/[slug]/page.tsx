@@ -33,6 +33,7 @@ export default async function TelaoPage({
 
   const telao = (
     <TelaoClient
+      slug={slug}
       eventId={event.event_id}
       eventName={event.event_name}
       config={config}
