@@ -56,3 +56,10 @@ export default async function TelaoPage({
 export const metadata = {
   title: 'Telão',
 };
+
+// Sempre fresh: o /telao tem que pegar a config mais recente em todo
+// request. Sem isso, Next/Vercel cacheia o HTML SSR e operadores precisam
+// limpar cache pra ver mudanças que já estão no DB. revalidatePath em
+// updateTelaoConfig ajuda mas não cobre todas as rotas (PiP iframe etc).
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
