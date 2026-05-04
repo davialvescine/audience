@@ -4,6 +4,7 @@ import type { SubmissionStatus } from '@audience/shared-types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
+import { RealtimeStatusBadge } from './RealtimeStatusBadge';
 import { SubmissionCard } from './SubmissionCard';
 
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -22,6 +23,7 @@ type Props = { eventId: string; initial: Item[] };
 
 export function ModerationQueue({ eventId, initial }: Props) {
   const [items, setItems] = useState(initial);
+  const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -41,7 +43,12 @@ export function ModerationQueue({ eventId, initial }: Props) {
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRtStatus('connected');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED')
+          setRtStatus('error');
+        else setRtStatus('connecting');
+      });
 
     // Polling fallback — refetches every 2s and merges. If Realtime delivers,
     // this is a no-op (same data). If Realtime is blocked, we still get fresh state.
@@ -75,15 +82,23 @@ export function ModerationQueue({ eventId, initial }: Props) {
 
   if (items.length === 0) {
     return (
-      <EmptyState
-        title="Sem submissões ainda"
-        description="Quando o público enviar, aparece aqui em tempo real."
-      />
+      <div className="space-y-3">
+        <div className="flex justify-end">
+          <RealtimeStatusBadge status={rtStatus} />
+        </div>
+        <EmptyState
+          title="Sem submissões ainda"
+          description="Quando o público enviar, aparece aqui em tempo real."
+        />
+      </div>
     );
   }
 
   return (
     <div className="grid gap-3">
+      <div className="flex justify-end">
+        <RealtimeStatusBadge status={rtStatus} />
+      </div>
       <AnimatePresence initial={false}>
         {items.map((i) => (
           <motion.div
