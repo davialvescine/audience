@@ -5,9 +5,14 @@ import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import type { TelaoConfig } from '@/lib/telao/config';
 
-// Subscribes to postgres_changes UPDATE on the event row so the /telao
+// Subscribes to a Realtime broadcast on `telao:${eventId}` so the /telao
 // page (browser source / chrome PiP / desktop) re-renders with the new
-// visual config without requiring a manual refresh.
+// visual config when the admin TelaoTab autosaves.
+//
+// We use broadcast instead of postgres_changes because RLS on `events`
+// only allows owner_id = auth.uid() — anon clients on /telao can't SELECT
+// the row, so postgres_changes never delivers. Broadcast bypasses that
+// since it doesn't read DB rows.
 export function useLiveTelaoConfig(
   eventId: string,
   initial: TelaoConfig,
@@ -19,18 +24,13 @@ export function useLiveTelaoConfig(
     if (!enabled) return;
     const supabase = getSupabaseBrowserClient();
     const channel = supabase
-      .channel(`event-config:${eventId}`)
+      .channel(`telao:${eventId}`)
       .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'events',
-          filter: `id=eq.${eventId}`,
-        },
-        (payload: { new: { telao_config?: TelaoConfig } }) => {
-          if (payload.new.telao_config) {
-            setConfig(payload.new.telao_config);
+        'broadcast',
+        { event: 'config-updated' },
+        (payload: { payload: { config?: TelaoConfig } }) => {
+          if (payload.payload.config) {
+            setConfig(payload.payload.config);
           }
         },
       )

@@ -5,9 +5,9 @@ import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 
 import { useLiveTelaoConfig } from '../useLiveTelaoConfig';
 
-// Captured by the supabase mock so tests can fire fake postgres_changes
+// Captured by the supabase mock so tests can fire fake broadcast
 // payloads at the subscribed callback.
-let capturedHandler: ((payload: { new: { telao_config: TelaoConfig } }) => void) | null = null;
+let capturedHandler: ((payload: { payload: { config: TelaoConfig } }) => void) | null = null;
 const removeChannelSpy = vi.fn();
 
 vi.mock('@/lib/supabase/browser', () => {
@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/browser', () => {
           on: (
             type: string,
             filter: object,
-            cb: (payload: { new: { telao_config: TelaoConfig } }) => void,
+            cb: (payload: { payload: { config: TelaoConfig } }) => void,
           ) => typeof ch;
           subscribe: () => typeof ch;
         } = {
@@ -61,14 +61,14 @@ describe('useLiveTelaoConfig', () => {
     expect(screen.getByTestId('bg').textContent).toBe(DEFAULT_TELAO_CONFIG.cardBg);
   });
 
-  it('subscribes to postgres_changes and updates when an UPDATE arrives', () => {
+  it('subscribes to a broadcast and updates when a config-updated event arrives', () => {
     render(<Probe eventId="evt-1" initial={DEFAULT_TELAO_CONFIG} />);
     expect(capturedHandler).not.toBeNull();
 
     act(() => {
       capturedHandler!({
-        new: {
-          telao_config: { ...DEFAULT_TELAO_CONFIG, cardBg: '#FFFFFF' },
+        payload: {
+          config: { ...DEFAULT_TELAO_CONFIG, cardBg: '#FFFFFF' },
         },
       });
     });

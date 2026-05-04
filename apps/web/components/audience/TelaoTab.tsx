@@ -122,11 +122,25 @@ export function TelaoTab({
       void Promise.all([
         cfgUnchanged ? Promise.resolve({ ok: true } as const) : updateTelaoConfig(eventId, config),
         modesUnchanged ? Promise.resolve({ ok: true } as const) : updateDisplayModes(eventId, modes),
-      ]).then(([r1, r2]) => {
+      ]).then(async ([r1, r2]) => {
         if (r1.ok && r2.ok) {
           lastSavedRef.current = { config, modes };
           setAutoSaveStatus('saved');
           setTimeout(() => setAutoSaveStatus('idle'), 1500);
+          // Broadcast new config so all open /telao tabs (browser source,
+          // PiP, desktop) re-render without F5. Uses HTTP REST broadcast
+          // (httpSend) — same path as the diagnostic test button.
+          if (!cfgUnchanged) {
+            try {
+              const supabase = getSupabaseBrowserClient();
+              const channel = supabase.channel(`telao:${eventId}`);
+              await channel.httpSend('config-updated', { config });
+              await supabase.removeChannel(channel);
+            } catch {
+              // Live update is best-effort; F5 + force-dynamic always
+              // get the latest config from DB anyway.
+            }
+          }
         } else {
           setAutoSaveStatus('error');
           setTimeout(() => setAutoSaveStatus('idle'), 3000);
