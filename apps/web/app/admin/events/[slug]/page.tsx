@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AdminShell } from '@/components/audience/AdminShell';
 import { EventSettings } from '@/components/audience/EventSettings';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
+import { H2RStatusBadge } from '@/components/audience/H2RStatusBadge';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { ShareCard } from '@/components/audience/ShareCard';
 import { TelaoTab } from '@/components/audience/TelaoTab';
@@ -47,11 +48,6 @@ export default async function EventModerationPage({
     sent: subs?.filter((s) => s.status === 'sent').length ?? 0,
     failed: subs?.filter((s) => s.status === 'failed').length ?? 0,
   };
-  const isOnline =
-    event.h2r_paired_at &&
-    event.h2r_last_heartbeat &&
-    Date.now() - new Date(event.h2r_last_heartbeat).getTime() < 90_000;
-
   const tabs = [
     {
       id: 'moderation',
@@ -158,16 +154,11 @@ export default async function EventModerationPage({
       <div className="mb-6">
         <h1 className="text-3xl font-display text-ink">{event.name}</h1>
         <div className="mt-2 flex items-center gap-3 text-sm">
-          {isOnline ? (
-            <span className="inline-flex items-center gap-1.5 text-success font-medium">
-              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-              H2R conectado
-            </span>
-          ) : event.h2r_paired_at ? (
-            <span className="text-danger font-medium">⚠ H2R offline</span>
-          ) : (
-            <span className="text-ink/60">Não conectado ao H2R</span>
-          )}
+          <H2RStatusBadge
+            pairedAt={event.h2r_paired_at}
+            lastHeartbeat={event.h2r_last_heartbeat}
+          />
+
           <span className="text-ink/40">•</span>
           <a
             href={publicUrl}

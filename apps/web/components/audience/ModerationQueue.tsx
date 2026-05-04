@@ -2,8 +2,9 @@
 
 import type { SubmissionStatus } from '@audience/shared-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { filterSubmissions, type SubmissionFilter } from './filterSubmissions';
 import { RealtimeStatusBadge } from './RealtimeStatusBadge';
 import { SubmissionCard } from './SubmissionCard';
 
@@ -24,6 +25,21 @@ type Props = { eventId: string; initial: Item[] };
 export function ModerationQueue({ eventId, initial }: Props) {
   const [items, setItems] = useState(initial);
   const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+  const [tab, setTab] = useState<SubmissionFilter['tab']>('all');
+  const [query, setQuery] = useState('');
+
+  const counts = useMemo(
+    () => ({
+      all: items.length,
+      pending: items.filter((i) => i.status === 'pending').length,
+      sent: items.filter((i) => i.status === 'sent').length,
+      rejected: items.filter((i) => i.status === 'rejected').length,
+      failed: items.filter((i) => i.status === 'failed').length,
+    }),
+    [items],
+  );
+
+  const visible = useMemo(() => filterSubmissions(items, { tab, query }), [items, tab, query]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -94,32 +110,73 @@ export function ModerationQueue({ eventId, initial }: Props) {
     );
   }
 
+  const tabs: Array<{ id: SubmissionFilter['tab']; label: string; count: number }> = [
+    { id: 'all', label: 'Tudo', count: counts.all },
+    { id: 'pending', label: 'Pendente', count: counts.pending },
+    { id: 'sent', label: 'No telão', count: counts.sent },
+    { id: 'failed', label: 'Falhas', count: counts.failed },
+    { id: 'rejected', label: 'Rejeitado', count: counts.rejected },
+  ];
+
   return (
     <div className="grid gap-3">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`px-3 h-8 rounded-md text-xs border transition inline-flex items-center gap-1.5 ${
+                tab === t.id
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-ink/15 text-ink/60 hover:border-ink/30'
+              }`}
+            >
+              <span>{t.label}</span>
+              <span className={`text-[10px] px-1.5 rounded-full ${tab === t.id ? 'bg-primary/20' : 'bg-ink/10'}`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
         <RealtimeStatusBadge status={rtStatus} />
       </div>
-      <AnimatePresence initial={false}>
-        {items.map((i) => (
-          <motion.div
-            key={i.id}
-            layout
-            initial={{ opacity: 0, y: -12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          >
-            <SubmissionCard
-              id={i.id}
-              name={i.name}
-              comment={i.comment}
-              status={i.status}
-              createdAt={i.created_at}
-              errorMessage={i.error_message}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Buscar por nome ou comentário…"
+        className="h-9 px-3 rounded-md border border-ink/15 bg-transparent text-sm text-ink focus:border-primary focus:outline-none"
+      />
+      {visible.length === 0 ? (
+        <EmptyState
+          title="Nenhum resultado"
+          description={query ? 'Limpa a busca ou troca a aba pra ver outros itens.' : 'Sem itens nessa categoria.'}
+        />
+      ) : (
+        <AnimatePresence initial={false}>
+          {visible.map((i) => (
+            <motion.div
+              key={i.id}
+              layout
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            >
+              <SubmissionCard
+                id={i.id}
+                name={i.name}
+                comment={i.comment}
+                status={i.status}
+                createdAt={i.created_at}
+                errorMessage={i.error_message}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      )}
     </div>
   );
 }
