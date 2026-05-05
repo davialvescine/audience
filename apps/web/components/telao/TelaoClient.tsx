@@ -60,6 +60,8 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
         type?: string;
         config?: TelaoConfig;
         sample?: { name: string; comment: string };
+        intervalSeconds?: number;
+        samples?: Array<{ name: string; comment: string }>;
       };
       if (data.type === 'telao-config-update' && data.config) {
         setConfig(data.config);
@@ -69,6 +71,23 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       }
       if (data.type === 'telao-play-cycle') {
         setPlayCycleId((id) => id + 1);
+      }
+      if (data.type === 'telao-play-queue' && data.samples) {
+        // Empilha as amostras na queue real — vai sair pelo tick live
+        // respeitando maxConcurrent, displaySeconds e transitionMode.
+        const ts = Date.now();
+        for (let i = 0; i < data.samples.length; i += 1) {
+          const s = data.samples[i]!;
+          queueRef.current.push({
+            id: `demo-${ts}-${i}`,
+            name: s.name,
+            comment: s.comment,
+            created_at: new Date().toISOString(),
+          });
+        }
+        if (typeof data.intervalSeconds === 'number') {
+          intervalRef.current = data.intervalSeconds;
+        }
       }
     };
     window.addEventListener('message', handler);
@@ -171,10 +190,12 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     };
   }, [eventId, slug, preview]);
 
-  // Preview default state: render the sample message statically when no cycle is running
+  // Preview default state: render the sample message statically se nao
+  // tiver um demo de fila rodando.
   useEffect(() => {
     if (!preview) return;
-    if (playCycleId > 0) return; // a cycle is in flight; don't override
+    if (playCycleId > 0) return;
+    if (queueRef.current.length > 0) return;
     setVisible([
       {
         id: `preview-${previewSample.name}-${previewSample.comment}`,
@@ -235,7 +256,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
   //   saida (sobrepoe momentaneamente).
   const lastRemovedAtRef = useRef(0);
   useEffect(() => {
-    if (preview) return;
+    // Em preview, o tick tambem roda — alimentado por demo queue (postMessage).
     const tick = setInterval(() => {
       if (pinned) return;
       if (queueRef.current.length === 0) return;

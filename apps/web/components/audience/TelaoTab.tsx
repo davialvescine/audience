@@ -592,7 +592,24 @@ export function TelaoTab({
                 className="text-xs px-3 h-8 inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary transition"
                 title="Tocar animação de entrada e saída"
               >
-                ▶ Tocar entrada e saída
+                ▶ Cycle
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  iframeRef.current?.contentWindow?.postMessage(
+                    {
+                      type: 'telao-play-queue',
+                      intervalSeconds: h2r.dispatchIntervalSeconds,
+                      samples: SAMPLE_PRESETS.map((p) => ({ name: p.name, comment: p.comment })),
+                    },
+                    window.location.origin,
+                  )
+                }
+                className="text-xs px-3 h-8 inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 hover:bg-accent/15 text-accent transition"
+                title="Simula uma fila com 4 mensagens (testa transição, intervalo, cards visíveis)"
+              >
+                ▶▶ Tocar fila
               </button>
             </div>
           </div>
