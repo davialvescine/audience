@@ -163,28 +163,39 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    const channel = supabase
-      .channel(`event:${eventId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'submissions', filter: `event_id=eq.${eventId}` },
-        (payload) => {
-          setItems((prev) => {
-            if (payload.eventType === 'INSERT') return [payload.new as Item, ...prev];
-            if (payload.eventType === 'UPDATE')
-              return prev.map((i) => (i.id === (payload.new as Item).id ? (payload.new as Item) : i));
-            if (payload.eventType === 'DELETE')
-              return prev.filter((i) => i.id !== (payload.old as { id: string }).id);
-            return prev;
-          });
-        },
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') setRtStatus('connected');
-        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED')
-          setRtStatus('error');
-        else setRtStatus('connecting');
-      });
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    // Garante que o JWT do usuario esta sincronizado com o Realtime
+    // ANTES de subscrever — senao o WebSocket conecta como anon e RLS
+    // bloqueia (CHANNEL_ERROR). Em produção (Vercel) o cookie session
+    // chega via SSR mas o realtime client ainda nao recebeu o token.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        void supabase.realtime.setAuth(session.access_token);
+      }
+      channel = supabase
+        .channel(`event:${eventId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'submissions', filter: `event_id=eq.${eventId}` },
+          (payload) => {
+            setItems((prev) => {
+              if (payload.eventType === 'INSERT') return [payload.new as Item, ...prev];
+              if (payload.eventType === 'UPDATE')
+                return prev.map((i) => (i.id === (payload.new as Item).id ? (payload.new as Item) : i));
+              if (payload.eventType === 'DELETE')
+                return prev.filter((i) => i.id !== (payload.old as { id: string }).id);
+              return prev;
+            });
+          },
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') setRtStatus('connected');
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED')
+            setRtStatus('error');
+          else setRtStatus('connecting');
+        });
+    });
 
     // Polling fallback — refetches every 2s and merges. If Realtime delivers,
     // this is a no-op (same data). If Realtime is blocked, we still get fresh state.
@@ -211,7 +222,7 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
     const t = setInterval(() => { void refresh(); }, 2000);
 
     return () => {
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
       clearInterval(t);
     };
   }, [eventId]);
