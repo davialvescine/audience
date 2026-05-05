@@ -10,7 +10,7 @@ import { RealtimeStatusBadge } from './RealtimeStatusBadge';
 import { SubmissionCard } from './SubmissionCard';
 
 import { EmptyState } from '@/components/ui/EmptyState';
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
+import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 import { approveSubmission, rejectSubmission, undoModerationAction } from '@/server-actions/moderation';
 import type { TelaoConfig } from '@/lib/telao/config';
 
@@ -168,20 +168,19 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    // Realtime client separado (sem @supabase/ssr cookie wrapper) —
+    // workaround pra "transport failure" no WS em prod com Vercel.
+    const rt = getSupabaseRealtimeClient();
+    let channel: ReturnType<typeof rt.channel> | null = null;
 
-    // Garante que o JWT do usuario esta sincronizado com o Realtime
-    // ANTES de subscrever — senao o WebSocket conecta como anon e RLS
-    // bloqueia (CHANNEL_ERROR). Em produção (Vercel) o cookie session
-    // chega via SSR mas o realtime client ainda nao recebeu o token.
     void supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) {
-        void supabase.realtime.setAuth(session.access_token);
+        void rt.realtime.setAuth(session.access_token);
         appendLog(`auth set (jwt len=${session.access_token.length})`);
       } else {
         appendLog('NO session — anon');
       }
-      channel = supabase
+      channel = rt
         .channel(`event:${eventId}`)
         .on(
           'postgres_changes',
@@ -236,7 +235,7 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
     const t = setInterval(() => { void refresh(); }, 2000);
 
     return () => {
-      if (channel) void supabase.removeChannel(channel);
+      if (channel) void rt.removeChannel(channel);
       clearInterval(t);
     };
   }, [eventId]);
