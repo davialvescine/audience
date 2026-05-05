@@ -516,8 +516,8 @@ export function TelaoTab({
                     : 'border-ink/15 text-ink/70 hover:border-ink/30'
                 }`}
               >
-                <span className="block font-medium">Sobrepor</span>
-                <span className="block text-[10px] opacity-70">próxima entra empurrando a anterior</span>
+                <span className="block font-medium">Em fila (rolagem)</span>
+                <span className="block text-[10px] opacity-70">enche até o limite, troca conforme sai</span>
               </button>
             </div>
           </div>

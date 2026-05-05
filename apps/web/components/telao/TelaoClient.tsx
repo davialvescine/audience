@@ -77,6 +77,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
         // respeitando maxConcurrent, displaySeconds e transitionMode.
         // Limpa o card estatico do preview pra nao contar no maxConcurrent.
         setVisible([]);
+        visibleCountRef.current = 0;
         const ts = Date.now();
         for (let i = 0; i < data.samples.length; i += 1) {
           const s = data.samples[i]!;
@@ -257,32 +258,34 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
   // - 'overlap': a nova entra empurrando a antiga pra cima durante a
   //   saida (sobrepoe momentaneamente).
   const lastRemovedAtRef = useRef(0);
+  const visibleCountRef = useRef(0);
   useEffect(() => {
     // Em preview, o tick tambem roda — alimentado por demo queue (postMessage).
+    // IMPORTANTE: nao fazer shift() de queueRef dentro de setState updater.
+    // Em Strict Mode (dev), o updater roda 2x e consome 2 items, mas so 1
+    // chega na visible. Deixar shift fora do updater garante consumo unico.
     const tick = setInterval(() => {
       if (pinned) return;
       if (queueRef.current.length === 0) return;
-      setVisible((cur) => {
-        if (cur.length >= config.maxConcurrent) return cur;
-        // Sequential: depois de remover, espera o intervalo antes de
-        // colocar a proxima. Permite pausa visual entre mensagens.
-        if (
-          config.transitionMode === 'sequential' &&
-          cur.length === 0 &&
-          lastRemovedAtRef.current > 0 &&
-          Date.now() - lastRemovedAtRef.current < intervalRef.current * 1000
-        ) {
-          return cur;
-        }
-        const next = queueRef.current.shift();
-        if (!next) return cur;
-        const removeAfter = config.displaySeconds * 1000;
-        setTimeout(() => {
-          lastRemovedAtRef.current = Date.now();
-          setVisible((cur2) => cur2.filter((m) => m.id !== next.id));
-        }, removeAfter);
-        return [...cur, next];
-      });
+      if (visibleCountRef.current >= config.maxConcurrent) return;
+      if (
+        config.transitionMode === 'sequential' &&
+        visibleCountRef.current === 0 &&
+        lastRemovedAtRef.current > 0 &&
+        Date.now() - lastRemovedAtRef.current < intervalRef.current * 1000
+      ) {
+        return;
+      }
+      const next = queueRef.current.shift();
+      if (!next) return;
+      visibleCountRef.current += 1;
+      const removeAfter = config.displaySeconds * 1000;
+      setTimeout(() => {
+        lastRemovedAtRef.current = Date.now();
+        visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
+        setVisible((cur) => cur.filter((m) => m.id !== next.id));
+      }, removeAfter);
+      setVisible((cur) => [...cur, next]);
     }, 250);
     return () => clearInterval(tick);
   }, [preview, config.maxConcurrent, config.displaySeconds, config.transitionMode, pinned]);
