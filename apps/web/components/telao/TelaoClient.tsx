@@ -79,11 +79,14 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
   useEffect(() => {
     if (preview) return;
     const supabase = getSupabaseBrowserClient();
-    const enqueue = (row: Submission) => {
-      if (seenIdsRef.current.has(row.id)) return;
-      seenIdsRef.current.add(row.id);
+    // Dedup por id+sent_at: a mesma submission re-enviada (botao "Mostrar
+    // novamente") tem novo sent_at, entao conta como nova entrada na fila.
+    const enqueue = (row: Submission & { sent_at?: string | null }) => {
+      const dedupKey = `${row.id}@${row.sent_at ?? ''}`;
+      if (seenIdsRef.current.has(dedupKey)) return;
+      seenIdsRef.current.add(dedupKey);
       queueRef.current.push({
-        id: row.id,
+        id: `${row.id}-${row.sent_at ?? Date.now()}`,
         name: row.name,
         comment: row.comment,
         created_at: row.created_at,
@@ -107,6 +110,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
           name: row.name,
           comment: row.comment,
           created_at: row.created_at,
+          sent_at: row.sent_at,
         });
       }
     };
