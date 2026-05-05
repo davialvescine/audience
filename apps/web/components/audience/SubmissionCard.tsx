@@ -3,9 +3,6 @@
 import type { SubmissionStatus } from '@audience/shared-types';
 import { useState, useTransition } from 'react';
 
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import {
   approveSubmission,
   dispatchToTelao,
@@ -29,6 +26,18 @@ type Props = {
   onPinChange?: (pinnedId: string | null) => void;
 };
 
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const sec = Math.round(diffMs / 1000);
+  if (sec < 60) return 'agora';
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} min`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const d = Math.round(hr / 24);
+  return `${d}d`;
+}
+
 export function SubmissionCard({
   id,
   name,
@@ -42,147 +51,179 @@ export function SubmissionCard({
   onPinChange,
 }: Props) {
   const [pending, start] = useTransition();
-  const [reshowFeedback, setReshowFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const pinnedLocal = isPinned;
 
+  const showFeedback = (msg: string) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-medium text-ink truncate">{name}</span>
-            <Badge status={status} />
-            {pinnedLocal ? (
-              <span className="text-[10px] uppercase tracking-wide bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                📌 Fixada
-              </span>
-            ) : null}
-            {displayCount > 0 ? (
-              <span className="text-[10px] uppercase tracking-wide bg-success/15 text-success px-1.5 py-0.5 rounded">
-                Exibida {displayCount}x
-              </span>
-            ) : null}
-          </div>
-          <p className="text-ink/80 break-words">{comment}</p>
-          <p className="mt-2 text-xs text-ink/55" suppressHydrationWarning>
-            {new Date(createdAt).toLocaleTimeString('pt-BR')}
-          </p>
-          {errorMessage ? <p className="mt-1 text-xs text-danger">Erro: {errorMessage}</p> : null}
-        </div>
+    <div
+      className={`group rounded-md border bg-paper px-3 py-2.5 transition hover:border-ink/25 ${
+        pinnedLocal ? 'border-primary/40' : 'border-ink/10'
+      }`}
+    >
+      <div className="flex items-baseline gap-2 mb-0.5">
+        <span className="text-sm font-medium text-ink truncate">{name}</span>
+        <span className="text-[10px] text-ink/40 tabular-nums" suppressHydrationWarning>
+          {relativeTime(createdAt)}
+        </span>
+        {pinnedLocal ? (
+          <span className="text-[10px] text-primary ml-auto">📌</span>
+        ) : displayCount > 0 ? (
+          <span className="text-[10px] text-ink/45 ml-auto">×{displayCount}</span>
+        ) : null}
       </div>
-      <div className="mt-4 flex gap-2 flex-wrap">
+      <p className="text-sm text-ink/85 break-words leading-snug">{comment}</p>
+      {errorMessage ? (
+        <p className="mt-1.5 text-[11px] text-danger">⚠ {errorMessage}</p>
+      ) : null}
+
+      <div className="mt-2.5 flex gap-1.5 flex-wrap">
         {status === 'pending' ? (
           <>
-            <Button
-              variant="accent"
-              loading={pending}
+            <ActionButton
+              variant="primary"
+              disabled={pending}
               onClick={() => start(() => approveSubmission(id).then(() => undefined))}
             >
               Aprovar
-            </Button>
-            <Button
-              variant="ghost"
-              loading={pending}
+            </ActionButton>
+            <ActionButton
+              variant="subtle"
+              disabled={pending}
               onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
             >
               Rejeitar
-            </Button>
+            </ActionButton>
           </>
         ) : null}
         {status === 'approved' ? (
           <>
-            <Button
-              variant="accent"
-              size="sm"
-              loading={pending}
+            <ActionButton
+              variant="primary"
+              disabled={pending}
               onClick={() =>
                 start(async () => {
-                  const r = await dispatchToTelao(id);
-                  setReshowFeedback(r.ok ? '✓ Mostrada no telão' : `✗ ${r.error}`);
-                  setTimeout(() => setReshowFeedback(null), 4000);
+                  const r = await pinSubmission(id);
+                  if (r.ok) onPinChange?.(id);
+                  showFeedback(r.ok ? 'Fixada no telão' : r.error);
                 })
               }
             >
-              ▶ Mostrar no telão
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              loading={pending}
+              📌 Mostrar no telão
+            </ActionButton>
+            <ActionButton
+              variant="subtle"
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  const r = await dispatchToTelao(id);
+                  showFeedback(r.ok ? `Exibindo (auto)` : r.error);
+                })
+              }
+            >
+              ↻ Exibir auto
+            </ActionButton>
+            <ActionButton
+              variant="subtle"
+              disabled={pending}
               onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
             >
-              Rejeitar
-            </Button>
+              ✕
+            </ActionButton>
           </>
         ) : null}
         {status === 'sent' ? (
           <>
             {!pinnedLocal ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={pending}
+              <ActionButton
+                variant="subtle"
+                disabled={pending}
                 onClick={() =>
                   start(async () => {
                     const r = await removeFromTelao(id);
-                    setReshowFeedback(r.ok ? '✓ Tirada do telão' : `✗ ${r.error}`);
-                    setTimeout(() => setReshowFeedback(null), 4000);
+                    showFeedback(r.ok ? 'Tirada do telão' : r.error);
                   })
                 }
               >
-                ⏹ Tirar do telão
-              </Button>
+                ⏹ Tirar
+              </ActionButton>
             ) : null}
             {pinnedLocal ? (
-              <Button
-                variant="accent"
-                size="sm"
-                loading={pending}
+              <ActionButton
+                variant="primary"
+                disabled={pending}
                 onClick={() => {
                   if (!eventId) return;
                   start(async () => {
                     const r = await unpinSubmission(eventId);
                     if (r.ok) onPinChange?.(null);
-                    setReshowFeedback(r.ok ? '✓ Solta' : `✗ ${r.error}`);
-                    setTimeout(() => setReshowFeedback(null), 4000);
+                    showFeedback(r.ok ? 'Solta' : r.error);
                   });
                 }}
               >
-                📌 Soltar do telão
-              </Button>
+                📌 Soltar
+              </ActionButton>
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={pending}
+              <ActionButton
+                variant="subtle"
+                disabled={pending}
                 onClick={() =>
                   start(async () => {
                     const r = await pinSubmission(id);
                     if (r.ok) onPinChange?.(id);
-                    setReshowFeedback(r.ok ? '✓ Fixada' : `✗ ${r.error}`);
-                    setTimeout(() => setReshowFeedback(null), 4000);
+                    showFeedback(r.ok ? 'Fixada' : r.error);
                   })
                 }
               >
                 📌 Fixar
-              </Button>
+              </ActionButton>
             )}
           </>
         ) : null}
         {status === 'failed' ? (
-          <Button
-            loading={pending}
+          <ActionButton
+            variant="primary"
+            disabled={pending}
             onClick={() => start(() => retrySubmission(id).then(() => undefined))}
           >
             Tentar novamente
-          </Button>
+          </ActionButton>
         ) : null}
       </div>
-      {reshowFeedback ? (
-        <p className={`mt-2 text-xs ${reshowFeedback.startsWith('✓') ? 'text-success' : 'text-danger'}`}>
-          {reshowFeedback}
-        </p>
+      {feedback ? (
+        <p className="mt-1.5 text-[11px] text-ink/55">{feedback}</p>
       ) : null}
-    </Card>
+    </div>
+  );
+}
+
+function ActionButton({
+  variant,
+  disabled,
+  onClick,
+  children,
+}: {
+  variant: 'primary' | 'subtle';
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const cls =
+    variant === 'primary'
+      ? 'bg-primary text-paper hover:bg-primary/90'
+      : 'bg-transparent text-ink/65 hover:bg-ink/5';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`text-xs h-7 px-2.5 rounded-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
+    >
+      {children}
+    </button>
   );
 }

@@ -296,28 +296,20 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
         placeholder="Buscar por nome ou comentário…"
         className="h-9 px-3 rounded-md border border-ink/15 bg-transparent text-sm text-ink focus:border-primary focus:outline-none"
       />
-      {visible.length === 0 ? (
-        <EmptyState
-          title="Nenhum resultado"
-          description={query ? 'Limpa a busca ou troca a aba pra ver outros itens.' : 'Sem itens nessa categoria.'}
-        />
-      ) : (
-        <AnimatePresence initial={false}>
-          {visible.map((i, idx) => (
-            <motion.div
-              key={i.id}
-              layout
-              initial={{ opacity: 0, y: -12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className={
-                idx === cursor
-                  ? 'ring-2 ring-primary/60 rounded-xl transition'
-                  : 'transition'
-              }
-              onClick={() => setCursor(idx)}
-            >
+      <div className="text-[11px] text-ink/45">
+        Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/<kbd className="px-1 rounded bg-ink/10">K</kbd> navegar ·{' '}
+        <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar ·{' '}
+        <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar ·{' '}
+        <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
+      </div>
+      {tab === 'all' ? (
+        <div className="grid lg:grid-cols-2 gap-4">
+          <Column
+            title="Chegando"
+            subtitle="Aguardando aprovação"
+            items={visible.filter((i) => i.status === 'pending')}
+            empty="Sem novos comentários."
+            renderCard={(i) => (
               <SubmissionCard
                 id={i.id}
                 name={i.name}
@@ -330,18 +322,70 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
                 eventId={eventId}
                 onPinChange={setPinnedId}
               />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+            )}
+          />
+          <Column
+            title="Fila"
+            subtitle="Aprovadas, prontas pro telão"
+            items={visible.filter((i) => i.status === 'approved')}
+            empty="Aprove uma mensagem pra ela aparecer aqui."
+            renderCard={(i) => (
+              <SubmissionCard
+                id={i.id}
+                name={i.name}
+                comment={i.comment}
+                status={i.status}
+                createdAt={i.created_at}
+                errorMessage={i.error_message}
+                displayCount={i.display_count ?? 0}
+                isPinned={i.id === pinnedId}
+                eventId={eventId}
+                onPinChange={setPinnedId}
+              />
+            )}
+          />
+        </div>
+      ) : visible.length === 0 ? (
+        <EmptyState
+          title="Nenhum resultado"
+          description={query ? 'Limpa a busca ou troca a aba pra ver outros itens.' : 'Sem itens nessa categoria.'}
+        />
+      ) : (
+        <div className="grid gap-3 max-w-3xl">
+          <AnimatePresence initial={false}>
+            {visible.map((i, idx) => (
+              <motion.div
+                key={i.id}
+                layout
+                initial={{ opacity: 0, y: -12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className={
+                  idx === cursor
+                    ? 'ring-2 ring-primary/60 rounded-xl transition'
+                    : 'transition'
+                }
+                onClick={() => setCursor(idx)}
+              >
+                <SubmissionCard
+                  id={i.id}
+                  name={i.name}
+                  comment={i.comment}
+                  status={i.status}
+                  createdAt={i.created_at}
+                  errorMessage={i.error_message}
+                  displayCount={i.display_count ?? 0}
+                  isPinned={i.id === pinnedId}
+                  eventId={eventId}
+                  onPinChange={setPinnedId}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       )}
 
-      {/* Atalhos hint + Undo toast (canto inferior, bem discreto) */}
-      <div className="text-[11px] text-ink/45 mt-2">
-        Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/<kbd className="px-1 rounded bg-ink/10">K</kbd> navegar ·{' '}
-        <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar ·{' '}
-        <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar ·{' '}
-        <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
-      </div>
       {undo ? (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
           <div className="flex items-center gap-3 bg-ink text-paper px-4 py-2.5 rounded-lg shadow-lg">
@@ -361,5 +405,53 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
         </div>
       ) : null}
     </div>
+  );
+}
+
+function Column({
+  title,
+  subtitle,
+  items,
+  empty,
+  renderCard,
+}: {
+  title: string;
+  subtitle: string;
+  items: Item[];
+  empty: string;
+  renderCard: (item: Item) => React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="flex items-baseline justify-between mb-3 pb-2 border-b border-ink/10">
+        <div>
+          <h3 className="font-display text-sm uppercase tracking-wider text-ink/80">
+            {title}
+          </h3>
+          <p className="text-xs text-ink/50">{subtitle}</p>
+        </div>
+        <span className="text-xs font-medium text-ink/60 tabular-nums">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-ink/40 py-6 text-center italic">{empty}</p>
+      ) : (
+        <div className="grid gap-2">
+          <AnimatePresence initial={false}>
+            {items.map((i) => (
+              <motion.div
+                key={i.id}
+                layout
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2 }}
+              >
+                {renderCard(i)}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+    </section>
   );
 }
