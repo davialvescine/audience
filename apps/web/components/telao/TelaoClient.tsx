@@ -83,8 +83,12 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     // novamente") tem novo sent_at, entao conta como nova entrada na fila.
     const enqueue = (row: Submission & { sent_at?: string | null }) => {
       const dedupKey = `${row.id}@${row.sent_at ?? ''}`;
-      if (seenIdsRef.current.has(dedupKey)) return;
+      if (seenIdsRef.current.has(dedupKey)) {
+        console.log('[telao] dup skip', { id: row.id, dedupKey });
+        return;
+      }
       seenIdsRef.current.add(dedupKey);
+      console.log('[telao] enqueue', { id: row.id, sent_at: row.sent_at, dedupKey });
       queueRef.current.push({
         id: `${row.id}-${row.sent_at ?? Date.now()}`,
         name: row.name,
@@ -102,7 +106,12 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
         p_slug: slug,
         p_since: lastSeenAt,
       });
-      if (error || !data) return;
+      if (error) {
+        console.warn('[telao] poll error', error);
+        return;
+      }
+      if (!data || data.length === 0) return;
+      console.log('[telao] poll got', data.length, 'rows since', lastSeenAt);
       for (const row of data) {
         if (row.sent_at && row.sent_at > lastSeenAt) lastSeenAt = row.sent_at;
         enqueue({

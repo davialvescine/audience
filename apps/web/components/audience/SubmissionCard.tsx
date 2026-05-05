@@ -71,13 +71,15 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
             variant="accent"
             size="sm"
             loading={pending}
-            onClick={() =>
+            onClick={() => {
+              console.log('[reshow] click', { id });
               start(async () => {
                 const r = await reshowSubmission(id);
+                console.log('[reshow] result', r);
                 setReshowFeedback(r.ok ? '✓ Reexibida no telão' : `✗ ${r.error}`);
                 setTimeout(() => setReshowFeedback(null), 4000);
-              })
-            }
+              });
+            }}
           >
             ↻ Mostrar novamente
           </Button>
