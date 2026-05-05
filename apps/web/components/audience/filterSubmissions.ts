@@ -1,7 +1,7 @@
 import type { SubmissionStatus } from '@audience/shared-types';
 
 export type SubmissionFilter = {
-  tab: 'all' | 'pending' | 'sent' | 'rejected' | 'failed';
+  tab: 'all' | 'pending' | 'approved' | 'sent' | 'rejected' | 'failed';
   query: string;
 };
 

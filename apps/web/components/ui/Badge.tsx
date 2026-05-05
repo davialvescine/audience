@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 const map: Record<SubmissionStatus, { label: string; cls: string }> = {
   pending: { label: 'Aguardando', cls: 'bg-ink/5 dark:bg-ink/10 text-ink' },
-  approved: { label: 'Aguardando bridge', cls: 'bg-accent/20 dark:bg-accent/25 text-accent' },
+  approved: { label: 'Na fila', cls: 'bg-accent/20 dark:bg-accent/25 text-accent' },
   rejected: { label: 'Rejeitado', cls: 'bg-danger/15 dark:bg-danger/20 text-danger' },
   sent: { label: 'No telão', cls: 'bg-success/15 dark:bg-success/20 text-success' },
   failed: { label: 'Falhou', cls: 'bg-danger/15 dark:bg-danger/20 text-danger' },

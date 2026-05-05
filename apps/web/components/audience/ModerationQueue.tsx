@@ -36,6 +36,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
     () => ({
       all: items.length,
       pending: items.filter((i) => i.status === 'pending').length,
+      approved: items.filter((i) => i.status === 'approved').length,
       sent: items.filter((i) => i.status === 'sent').length,
       rejected: items.filter((i) => i.status === 'rejected').length,
       failed: items.filter((i) => i.status === 'failed').length,
@@ -244,6 +245,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
   const tabs: Array<{ id: SubmissionFilter['tab']; label: string; count: number }> = [
     { id: 'all', label: 'Tudo', count: counts.all },
     { id: 'pending', label: 'Aguardando', count: counts.pending },
+    { id: 'approved', label: 'Na fila', count: counts.approved },
     { id: 'sent', label: 'Exibidas', count: counts.sent },
     { id: 'failed', label: 'Falhas', count: counts.failed },
     { id: 'rejected', label: 'Rejeitado', count: counts.rejected },

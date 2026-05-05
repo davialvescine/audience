@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
   approveSubmission,
+  dispatchToTelao,
   pinSubmission,
   rejectSubmission,
-  reshowSubmission,
+  removeFromTelao,
   retrySubmission,
   unpinSubmission,
 } from '@/server-actions/moderation';
@@ -69,7 +70,7 @@ export function SubmissionCard({
           {errorMessage ? <p className="mt-1 text-xs text-danger">Erro: {errorMessage}</p> : null}
         </div>
       </div>
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex gap-2 flex-wrap">
         {status === 'pending' ? (
           <>
             <Button
@@ -88,7 +89,7 @@ export function SubmissionCard({
             </Button>
           </>
         ) : null}
-        {status === 'sent' ? (
+        {status === 'approved' ? (
           <>
             <Button
               variant="accent"
@@ -96,17 +97,45 @@ export function SubmissionCard({
               loading={pending}
               onClick={() =>
                 start(async () => {
-                  const r = await reshowSubmission(id);
-                  setReshowFeedback(r.ok ? '✓ Reexibida no telão' : `✗ ${r.error}`);
+                  const r = await dispatchToTelao(id);
+                  setReshowFeedback(r.ok ? '✓ Mostrada no telão' : `✗ ${r.error}`);
                   setTimeout(() => setReshowFeedback(null), 4000);
                 })
               }
             >
-              ↻ Mostrar novamente
+              ▶ Mostrar no telão
             </Button>
-            {pinnedLocal ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={pending}
+              onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
+            >
+              Rejeitar
+            </Button>
+          </>
+        ) : null}
+        {status === 'sent' ? (
+          <>
+            {!pinnedLocal ? (
               <Button
                 variant="ghost"
+                size="sm"
+                loading={pending}
+                onClick={() =>
+                  start(async () => {
+                    const r = await removeFromTelao(id);
+                    setReshowFeedback(r.ok ? '✓ Tirada do telão' : `✗ ${r.error}`);
+                    setTimeout(() => setReshowFeedback(null), 4000);
+                  })
+                }
+              >
+                ⏹ Tirar do telão
+              </Button>
+            ) : null}
+            {pinnedLocal ? (
+              <Button
+                variant="accent"
                 size="sm"
                 loading={pending}
                 onClick={() => {
@@ -130,12 +159,12 @@ export function SubmissionCard({
                   start(async () => {
                     const r = await pinSubmission(id);
                     if (r.ok) onPinChange?.(id);
-                    setReshowFeedback(r.ok ? '✓ Fixada no telão' : `✗ ${r.error}`);
+                    setReshowFeedback(r.ok ? '✓ Fixada' : `✗ ${r.error}`);
                     setTimeout(() => setReshowFeedback(null), 4000);
                   })
                 }
               >
-                📌 Fixar no telão
+                📌 Fixar
               </Button>
             )}
           </>

@@ -31,12 +31,10 @@ async function deliverToH2R(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
   data: DeliveryRow,
 ): Promise<'sent' | 'queued' | 'failed'> {
-  // No H2R webhook configured → other display modes (Browser Source, Chrome PiP, Desktop App)
-  // pick the message up via Supabase Realtime as soon as status flips to 'sent'.
-  // Mark as sent immediately so the /telao subscription fires.
+  // No H2R webhook configured → operador dispara manualmente via botao
+  // "Mostrar no telão" (dispatchToTelao). Fica em status='approved'.
   if (!data.webhook_url) {
-    await supabase.rpc('mark_submission_sent', { p_submission_id: data.submission_id });
-    return 'sent';
+    return 'queued';
   }
 
   const payload = buildH2RPayload({
@@ -142,6 +140,34 @@ export async function undoModerationAction(submissionId: string): Promise<Result
     .maybeSingle();
   if (error) return { ok: false, error: 'Falha ao desfazer.' };
   if (!data) return { ok: false, error: 'Não dá pra desfazer essa ação.' };
+  return { ok: true, status: 'sent' };
+}
+
+// Dispatch manual: pega uma mensagem 'approved' e marca como sent.
+// Eventos sem webhook H2R dependem deste botao pra mostrar no telao.
+export async function dispatchToTelao(submissionId: string): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc('mark_submission_sent', {
+    p_submission_id: submissionId,
+  });
+  if (error) return { ok: false, error: 'Falha ao mostrar.' };
+  return { ok: true, status: 'sent' };
+}
+
+// Tira a mensagem do telao (volta pra fila approved). Operador pode
+// re-disparar depois com "Mostrar no telão".
+export async function removeFromTelao(submissionId: string): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase
+    .from('submissions')
+    .update({ status: 'approved', sent_at: null })
+    .eq('id', submissionId)
+    .eq('status', 'sent')
+    .select('id')
+    .maybeSingle();
+  if (error) return { ok: false, error: 'Falha ao tirar.' };
   return { ok: true, status: 'sent' };
 }
 
