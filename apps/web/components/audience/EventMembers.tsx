@@ -36,15 +36,25 @@ export function EventMembers({ eventId, currentUserId, initialMembers, platformU
 
   const add = () => {
     setFeedback(null);
+    const picked = platformUsers.find((u) => u.email === email);
+    if (!picked) return;
     start(async () => {
       const res = await addEventMember(eventId, email);
       if (!res.ok) {
         setFeedback({ kind: 'err', msg: res.error });
         return;
       }
-      // Optimistic — recarrega na próxima visita pra mostrar o novo membro
+      setMembers((prev) => [
+        ...prev,
+        {
+          user_id: picked.user_id,
+          email: picked.email,
+          added_at: new Date().toISOString(),
+          is_owner: false,
+        },
+      ]);
       setEmail('');
-      setFeedback({ kind: 'ok', msg: 'Adicionado. Vai aparecer na lista após recarregar.' });
+      setFeedback({ kind: 'ok', msg: `${picked.email} adicionado.` });
     });
   };
 
