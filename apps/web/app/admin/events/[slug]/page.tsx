@@ -44,6 +44,10 @@ export default async function EventModerationPage({
     p_event_id: event.id,
   });
 
+  const { data: platformUsers } = isOwner
+    ? await supabase.rpc('list_platform_users')
+    : { data: [] as Array<{ user_id: string; email: string }> };
+
   const { data: subs } = await supabase
     .from('submissions')
     .select('id, name, comment, status, created_at, error_message')
@@ -177,6 +181,7 @@ export default async function EventModerationPage({
             eventId={event.id}
             currentUserId={user.id}
             initialMembers={(members ?? []) as Array<{ user_id: string; email: string; added_at: string; is_owner: boolean }>}
+            platformUsers={(platformUsers ?? []) as Array<{ user_id: string; email: string }>}
             isOwner={isOwner}
           />
           <ModeratorLinks

@@ -334,6 +334,16 @@ export type Database = {
           webhook_url: string
         }[]
       }
+      diag_rls_state: {
+        Args: { p_user: string }
+        Returns: {
+          events_owned: number
+          events_visible_via_member: number
+          member_rows: number
+          policies_on_events: string
+          total_events: number
+        }[]
+      }
       get_event_by_slug: {
         Args: { p_slug: string }
         Returns: {
@@ -385,6 +395,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_platform_users: {
+        Args: never
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       mark_submission_failed: {
         Args: { p_error: string; p_submission_id: string }
         Returns: undefined
@@ -431,6 +448,7 @@ export type Database = {
         Returns: string
       }
       validate_moderator_token: { Args: { p_token: string }; Returns: string }
+      whoami_probe: { Args: never; Returns: string }
     }
     Enums: {
       submission_status: "pending" | "approved" | "rejected" | "sent" | "failed"

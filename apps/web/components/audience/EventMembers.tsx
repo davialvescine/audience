@@ -13,16 +13,24 @@ type Member = {
   is_owner: boolean;
 };
 
+type PlatformUser = {
+  user_id: string;
+  email: string;
+};
+
 type Props = {
   eventId: string;
   currentUserId: string;
   initialMembers: Member[];
+  platformUsers: PlatformUser[];
   isOwner: boolean;
 };
 
-export function EventMembers({ eventId, currentUserId, initialMembers, isOwner }: Props) {
+export function EventMembers({ eventId, currentUserId, initialMembers, platformUsers, isOwner }: Props) {
   const [members, setMembers] = useState(initialMembers);
   const [email, setEmail] = useState('');
+  const memberIds = new Set(members.map((m) => m.user_id));
+  const candidates = platformUsers.filter((u) => !memberIds.has(u.user_id));
   const [pending, start] = useTransition();
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null);
 
@@ -60,9 +68,9 @@ export function EventMembers({ eventId, currentUserId, initialMembers, isOwner }
 
   return (
     <Card>
-      <h3 className="font-display text-lg mb-1">Moderadores</h3>
+      <h3 className="font-display text-lg mb-1">Gestores do evento</h3>
       <p className="text-sm text-ink/60 mb-4">
-        Pessoas que podem moderar comentários neste evento. Todas veem a mesma fila e atualizações são compartilhadas.
+        Pessoas com acesso completo a este evento (moderar, configurar telão, ver compartilhamento). Pra dar acesso só de moderação sem login, usa o link de moderador abaixo.
         {isOwner ? '' : ' Só o dono pode adicionar/remover.'}
       </p>
 
@@ -99,19 +107,29 @@ export function EventMembers({ eventId, currentUserId, initialMembers, isOwner }
       {isOwner ? (
         <>
           <div className="flex gap-2">
-            <input
-              type="email"
+            <select
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@dominio.com"
-              className="flex-1 h-10 px-3 rounded-md border border-ink/15 bg-transparent text-ink focus:border-primary focus:outline-none"
-            />
-            <Button onClick={add} loading={pending} disabled={!email.trim() || pending}>
+              disabled={candidates.length === 0}
+              className="flex-1 h-10 px-3 rounded-md border border-ink/15 bg-transparent text-ink focus:border-primary focus:outline-none disabled:opacity-60"
+            >
+              <option value="">
+                {candidates.length === 0
+                  ? 'Todos os usuários já são gestores'
+                  : 'Selecione um usuário…'}
+              </option>
+              {candidates.map((u) => (
+                <option key={u.user_id} value={u.email}>
+                  {u.email}
+                </option>
+              ))}
+            </select>
+            <Button onClick={add} loading={pending} disabled={!email || pending}>
               Adicionar
             </Button>
           </div>
           <p className="text-xs text-ink/50 mt-2">
-            O usuário precisa ter cadastro na plataforma. Se ainda não tem, convide em <a href="/admin/users" className="text-primary hover:underline">/admin/users</a> primeiro.
+            Não vê a pessoa na lista? Convide ela primeiro em <a href="/admin/users" className="text-primary hover:underline">/admin/users</a>.
           </p>
         </>
       ) : null}
