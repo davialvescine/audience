@@ -17,6 +17,12 @@ import { requireUser } from '@/lib/auth/requireUser';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
 
+// Sempre fresh: evento e global, multiplos moderadores. Cada GET puxa
+// DB pra refletir mudancas que outro moderador fez (polling de 2s
+// nas listas + force-dynamic na pagina = state coerente entre tabs).
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function EventModerationPage({
   params,
 }: {

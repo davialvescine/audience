@@ -109,7 +109,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
         });
       }
     };
-    const pollTimer = setInterval(() => { void poll(); }, 3000);
+    const pollTimer = setInterval(() => { void poll(); }, 2000);
 
     return () => {
       clearInterval(pollTimer);
