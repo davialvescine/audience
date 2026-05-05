@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AdminShell } from '@/components/audience/AdminShell';
 import { EventMembers } from '@/components/audience/EventMembers';
 import { EventSettings } from '@/components/audience/EventSettings';
+import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { H2RStatusBadge } from '@/components/audience/H2RStatusBadge';
 import { ModeratorLinks } from '@/components/audience/ModeratorLinks';
@@ -101,6 +102,18 @@ export default async function EventModerationPage({
             queuedCount={counts.queued}
             intervalSeconds={event.dispatch_interval_seconds ?? 3}
           />
+          <details className="rounded-lg border border-ink/10 bg-paper/50">
+            <summary className="px-3 py-2 text-sm text-ink/70 cursor-pointer hover:text-ink select-none">
+              Tempos: exibição (na aba Telão) · intervalo entre disparos (
+              {event.dispatch_interval_seconds ?? 3}s)
+            </summary>
+            <div className="px-3 pb-3">
+              <DispatchIntervalForm
+                eventId={event.id}
+                current={event.dispatch_interval_seconds ?? 3}
+              />
+            </div>
+          </details>
           <QueueControls
             eventId={event.id}
             initialSubmissionsOpen={event.submissions_open}

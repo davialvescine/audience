@@ -30,10 +30,16 @@ type DeliveryRow = {
 async function deliverToH2R(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
   data: DeliveryRow,
+  options: { autoMarkSent?: boolean } = {},
 ): Promise<'sent' | 'queued' | 'failed'> {
-  // No H2R webhook configured → operador dispara manualmente via botao
-  // "Mostrar no telão" (dispatchToTelao). Fica em status='approved'.
+  // Sem webhook H2R: padrao e deixar em 'approved' (operador dispara
+  // manualmente via "Mostrar no telão"). Mas no flush em batch passa
+  // autoMarkSent=true pra disparar a fila respeitando o intervalo.
   if (!data.webhook_url) {
+    if (options.autoMarkSent) {
+      await supabase.rpc('mark_submission_sent', { p_submission_id: data.submission_id });
+      return 'sent';
+    }
     return 'queued';
   }
 
@@ -288,13 +294,17 @@ export async function flushApprovedForEvent(eventId: string): Promise<{
     if (Date.now() - startedAt > FLUSH_TIME_BUDGET_MS) break;
 
     const row = rows![i]!;
-    const outcome = await deliverToH2R(supabase, {
-      submission_id: row.id,
-      event_name: event.name,
-      display_name: row.name,
-      comment: row.comment,
-      webhook_url: event.h2r_webhook_url,
-    });
+    const outcome = await deliverToH2R(
+      supabase,
+      {
+        submission_id: row.id,
+        event_name: event.name,
+        display_name: row.name,
+        comment: row.comment,
+        webhook_url: event.h2r_webhook_url,
+      },
+      { autoMarkSent: true },
+    );
     if (outcome === 'sent') sent += 1;
     else if (outcome === 'queued') queued += 1;
     else failed += 1;
