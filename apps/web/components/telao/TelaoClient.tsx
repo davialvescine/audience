@@ -85,7 +85,6 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     // submissions com sent_at maior que o ultimo visto. Reshow gera novo
     // sent_at, entao volta como entrada nova.
     const enqueue = (row: Submission & { sent_at?: string | null }) => {
-      console.log('[telao] enqueue', { id: row.id, sent_at: row.sent_at });
       queueRef.current.push({
         id: `${row.id}-${row.sent_at ?? Date.now()}`,
         name: row.name,
@@ -103,12 +102,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
         p_slug: slug,
         p_since: lastSeenAt,
       });
-      if (error) {
-        console.warn('[telao] poll error', error);
-        return;
-      }
-      if (!data || data.length === 0) return;
-      console.log('[telao] poll got', data.length, 'rows since', lastSeenAt);
+      if (error || !data || data.length === 0) return;
       for (const row of data) {
         if (row.sent_at && row.sent_at > lastSeenAt) lastSeenAt = row.sent_at;
         enqueue({
