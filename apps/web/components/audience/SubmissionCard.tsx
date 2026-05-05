@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
   approveSubmission,
+  pinSubmission,
   rejectSubmission,
   reshowSubmission,
   retrySubmission,
+  unpinSubmission,
 } from '@/server-actions/moderation';
 
 type Props = {
@@ -21,9 +23,21 @@ type Props = {
   createdAt: string;
   errorMessage: string | null;
   displayCount?: number;
+  isPinned?: boolean;
+  eventId?: string;
 };
 
-export function SubmissionCard({ id, name, comment, status, createdAt, errorMessage, displayCount = 0 }: Props) {
+export function SubmissionCard({
+  id,
+  name,
+  comment,
+  status,
+  createdAt,
+  errorMessage,
+  displayCount = 0,
+  isPinned = false,
+  eventId,
+}: Props) {
   const [pending, start] = useTransition();
   const [reshowFeedback, setReshowFeedback] = useState<string | null>(null);
 
@@ -34,6 +48,11 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-ink truncate">{name}</span>
             <Badge status={status} />
+            {isPinned ? (
+              <span className="text-[10px] uppercase tracking-wide bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                📌 Fixada
+              </span>
+            ) : null}
             {displayCount > 0 ? (
               <span className="text-[10px] uppercase tracking-wide bg-success/15 text-success px-1.5 py-0.5 rounded">
                 Exibida {displayCount}x
@@ -67,20 +86,54 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
           </>
         ) : null}
         {status === 'sent' ? (
-          <Button
-            variant="accent"
-            size="sm"
-            loading={pending}
-            onClick={() =>
-              start(async () => {
-                const r = await reshowSubmission(id);
-                setReshowFeedback(r.ok ? '✓ Reexibida no telão' : `✗ ${r.error}`);
-                setTimeout(() => setReshowFeedback(null), 4000);
-              })
-            }
-          >
-            ↻ Mostrar novamente
-          </Button>
+          <>
+            <Button
+              variant="accent"
+              size="sm"
+              loading={pending}
+              onClick={() =>
+                start(async () => {
+                  const r = await reshowSubmission(id);
+                  setReshowFeedback(r.ok ? '✓ Reexibida no telão' : `✗ ${r.error}`);
+                  setTimeout(() => setReshowFeedback(null), 4000);
+                })
+              }
+            >
+              ↻ Mostrar novamente
+            </Button>
+            {isPinned ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={pending}
+                onClick={() => {
+                  if (!eventId) return;
+                  start(async () => {
+                    const r = await unpinSubmission(eventId);
+                    setReshowFeedback(r.ok ? '✓ Solta' : `✗ ${r.error}`);
+                    setTimeout(() => setReshowFeedback(null), 4000);
+                  });
+                }}
+              >
+                📌 Soltar do telão
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={pending}
+                onClick={() =>
+                  start(async () => {
+                    const r = await pinSubmission(id);
+                    setReshowFeedback(r.ok ? '✓ Fixada no telão' : `✗ ${r.error}`);
+                    setTimeout(() => setReshowFeedback(null), 4000);
+                  })
+                }
+              >
+                📌 Fixar no telão
+              </Button>
+            )}
+          </>
         ) : null}
         {status === 'failed' ? (
           <Button

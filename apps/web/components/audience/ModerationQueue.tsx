@@ -23,9 +23,9 @@ type Item = {
   display_count?: number;
 };
 
-type Props = { eventId: string; initial: Item[] };
+type Props = { eventId: string; initial: Item[]; pinnedSubmissionId?: string | null };
 
-export function ModerationQueue({ eventId, initial }: Props) {
+export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props) {
   const [items, setItems] = useState(initial);
   const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [tab, setTab] = useState<SubmissionFilter['tab']>('all');
@@ -323,6 +323,8 @@ export function ModerationQueue({ eventId, initial }: Props) {
                 createdAt={i.created_at}
                 errorMessage={i.error_message}
                 displayCount={i.display_count ?? 0}
+                isPinned={i.id === pinnedSubmissionId}
+                eventId={eventId}
               />
             </motion.div>
           ))}

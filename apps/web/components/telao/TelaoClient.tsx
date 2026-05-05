@@ -37,6 +37,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
   // saving config in admin to see changes.
   const [config, setConfig] = useState<TelaoConfig>(initialConfig);
   const [visible, setVisible] = useState<Submission[]>([]);
+  const [pinned, setPinned] = useState<Submission | null>(null);
   const queueRef = useRef<Submission[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
 
@@ -137,9 +138,33 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     };
     const cfgTimer = setInterval(() => { void pollConfig(); }, 5000);
 
+    // Polling de mensagem fixada. Quando muda, atualiza state. Renderiza
+    // por tempo indeterminado ate ser desfixada (server seta null).
+    const pollPinned = async () => {
+      const { data, error } = await supabase.rpc('get_pinned_submission', { p_slug: slug });
+      if (error) return;
+      const row = data?.[0];
+      if (!row) {
+        setPinned((cur) => (cur === null ? cur : null));
+        return;
+      }
+      setPinned((cur) => {
+        if (cur && cur.id === row.id) return cur;
+        return {
+          id: row.id,
+          name: row.name,
+          comment: row.comment,
+          created_at: row.sent_at ?? new Date().toISOString(),
+        };
+      });
+    };
+    void pollPinned();
+    const pinTimer = setInterval(() => { void pollPinned(); }, 2000);
+
     return () => {
       clearInterval(pollTimer);
       clearInterval(cfgTimer);
+      clearInterval(pinTimer);
     };
   }, [eventId, slug, preview]);
 
@@ -312,7 +337,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
       }}
     >
       <AnimatePresence>
-        {visible.map((m) => (
+        {(pinned ? [pinned] : visible).map((m) => (
           <motion.div
             key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}-${config.heightPx}`}
             initial={variants.initial}

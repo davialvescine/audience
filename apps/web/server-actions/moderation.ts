@@ -145,6 +145,33 @@ export async function undoModerationAction(submissionId: string): Promise<Result
   return { ok: true, status: 'sent' };
 }
 
+// Pin: fixa mensagem no telao por tempo indeterminado. Operador clica
+// "Soltar" pra liberar. Uma fixada por evento.
+export async function pinSubmission(submissionId: string): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc('pin_submission', { p_submission_id: submissionId });
+  if (error) return { ok: false, error: 'Falha ao fixar.' };
+  const { data: ev } = await supabase
+    .from('submissions')
+    .select('event_id, events!inner(slug)')
+    .eq('id', submissionId)
+    .maybeSingle();
+  const slug = (ev as unknown as { events?: { slug: string } } | null)?.events?.slug;
+  if (slug) revalidatePath(`/admin/events/${slug}`);
+  return { ok: true, status: 'sent' };
+}
+
+export async function unpinSubmission(eventId: string): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc('unpin_submission', { p_event_id: eventId });
+  if (error) return { ok: false, error: 'Falha ao soltar.' };
+  const { data: ev } = await supabase.from('events').select('slug').eq('id', eventId).maybeSingle();
+  if (ev) revalidatePath(`/admin/events/${ev.slug}`);
+  return { ok: true, status: 'sent' };
+}
+
 // Reshow: pega uma mensagem que ja foi enviada e dispara de novo (volta
 // pra pending, depois aprova → reenvia pro telao).
 export async function reshowSubmission(submissionId: string): Promise<Result> {

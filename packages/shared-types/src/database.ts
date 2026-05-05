@@ -80,6 +80,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          pinned_submission_id: string | null
           slug: string
           submissions_open: boolean
           telao_config: Json
@@ -97,6 +98,7 @@ export type Database = {
           id?: string
           name: string
           owner_id: string
+          pinned_submission_id?: string | null
           slug: string
           submissions_open?: boolean
           telao_config?: Json
@@ -114,6 +116,7 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          pinned_submission_id?: string | null
           slug?: string
           submissions_open?: boolean
           telao_config?: Json
@@ -121,6 +124,13 @@ export type Database = {
           theme_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "events_pinned_submission_id_fkey"
+            columns: ["pinned_submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_theme_id_fkey"
             columns: ["theme_id"]
@@ -358,6 +368,15 @@ export type Database = {
         }[]
       }
       get_moderator_email: { Args: { p_user_id: string }; Returns: string }
+      get_pinned_submission: {
+        Args: { p_slug: string }
+        Returns: {
+          comment: string
+          id: string
+          name: string
+          sent_at: string
+        }[]
+      }
       get_submissions_via_token: {
         Args: { p_status_filter?: string; p_token: string }
         Returns: {
@@ -417,6 +436,7 @@ export type Database = {
         Args: { p_action: string; p_submission_id: string; p_token: string }
         Returns: undefined
       }
+      pin_submission: { Args: { p_submission_id: string }; Returns: undefined }
       record_heartbeat: {
         Args: { p_event_id: string; p_secret: string }
         Returns: boolean
@@ -450,6 +470,7 @@ export type Database = {
         }
         Returns: string
       }
+      unpin_submission: { Args: { p_event_id: string }; Returns: undefined }
       validate_moderator_token: { Args: { p_token: string }; Returns: string }
       whoami_probe: { Args: never; Returns: string }
     }

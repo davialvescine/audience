@@ -34,7 +34,7 @@ export default async function EventModerationPage({
   const supabase = await getSupabaseServerClient();
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes, owner_id')
+    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes, owner_id, pinned_submission_id')
     .eq('slug', slug)
     .single();
   if (!event) notFound();
@@ -106,7 +106,11 @@ export default async function EventModerationPage({
             initialSubmissionsOpen={event.submissions_open}
             pendingCount={counts.pending}
           />
-          <ModerationQueue eventId={event.id} initial={subs ?? []} />
+          <ModerationQueue
+            eventId={event.id}
+            initial={subs ?? []}
+            pinnedSubmissionId={event.pinned_submission_id}
+          />
         </div>
       ),
     },
