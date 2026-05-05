@@ -303,12 +303,54 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
         <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
       </div>
       {tab === 'all' ? (
-        <div className="grid lg:grid-cols-2 gap-4">
+        <>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Column
+              title="Chegando"
+              subtitle="Aguardando aprovação"
+              items={visible.filter((i) => i.status === 'pending')}
+              empty="Sem novos comentários."
+              renderCard={(i) => (
+                <SubmissionCard
+                  id={i.id}
+                  name={i.name}
+                  comment={i.comment}
+                  status={i.status}
+                  createdAt={i.created_at}
+                  errorMessage={i.error_message}
+                  displayCount={i.display_count ?? 0}
+                  isPinned={i.id === pinnedId}
+                  eventId={eventId}
+                  onPinChange={setPinnedId}
+                />
+              )}
+            />
+            <Column
+              title="Fila"
+              subtitle="Aprovadas, prontas pro telão"
+              items={visible.filter((i) => i.status === 'approved')}
+              empty="Aprove uma mensagem pra ela aparecer aqui."
+              renderCard={(i) => (
+                <SubmissionCard
+                  id={i.id}
+                  name={i.name}
+                  comment={i.comment}
+                  status={i.status}
+                  createdAt={i.created_at}
+                  errorMessage={i.error_message}
+                  displayCount={i.display_count ?? 0}
+                  isPinned={i.id === pinnedId}
+                  eventId={eventId}
+                  onPinChange={setPinnedId}
+                />
+              )}
+            />
+          </div>
           <Column
-            title="Chegando"
-            subtitle="Aguardando aprovação"
-            items={visible.filter((i) => i.status === 'pending')}
-            empty="Sem novos comentários."
+            title="Já exibidas"
+            subtitle="Histórico do que já foi pro telão (clique pra reexibir/fixar)"
+            items={visible.filter((i) => i.status === 'sent')}
+            empty="Nada exibido ainda."
             renderCard={(i) => (
               <SubmissionCard
                 id={i.id}
@@ -324,27 +366,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
               />
             )}
           />
-          <Column
-            title="Fila"
-            subtitle="Aprovadas, prontas pro telão"
-            items={visible.filter((i) => i.status === 'approved')}
-            empty="Aprove uma mensagem pra ela aparecer aqui."
-            renderCard={(i) => (
-              <SubmissionCard
-                id={i.id}
-                name={i.name}
-                comment={i.comment}
-                status={i.status}
-                createdAt={i.created_at}
-                errorMessage={i.error_message}
-                displayCount={i.display_count ?? 0}
-                isPinned={i.id === pinnedId}
-                eventId={eventId}
-                onPinChange={setPinnedId}
-              />
-            )}
-          />
-        </div>
+        </>
       ) : visible.length === 0 ? (
         <EmptyState
           title="Nenhum resultado"
