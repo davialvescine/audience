@@ -123,11 +123,30 @@ export function SubmissionCard({
           </>
         ) : null}
 
-        {status === 'approved' ? (
+        {(status === 'approved' || status === 'sent') ? (
           <>
             <Btn
-              kind="primary"
+              kind="secondary"
               disabled={pending}
+              title="Exibir com tempo automático (entra, fica e sai sozinho)"
+              onClick={() =>
+                start(async () => {
+                  // Se ja tava sent, volta pra approved primeiro pra re-disparar.
+                  if (status === 'sent') {
+                    await removeFromTelao(id);
+                    if (isPinned) onPinChange?.(null);
+                  }
+                  const r = await dispatchToTelao(id);
+                  showFeedback(r.ok ? 'Exibindo (auto)' : r.error);
+                })
+              }
+            >
+              ▶ Exibir
+            </Btn>
+            <Btn
+              kind="primary"
+              disabled={pending || (status === 'sent' && isPinned)}
+              title={isPinned ? 'Já está fixada' : 'Manda pro telão e fica ate clicar Tirar'}
               onClick={() =>
                 start(async () => {
                   const r = await pinSubmission(id);
@@ -140,32 +159,8 @@ export function SubmissionCard({
             </Btn>
             <Btn
               kind="secondary"
-              disabled={pending}
-              title="Exibir com tempo automático configurado"
-              onClick={() =>
-                start(async () => {
-                  const r = await dispatchToTelao(id);
-                  showFeedback(r.ok ? 'Exibindo (auto)' : r.error);
-                })
-              }
-            >
-              ▶
-            </Btn>
-            <Btn
-              kind="ghost"
-              disabled={pending}
-              onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
-            >
-              ✕
-            </Btn>
-          </>
-        ) : null}
-
-        {status === 'sent' ? (
-          <>
-            <Btn
-              kind="primary"
-              disabled={pending}
+              disabled={pending || status !== 'sent'}
+              title={status !== 'sent' ? 'Mensagem não está no telão' : 'Remove do telão (volta pra fila)'}
               onClick={() =>
                 start(async () => {
                   const r = await removeFromTelao(id);
@@ -176,24 +171,15 @@ export function SubmissionCard({
             >
               Tirar do telão
             </Btn>
-            <Btn
-              kind="secondary"
-              disabled={pending}
-              title="Reexibir com tempo automático"
-              onClick={() =>
-                start(async () => {
-                  // Volta pra approved e dispara auto.
-                  const r = await removeFromTelao(id);
-                  if (r.ok) {
-                    if (isPinned) onPinChange?.(null);
-                    const r2 = await dispatchToTelao(id);
-                    showFeedback(r2.ok ? 'Exibindo (auto)' : r2.error);
-                  }
-                })
-              }
-            >
-              ▶
-            </Btn>
+            {status === 'approved' ? (
+              <Btn
+                kind="ghost"
+                disabled={pending}
+                onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
+              >
+                ✕
+              </Btn>
+            ) : null}
           </>
         ) : null}
 
