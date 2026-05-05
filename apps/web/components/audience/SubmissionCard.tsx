@@ -159,12 +159,12 @@ export function SubmissionCard({
             </Btn>
             <Btn
               kind="secondary"
-              disabled={pending || status !== 'sent'}
-              title={status !== 'sent' ? 'Mensagem não está no telão' : 'Remove do telão (volta pra fila)'}
+              disabled={pending || !isPinned}
+              title={isPinned ? 'Solta a fixada (volta a rotação automática)' : 'Disponível só quando fixada'}
               onClick={() =>
                 start(async () => {
                   const r = await removeFromTelao(id);
-                  if (r.ok && isPinned) onPinChange?.(null);
+                  if (r.ok) onPinChange?.(null);
                   showFeedback(r.ok ? 'Tirada do telão' : r.error);
                 })
               }

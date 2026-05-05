@@ -161,8 +161,9 @@ export async function dispatchToTelao(submissionId: string): Promise<Result> {
   return { ok: true, status: 'sent' };
 }
 
-// Tira a mensagem do telao (volta pra fila approved). Tambem unpinna se
-// for a fixada do evento.
+// Tira a mensagem do telao. Status continua 'sent' (mensagem ja foi
+// exibida — preserva o historico/contador). Acao real: desfixa se for
+// a fixada do evento; pra mensagens em rotacao automatica e no-op.
 export async function removeFromTelao(submissionId: string): Promise<Result> {
   await requireUser();
   const supabase = await getSupabaseServerClient();
@@ -171,19 +172,12 @@ export async function removeFromTelao(submissionId: string): Promise<Result> {
     .select('event_id')
     .eq('id', submissionId)
     .single();
-  if (row) {
-    await supabase
-      .from('events')
-      .update({ pinned_submission_id: null })
-      .eq('id', row.event_id)
-      .eq('pinned_submission_id', submissionId);
-  }
-  const { error } = await supabase
-    .from('submissions')
-    .update({ status: 'approved', sent_at: null })
-    .eq('id', submissionId)
-    .eq('status', 'sent');
-  if (error) return { ok: false, error: 'Falha ao tirar.' };
+  if (!row) return { ok: false, error: 'Mensagem nao encontrada.' };
+  await supabase
+    .from('events')
+    .update({ pinned_submission_id: null })
+    .eq('id', row.event_id)
+    .eq('pinned_submission_id', submissionId);
   return { ok: true, status: 'sent' };
 }
 
