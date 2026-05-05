@@ -167,9 +167,25 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
       },
       250 + config.displaySeconds * 1000,
     );
+    // Apos a animacao de saida, restaura o sample estatico — operador
+    // continua vendo o card no preview mesmo depois do ciclo terminar.
+    const restoreTimer = setTimeout(
+      () => {
+        setVisible([
+          {
+            id: `preview-${previewSample.name}-${previewSample.comment}`,
+            name: previewSample.name || 'Nome de exemplo',
+            comment: previewSample.comment || 'Mensagem de exemplo aparece aqui.',
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      },
+      250 + config.displaySeconds * 1000 + 600,
+    );
     return () => {
       clearTimeout(enterTimer);
       clearTimeout(exitTimer);
+      clearTimeout(restoreTimer);
     };
   }, [playCycleId, preview, previewSample, config.displaySeconds]);
 
