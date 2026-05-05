@@ -13,33 +13,13 @@ export const revalidate = 0;
 export default async function AdminEventsPage() {
   const user = await requireUser();
   const supabase = await getSupabaseServerClient();
-  const { data: events, error: eventsErr } = await supabase
+  const { data: events } = await supabase
     .from('events')
     .select('id, slug, name, h2r_paired_at, h2r_last_heartbeat, submissions_open, created_at')
     .order('created_at', { ascending: false });
-  if (eventsErr) {
-    console.error('[events list] query failed', { userId: user.id, err: eventsErr });
-  }
-  console.log('[events list] user', user.id, 'email', user.email, 'count', events?.length ?? 0);
-
-  // Debug: chama RPC que retorna o auth.uid() que o PostgREST ve
-  const { data: authProbe, error: authProbeErr } = await supabase.rpc(
-    'whoami_probe' as never,
-  );
-  const debugInfo = {
-    userIdFromCookie: user.id,
-    userEmail: user.email,
-    eventsCount: events?.length ?? 0,
-    authUidFromRPC: authProbe,
-    authProbeError: authProbeErr?.message ?? null,
-    eventsError: eventsErr?.message ?? null,
-  };
 
   return (
     <AdminShell userEmail={user.email ?? ''}>
-      <pre className="mb-4 p-3 bg-yellow-100 text-xs overflow-x-auto rounded">
-        DEBUG: {JSON.stringify(debugInfo, null, 2)}
-      </pre>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-display text-ink">Eventos</h1>
