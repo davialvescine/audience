@@ -229,6 +229,10 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
   useEffect(() => {
     if (preview) return;
     const tick = setInterval(() => {
+      // Pinned: nao avanca a fila. Mensagens recem-aprovadas acumulam
+      // ate o operador "Soltar" — quando pinned vira null, reabre o
+      // fluxo normal e a fila comeca a sair.
+      if (pinned) return;
       if (queueRef.current.length === 0) return;
       setVisible((cur) => {
         if (cur.length >= config.maxConcurrent) return cur;
@@ -242,7 +246,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
       });
     }, 500);
     return () => clearInterval(tick);
-  }, [preview, config.maxConcurrent, config.displaySeconds]);
+  }, [preview, config.maxConcurrent, config.displaySeconds, pinned]);
 
   const variants = animationVariants(config.animation);
   const hasCustomPos =
