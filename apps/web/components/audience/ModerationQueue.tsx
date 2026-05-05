@@ -242,8 +242,8 @@ export function ModerationQueue({ eventId, initial }: Props) {
 
   const tabs: Array<{ id: SubmissionFilter['tab']; label: string; count: number }> = [
     { id: 'all', label: 'Tudo', count: counts.all },
-    { id: 'pending', label: 'Pendente', count: counts.pending },
-    { id: 'sent', label: 'No telão', count: counts.sent },
+    { id: 'pending', label: 'Aguardando', count: counts.pending },
+    { id: 'sent', label: 'Exibidas', count: counts.sent },
     { id: 'failed', label: 'Falhas', count: counts.failed },
     { id: 'rejected', label: 'Rejeitado', count: counts.rejected },
   ];

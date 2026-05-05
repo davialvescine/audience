@@ -81,7 +81,7 @@ export default async function EventModerationPage({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card className="text-center">
               <p className="text-3xl font-display font-bold text-ink">{counts.pending}</p>
-              <p className="text-xs text-ink/60 uppercase tracking-wide">Pendentes</p>
+              <p className="text-xs text-ink/60 uppercase tracking-wide">Aguardando</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-display font-bold text-accent">{counts.queued}</p>

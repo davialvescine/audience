@@ -1,7 +1,7 @@
 'use client';
 
 import type { SubmissionStatus } from '@audience/shared-types';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +25,7 @@ type Props = {
 
 export function SubmissionCard({ id, name, comment, status, createdAt, errorMessage, displayCount = 0 }: Props) {
   const [pending, start] = useTransition();
+  const [reshowFeedback, setReshowFeedback] = useState<string | null>(null);
 
   return (
     <Card>
@@ -69,7 +70,13 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
           <Button
             variant="ghost"
             loading={pending}
-            onClick={() => start(() => reshowSubmission(id).then(() => undefined))}
+            onClick={() =>
+              start(async () => {
+                const r = await reshowSubmission(id);
+                setReshowFeedback(r.ok ? '✓ Reexibida' : `✗ ${r.error}`);
+                setTimeout(() => setReshowFeedback(null), 4000);
+              })
+            }
           >
             Mostrar novamente
           </Button>
@@ -83,6 +90,11 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
           </Button>
         ) : null}
       </div>
+      {reshowFeedback ? (
+        <p className={`mt-2 text-xs ${reshowFeedback.startsWith('✓') ? 'text-success' : 'text-danger'}`}>
+          {reshowFeedback}
+        </p>
+      ) : null}
     </Card>
   );
 }

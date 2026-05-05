@@ -155,11 +155,20 @@ export async function reshowSubmission(submissionId: string): Promise<Result> {
     .update({ status: 'pending', error_message: null, approved_at: null, sent_at: null })
     .eq('id', submissionId)
     .eq('status', 'sent')
-    .select('id')
+    .select('id, event_id')
     .maybeSingle();
-  if (error) return { ok: false, error: 'Falha ao reexibir.' };
-  if (!data) return { ok: false, error: 'Mensagem não pode ser reexibida.' };
-  return approveSubmission(submissionId);
+  if (error) {
+    console.error('[reshowSubmission] update failed', { submissionId, err: error });
+    return { ok: false, error: `Falha ao reexibir: ${error.message}` };
+  }
+  if (!data) {
+    return { ok: false, error: 'Mensagem não pode ser reexibida (status diferente de sent).' };
+  }
+  const result = await approveSubmission(submissionId);
+  if (!result.ok) {
+    console.error('[reshowSubmission] approve failed', { submissionId, err: result.error });
+  }
+  return result;
 }
 
 export async function retrySubmission(submissionId: string): Promise<Result> {
