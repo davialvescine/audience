@@ -439,7 +439,6 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
         {renderList.map((m) => (
           <motion.div
             key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}-${config.heightPx}`}
-            layout
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
