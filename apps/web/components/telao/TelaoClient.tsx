@@ -297,29 +297,30 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     return () => clearInterval(tick);
   }, [preview, config.maxConcurrent, config.displaySeconds, config.transitionMode, pinned]);
 
-  // Detecta overflow: se a pilha exceder ~90% da viewport com 2+ cards,
-  // o ultimo nao cabe. Volta ele pra frente da fila e diminui o limite.
-  // So culla com 2+ cards — se apenas 1 ja overflowa, deixa (caso extremo
-  // de fonte gigante ou comentario imenso; melhor um cortado do que nada).
+  // Cull APENAS quando visible cresceu (alguem foi adicionado). Evita
+  // cascata de culls que sumiria com varios cards de uma vez.
+  const prevVisibleLenRef = useRef(0);
   useEffect(() => {
+    const grew = visible.length > prevVisibleLenRef.current;
+    prevVisibleLenRef.current = visible.length;
+    if (!grew) return;
+    if (visible.length < 2) return;
     const el = rootRef.current;
     if (!el) return;
     const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
     const maxAllowed = vh * 0.9;
-    if (el.offsetHeight > maxAllowed && visible.length >= 2) {
+    if (el.offsetHeight > maxAllowed) {
       const newest = visible[visible.length - 1];
-      if (newest) {
-        const t = removeTimeoutsRef.current.get(newest.id);
-        if (t) {
-          clearTimeout(t);
-          removeTimeoutsRef.current.delete(newest.id);
-        }
-        queueRef.current.unshift(newest);
-        visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
-        // Limite efetivo = quantos efetivamente cabem (visible.length - 1).
-        effectiveMaxRef.current = visible.length - 1;
-        setVisible((cur) => cur.slice(0, -1));
+      if (!newest) return;
+      const t = removeTimeoutsRef.current.get(newest.id);
+      if (t) {
+        clearTimeout(t);
+        removeTimeoutsRef.current.delete(newest.id);
       }
+      queueRef.current.unshift(newest);
+      visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
+      effectiveMaxRef.current = visible.length - 1;
+      setVisible((cur) => cur.slice(0, -1));
     }
   }, [visible]);
 
