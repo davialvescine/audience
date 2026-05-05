@@ -297,15 +297,16 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     return () => clearInterval(tick);
   }, [preview, config.maxConcurrent, config.displaySeconds, config.transitionMode, pinned]);
 
-  // Detecta overflow: se a pilha exceder ~90% da viewport, o ultimo card
-  // adicionado nao cabe. Remove ele (volta pra fila como front) e diminui
-  // o limite efetivo. O tick para de tentar empilhar ate alguem sair.
+  // Detecta overflow: se a pilha exceder ~90% da viewport com 2+ cards,
+  // o ultimo nao cabe. Volta ele pra frente da fila e diminui o limite.
+  // So culla com 2+ cards — se apenas 1 ja overflowa, deixa (caso extremo
+  // de fonte gigante ou comentario imenso; melhor um cortado do que nada).
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
     const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
     const maxAllowed = vh * 0.9;
-    if (el.offsetHeight > maxAllowed && visible.length > 0) {
+    if (el.offsetHeight > maxAllowed && visible.length >= 2) {
       const newest = visible[visible.length - 1];
       if (newest) {
         const t = removeTimeoutsRef.current.get(newest.id);
@@ -313,9 +314,10 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
           clearTimeout(t);
           removeTimeoutsRef.current.delete(newest.id);
         }
-        queueRef.current.unshift(newest); // espera proxima vaga
+        queueRef.current.unshift(newest);
         visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
-        effectiveMaxRef.current = Math.max(1, visible.length - 1);
+        // Limite efetivo = quantos efetivamente cabem (visible.length - 1).
+        effectiveMaxRef.current = visible.length - 1;
         setVisible((cur) => cur.slice(0, -1));
       }
     }
