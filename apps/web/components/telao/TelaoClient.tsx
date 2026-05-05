@@ -12,6 +12,8 @@ import {
 } from '@/lib/telao/config';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
+import { snapToGrid } from './snapToGrid';
+
 type Submission = {
   id: string;
   name: string;
@@ -208,6 +210,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     lastX: number;
     lastY: number;
   } | null>(null);
+  const [dragHud, setDragHud] = useState<{ x: number; y: number } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!preview) return;
@@ -224,6 +227,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
       lastX: baseX,
       lastY: baseY,
     };
+    setDragHud({ x: baseX, y: baseY });
     el.setPointerCapture(e.pointerId);
     e.preventDefault();
   };
@@ -233,13 +237,13 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     if (!d) return;
     const dx = ((e.clientX - d.startX) / 1920) * 100;
     const dy = ((e.clientY - d.startY) / 1080) * 100;
-    // Clamp only the card's center to the stage. The card may extend
-    // past the edge if widthPct/height are large — user can shrink the
-    // card via the Largura/Altura sliders if they don't want overflow.
-    const nx = Math.max(0, Math.min(100, d.baseX + dx));
-    const ny = Math.max(0, Math.min(100, d.baseY + dy));
+    // Snap em 0/25/50/75/100% quando dentro de 3% — o operador agarra
+    // os cantos/centro sem precisar mirar pixel-perfect.
+    const nx = snapToGrid(d.baseX + dx, 3);
+    const ny = snapToGrid(d.baseY + dy, 3);
     d.lastX = nx;
     d.lastY = ny;
+    setDragHud({ x: nx, y: ny });
     setConfig((c) => ({ ...c, posXPct: nx, posYPct: ny }));
   };
 
@@ -248,6 +252,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     if (!d) return;
     rootRef.current?.releasePointerCapture(e.pointerId);
     dragRef.current = null;
+    setDragHud(null);
     // Tell parent so autosave persists the new coords.
     if (typeof window !== 'undefined' && window.parent !== window) {
       window.parent.postMessage(
@@ -328,6 +333,25 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
           </motion.div>
         ))}
       </AnimatePresence>
+      {preview && dragHud ? (
+        <div
+          style={{
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            background: 'rgba(0,0,0,0.78)',
+            color: '#fff',
+            padding: '8px 12px',
+            borderRadius: 8,
+            fontFamily: 'ui-monospace, monospace',
+            fontSize: 14,
+            pointerEvents: 'none',
+            zIndex: 1000,
+          }}
+        >
+          X: {Math.round(dragHud.x)}% · Y: {Math.round(dragHud.y)}%
+        </div>
+      ) : null}
     </div>
   );
 }

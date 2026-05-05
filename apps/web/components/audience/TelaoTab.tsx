@@ -19,6 +19,29 @@ import {
 import { updateDisplayModes, updateTelaoConfig } from '@/server-actions/telao';
 
 const ANIMATIONS: TelaoAnimation[] = ['slide-up', 'slide-down', 'slide-left', 'slide-right', 'fade', 'scale', 'bounce'];
+
+const SAMPLE_PRESETS = [
+  {
+    label: 'Curto',
+    name: 'Ana',
+    comment: 'Top demais!',
+  },
+  {
+    label: 'Médio',
+    name: 'João da Silva',
+    comment: 'Que evento incrível! Deus abençoe todos vocês.',
+  },
+  {
+    label: 'Longo',
+    name: 'Maria Aparecida Souza',
+    comment: 'Estou muito emocionada com tudo que escutei hoje. Que Deus continue abençoando o trabalho de cada um. Vou levar pra casa.',
+  },
+  {
+    label: 'Emoji',
+    name: 'Pedro 🙏',
+    comment: '🔥🔥🔥 Glória a Deus! 🙏✨ Maravilha!',
+  },
+] as const;
 const SHADOWS: TelaoShadow[] = ['none', 'subtle', 'medium', 'dramatic'];
 const ALL_MODES: TelaoDisplayMode[] = ['h2r', 'browser_source', 'chrome_pip', 'desktop_app'];
 
@@ -114,6 +137,16 @@ export function TelaoTab({
       window.location.origin,
     );
   }, [sample, iframeReady]);
+
+  // Auto-play animation cycle whenever animation changes — the user
+  // gets an immediate visual instead of having to click ▶.
+  useEffect(() => {
+    if (!iframeReady) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'telao-play-cycle' },
+      window.location.origin,
+    );
+  }, [config.animation, iframeReady]);
 
   // Debounced autosave: fires 600ms after the last config / modes change
   useEffect(() => {
@@ -429,7 +462,22 @@ export function TelaoTab({
           </p>
 
           <div className="mt-4 pt-4 border-t border-ink/10 space-y-3">
-            <p className="text-xs uppercase tracking-wide text-ink/60">Texto de teste</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wide text-ink/60">Texto de teste</p>
+              <div className="flex gap-1">
+                {SAMPLE_PRESETS.map((preset, i) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setSample({ name: preset.name, comment: preset.comment })}
+                    className="text-[11px] h-7 px-2 rounded-md border border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink transition"
+                    title={`Trocar exemplo: ${preset.label}`}
+                  >
+                    {i + 1}. {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="text"
               value={sample.name}
@@ -445,7 +493,7 @@ export function TelaoTab({
               className="w-full px-3 py-2 rounded-md border border-ink/20 bg-paper text-ink text-sm resize-none"
             />
             <p className="text-xs text-ink/50">
-              Use pra ver como mensagens reais ficam com a configuração escolhida.
+              Troca os presets pra ver como mensagens curtas/longas ficam com sua config.
             </p>
           </div>
         </Card>
