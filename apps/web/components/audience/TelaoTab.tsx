@@ -622,23 +622,17 @@ function DiagnosticTestCard({ eventId }: { eventId: string }) {
     setStatus('sending');
     setMessage(null);
     try {
-      const supabase = getSupabaseBrowserClient();
-      // httpSend() posts to /realtime/v1/api/broadcast directly — no WebSocket
-      // subscribe required. Avoids CHANNEL_ERROR from the WS path while still
-      // delivering to subscribed listeners on the same topic.
-      const channel = supabase.channel(`telao:${eventId}`, {
-        config: { broadcast: { self: false } },
-      });
-      const result = await channel.httpSend('test_message', {
-        name: 'TESTE DE DIAGNÓSTICO',
-        comment: `Telão funcionando — ${new Date().toLocaleTimeString('pt-BR')}`,
-      });
-      await supabase.removeChannel(channel);
-      if (!result.success) {
-        throw new Error(`broadcast falhou (${result.status}): ${result.error}`);
-      }
+      const { dispatchDiagnosticTest, deleteDiagnosticTest } = await import(
+        '@/server-actions/diagnosticTest'
+      );
+      const r = await dispatchDiagnosticTest(eventId);
+      if (!r.ok) throw new Error(r.error);
       setStatus('sent');
-      setMessage('Disparado. Se aparecer no telão, o canal Realtime tá ok.');
+      setMessage('Disparado. Em até 3s aparece no telão.');
+      // Auto-cleanup: remove a row de teste 15s depois.
+      setTimeout(() => {
+        void deleteDiagnosticTest(r.submissionId);
+      }, 15_000);
     } catch (err) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'erro desconhecido');
@@ -649,9 +643,9 @@ function DiagnosticTestCard({ eventId }: { eventId: string }) {
     <Card>
       <h3 className="font-display text-lg mb-1">🔧 Teste de conexão</h3>
       <p className="text-sm text-ink/60 mb-3">
-        Dispara uma mensagem fixa pelo canal Realtime — sem passar pelo banco. Se aparecer no
-        telão (OBS, vMix, PiP, qualquer modo aberto), a URL tá funcionando. Se não aparecer,
-        o problema é na conexão entre a tela e o servidor.
+        Insere uma submission marcada como diagnóstico no banco. Em até 3s o telão (OBS, vMix,
+        PiP, qualquer modo aberto) deve mostrar. A linha é removida automaticamente do banco
+        após 15s. Se não aparecer no telão, o problema é na URL/conexão dele.
       </p>
       <div className="flex items-center gap-3 flex-wrap">
         <Button onClick={fire} loading={status === 'sending'}>

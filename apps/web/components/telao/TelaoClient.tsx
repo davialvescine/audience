@@ -89,21 +89,6 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
       });
     };
 
-    // Broadcast channel — only used for the "Disparar teste" button in
-    // admin. Doesn't depend on RLS (broadcast bypasses table policies).
-    const channel = supabase
-      .channel(`telao:${eventId}`, { config: { broadcast: { self: false } } })
-      .on('broadcast', { event: 'test_message' }, ({ payload }) => {
-        const p = payload as { name?: string; comment?: string };
-        enqueue({
-          id: `test-${Date.now()}`,
-          name: p.name ?? 'TESTE',
-          comment: p.comment ?? 'Mensagem de teste',
-          created_at: new Date().toISOString(),
-        });
-      })
-      .subscribe();
-
     // Polling via security-definer RPC. RLS sobre submissions e
     // owner-only — anon nao pode SELECT direto. A RPC e scoped ao slug
     // e seguramente expoe so os comentarios sent desse evento.
@@ -127,7 +112,6 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     const pollTimer = setInterval(() => { void poll(); }, 3000);
 
     return () => {
-      void supabase.removeChannel(channel);
       clearInterval(pollTimer);
     };
   }, [eventId, slug, preview]);
