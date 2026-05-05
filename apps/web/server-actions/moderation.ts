@@ -145,6 +145,23 @@ export async function undoModerationAction(submissionId: string): Promise<Result
   return { ok: true, status: 'sent' };
 }
 
+// Reshow: pega uma mensagem que ja foi enviada e dispara de novo (volta
+// pra pending, depois aprova → reenvia pro telao).
+export async function reshowSubmission(submissionId: string): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('submissions')
+    .update({ status: 'pending', error_message: null, approved_at: null, sent_at: null })
+    .eq('id', submissionId)
+    .eq('status', 'sent')
+    .select('id')
+    .maybeSingle();
+  if (error) return { ok: false, error: 'Falha ao reexibir.' };
+  if (!data) return { ok: false, error: 'Mensagem não pode ser reexibida.' };
+  return approveSubmission(submissionId);
+}
+
 export async function retrySubmission(submissionId: string): Promise<Result> {
   await requireUser();
   const supabase = await getSupabaseServerClient();

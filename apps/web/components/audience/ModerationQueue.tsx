@@ -12,7 +12,6 @@ import { SubmissionCard } from './SubmissionCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 import { approveSubmission, rejectSubmission, undoModerationAction } from '@/server-actions/moderation';
-import type { TelaoConfig } from '@/lib/telao/config';
 
 type Item = {
   id: string;
@@ -23,9 +22,9 @@ type Item = {
   error_message: string | null;
 };
 
-type Props = { eventId: string; initial: Item[]; telaoConfig?: TelaoConfig | undefined };
+type Props = { eventId: string; initial: Item[] };
 
-export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
+export function ModerationQueue({ eventId, initial }: Props) {
   const [items, setItems] = useState(initial);
   const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [tab, setTab] = useState<SubmissionFilter['tab']>('all');
@@ -322,7 +321,6 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
                 status={i.status}
                 createdAt={i.created_at}
                 errorMessage={i.error_message}
-                telaoConfig={telaoConfig}
               />
             </motion.div>
           ))}
