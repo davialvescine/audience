@@ -209,17 +209,23 @@ export default async function EventModerationPage({
     },
   ];
 
+  const enabledModes = (event.enabled_display_modes as TelaoDisplayMode[] | null) ?? [];
+  const showH2RBadge = enabledModes.includes('h2r');
+
   return (
     <AdminShell userEmail={user.email ?? ''}>
       <div className="mb-6">
         <h1 className="text-3xl font-display text-ink">{event.name}</h1>
         <div className="mt-2 flex items-center gap-3 text-sm">
-          <H2RStatusBadge
-            pairedAt={event.h2r_paired_at}
-            lastHeartbeat={event.h2r_last_heartbeat}
-          />
-
-          <span className="text-ink/40">•</span>
+          {showH2RBadge ? (
+            <>
+              <H2RStatusBadge
+                pairedAt={event.h2r_paired_at}
+                lastHeartbeat={event.h2r_last_heartbeat}
+              />
+              <span className="text-ink/40">•</span>
+            </>
+          ) : null}
           <a
             href={publicUrl}
             target="_blank"
