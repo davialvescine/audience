@@ -259,6 +259,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
   //   saida (sobrepoe momentaneamente).
   const lastRemovedAtRef = useRef(0);
   const visibleCountRef = useRef(0);
+  const removeTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => {
     // Em preview, o tick tambem roda — alimentado por demo queue (postMessage).
     // IMPORTANTE: nao fazer shift() de queueRef dentro de setState updater.
@@ -280,17 +281,51 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       if (!next) return;
       visibleCountRef.current += 1;
       const removeAfter = config.displaySeconds * 1000;
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        removeTimeoutsRef.current.delete(next.id);
         lastRemovedAtRef.current = Date.now();
         visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
         setVisible((cur) => cur.filter((m) => m.id !== next.id));
       }, removeAfter);
+      removeTimeoutsRef.current.set(next.id, timeoutId);
       setVisible((cur) => [...cur, next]);
     }, 250);
     return () => clearInterval(tick);
   }, [preview, config.maxConcurrent, config.displaySeconds, config.transitionMode, pinned]);
 
+  // Auto-cull: se a pilha de cards exceder a area util (90% da viewport),
+  // remove o mais antigo pra dar lugar ao novo. Tambem cancela seu timeout
+  // pra nao tentar remove-lo de novo depois.
+  useEffect(() => {
+    if (preview) {
+      // No iframe de preview, viewport e 1080. Cull baseado nisso.
+    }
+    const el = rootRef.current;
+    if (!el) return;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const maxAllowed = vh * 0.9;
+    if (el.offsetHeight > maxAllowed && visible.length > 1) {
+      const oldest = visible[0];
+      if (oldest) {
+        const t = removeTimeoutsRef.current.get(oldest.id);
+        if (t) {
+          clearTimeout(t);
+          removeTimeoutsRef.current.delete(oldest.id);
+        }
+        visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
+        setVisible((cur) => cur.slice(1));
+      }
+    }
+  }, [visible, preview]);
+
   const variants = animationVariants(config.animation);
+  // Pra anchors superiores, novos no topo (empilha pra baixo).
+  // Pra anchors inferiores, novos embaixo (empilha pra cima).
+  const renderList = pinned
+    ? [pinned]
+    : config.position.startsWith('top-')
+      ? [...visible].reverse()
+      : visible;
   const hasCustomPos =
     typeof config.posXPct === 'number' && typeof config.posYPct === 'number';
   const positionStyle = hasCustomPos
@@ -383,7 +418,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       }}
     >
       <AnimatePresence>
-        {(pinned ? [pinned] : visible).map((m) => (
+        {renderList.map((m) => (
           <motion.div
             key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}-${config.heightPx}`}
             layout
