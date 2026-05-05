@@ -81,14 +81,11 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     const supabase = getSupabaseBrowserClient();
     // Dedup por id+sent_at: a mesma submission re-enviada (botao "Mostrar
     // novamente") tem novo sent_at, entao conta como nova entrada na fila.
+    // Sem dedup local: o lastSeenAt no poll ja garante que so pegamos
+    // submissions com sent_at maior que o ultimo visto. Reshow gera novo
+    // sent_at, entao volta como entrada nova.
     const enqueue = (row: Submission & { sent_at?: string | null }) => {
-      const dedupKey = `${row.id}@${row.sent_at ?? ''}`;
-      if (seenIdsRef.current.has(dedupKey)) {
-        console.log('[telao] dup skip', { id: row.id, dedupKey });
-        return;
-      }
-      seenIdsRef.current.add(dedupKey);
-      console.log('[telao] enqueue', { id: row.id, sent_at: row.sent_at, dedupKey });
+      console.log('[telao] enqueue', { id: row.id, sent_at: row.sent_at });
       queueRef.current.push({
         id: `${row.id}-${row.sent_at ?? Date.now()}`,
         name: row.name,
