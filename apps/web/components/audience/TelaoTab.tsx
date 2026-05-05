@@ -17,6 +17,7 @@ import {
   type TelaoShadow,
 } from '@/lib/telao/config';
 import { setTelaoConfigOverride, updateDisplayModes, updateTelaoConfig } from '@/server-actions/telao';
+import { updateDispatchInterval } from '@/server-actions/moderation';
 
 const ANIMATIONS: TelaoAnimation[] = ['slide-up', 'slide-down', 'slide-left', 'slide-right', 'fade', 'scale', 'bounce'];
 
@@ -474,8 +475,9 @@ export function TelaoTab({
           </p>
 
           {/* Timing */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <Slider label="Tempo de exibição" suffix="s" min={3} max={30} value={config.displaySeconds} onChange={(v) => updateField('displaySeconds', v)} />
+            <IntervalSlider eventId={eventId} initial={h2r.dispatchIntervalSeconds} />
             <Slider label="Mensagens visíveis" suffix="" min={1} max={5} value={config.maxConcurrent} onChange={(v) => updateField('maxConcurrent', v)} />
           </div>
 
@@ -681,6 +683,33 @@ function DiagnosticTestCard({ eventId }: { eventId: string }) {
 }
 
 // ── Helper inputs ────────────────────────────────────────────────
+
+// Slider auto-save pro intervalo entre disparos (event-level setting,
+// nao parte do telao_config). Debounce de 500ms pra nao spammar o
+// server action.
+function IntervalSlider({ eventId, initial }: { eventId: string; initial: number }) {
+  const [value, setValue] = useState(initial);
+  const [savedValue, setSavedValue] = useState(initial);
+  useEffect(() => {
+    if (value === savedValue) return;
+    const t = setTimeout(() => {
+      void updateDispatchInterval(eventId, value).then((r) => {
+        if (r.ok) setSavedValue(value);
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [value, savedValue, eventId]);
+  return (
+    <Slider
+      label="Intervalo de exibição"
+      suffix="s"
+      min={1}
+      max={30}
+      value={value}
+      onChange={setValue}
+    />
+  );
+}
 
 function Slider({
   label,
