@@ -71,7 +71,7 @@ export function SubmissionCard({
       : status === 'approved'
         ? 'border-amber-400/50 bg-amber-50/60 dark:bg-amber-500/[0.05]'
         : status === 'rejected'
-          ? 'border-ink/10 bg-ink/[0.02] opacity-60'
+          ? 'border-danger/40 bg-danger/[0.06]'
           : status === 'failed'
             ? 'border-danger/40 bg-danger/[0.05]'
             : 'border-ink/10 bg-paper';
