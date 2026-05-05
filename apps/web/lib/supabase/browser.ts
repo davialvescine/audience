@@ -25,6 +25,9 @@ export function getSupabaseRealtimeClient(): SupabaseClient<Database> {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
+          // Storage key distinto pra silenciar warning de "Multiple
+          // GoTrueClient instances" do supabase-js.
+          storageKey: 'sb-realtime-only',
         },
       },
     );
