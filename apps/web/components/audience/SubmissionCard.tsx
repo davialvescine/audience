@@ -68,17 +68,18 @@ export function SubmissionCard({ id, name, comment, status, createdAt, errorMess
         ) : null}
         {status === 'sent' ? (
           <Button
-            variant="ghost"
+            variant="accent"
+            size="sm"
             loading={pending}
             onClick={() =>
               start(async () => {
                 const r = await reshowSubmission(id);
-                setReshowFeedback(r.ok ? '✓ Reexibida' : `✗ ${r.error}`);
+                setReshowFeedback(r.ok ? '✓ Reexibida no telão' : `✗ ${r.error}`);
                 setTimeout(() => setReshowFeedback(null), 4000);
               })
             }
           >
-            Mostrar novamente
+            ↻ Mostrar novamente
           </Button>
         ) : null}
         {status === 'failed' ? (
