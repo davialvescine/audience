@@ -136,11 +136,12 @@ export function SubmissionCard({
                 })
               }
             >
-              ▶ Mostrar no telão
+              Mostrar no telão
             </Btn>
             <Btn
               kind="secondary"
               disabled={pending}
+              title="Exibir com tempo automático configurado"
               onClick={() =>
                 start(async () => {
                   const r = await dispatchToTelao(id);
@@ -148,7 +149,7 @@ export function SubmissionCard({
                 })
               }
             >
-              ↻ Auto
+              ▶
             </Btn>
             <Btn
               kind="ghost"
@@ -173,23 +174,26 @@ export function SubmissionCard({
                 })
               }
             >
-              ⏹ Tirar do telão
+              Tirar do telão
             </Btn>
-            {!isPinned ? (
-              <Btn
-                kind="secondary"
-                disabled={pending}
-                onClick={() =>
-                  start(async () => {
-                    const r = await pinSubmission(id);
-                    if (r.ok) onPinChange?.(id);
-                    showFeedback(r.ok ? 'Fixada' : r.error);
-                  })
-                }
-              >
-                📌 Fixar
-              </Btn>
-            ) : null}
+            <Btn
+              kind="secondary"
+              disabled={pending}
+              title="Reexibir com tempo automático"
+              onClick={() =>
+                start(async () => {
+                  // Volta pra approved e dispara auto.
+                  const r = await removeFromTelao(id);
+                  if (r.ok) {
+                    if (isPinned) onPinChange?.(null);
+                    const r2 = await dispatchToTelao(id);
+                    showFeedback(r2.ok ? 'Exibindo (auto)' : r2.error);
+                  }
+                })
+              }
+            >
+              ▶
+            </Btn>
           </>
         ) : null}
 
@@ -215,11 +219,13 @@ function Btn({
   disabled,
   onClick,
   children,
+  title,
 }: {
   kind: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
+  title?: string;
 }) {
   const cls = {
     primary: 'bg-primary text-paper hover:bg-primary/90 shadow-sm',
@@ -231,6 +237,7 @@ function Btn({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`text-xs h-7 px-3 rounded-md font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {children}
