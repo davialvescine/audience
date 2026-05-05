@@ -25,18 +25,13 @@ export async function addEventMember(eventId: string, email: string): Promise<Re
     p_email: parsed.data.email,
   });
   if (error) {
-    console.error('[addEventMember]', {
-      eventId: parsed.data.eventId,
-      email: parsed.data.email,
-      err: { message: error.message, code: error.code, details: error.details, hint: error.hint },
-    });
     if (error.message.includes('user_not_found')) {
       return { ok: false, error: 'Esse email não tem cadastro. Convide ele primeiro em /admin/users.' };
     }
     if (error.message.includes('forbidden')) {
       return { ok: false, error: 'Só o dono do evento pode adicionar membros.' };
     }
-    return { ok: false, error: `Falha ao adicionar: ${error.message}` };
+    return { ok: false, error: 'Falha ao adicionar.' };
   }
   const { data: ev } = await supabase
     .from('events')
