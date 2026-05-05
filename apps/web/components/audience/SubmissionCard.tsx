@@ -10,7 +10,6 @@ import {
   rejectSubmission,
   removeFromTelao,
   retrySubmission,
-  unpinSubmission,
 } from '@/server-actions/moderation';
 
 type Props = {
@@ -52,29 +51,52 @@ export function SubmissionCard({
 }: Props) {
   const [pending, start] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
-  const pinnedLocal = isPinned;
 
   const showFeedback = (msg: string) => {
     setFeedback(msg);
-    setTimeout(() => setFeedback(null), 3000);
+    setTimeout(() => setFeedback(null), 2500);
   };
+
+  // Bordas/fundos por estado:
+  // - fixada: roxo/primary
+  // - exibida (sent): verde
+  // - aprovada aguardando: amarelo
+  // - rejeitada: cinza riscado
+  // - falhou: vermelho
+  // - pendente: neutro
+  const cardCls = isPinned
+    ? 'border-primary/50 bg-primary/[0.05]'
+    : status === 'sent'
+      ? 'border-success/40 bg-success/[0.05]'
+      : status === 'approved'
+        ? 'border-amber-400/50 bg-amber-50/60 dark:bg-amber-500/[0.05]'
+        : status === 'rejected'
+          ? 'border-ink/10 bg-ink/[0.02] opacity-60'
+          : status === 'failed'
+            ? 'border-danger/40 bg-danger/[0.05]'
+            : 'border-ink/10 bg-paper';
 
   return (
     <div
-      className={`group rounded-md border bg-paper px-3 py-2.5 transition hover:border-ink/25 ${
-        pinnedLocal ? 'border-primary/40' : 'border-ink/10'
-      }`}
+      className={`group rounded-md border px-3 py-2.5 transition hover:border-ink/30 ${cardCls}`}
     >
       <div className="flex items-baseline gap-2 mb-0.5">
         <span className="text-sm font-medium text-ink truncate">{name}</span>
         <span className="text-[10px] text-ink/40 tabular-nums" suppressHydrationWarning>
           {relativeTime(createdAt)}
         </span>
-        {pinnedLocal ? (
-          <span className="text-[10px] text-primary ml-auto">📌</span>
-        ) : displayCount > 0 ? (
-          <span className="text-[10px] text-ink/45 ml-auto">×{displayCount}</span>
-        ) : null}
+        <div className="ml-auto flex items-center gap-1.5 text-[10px]">
+          {isPinned ? <span className="text-primary font-medium">📌 fixada</span> : null}
+          {!isPinned && status === 'sent' ? (
+            <span className="text-success font-medium">exibida</span>
+          ) : null}
+          {!isPinned && status === 'approved' ? (
+            <span className="text-amber-600 dark:text-amber-400 font-medium">aguardando</span>
+          ) : null}
+          {displayCount > 0 ? (
+            <span className="text-ink/45">×{displayCount}</span>
+          ) : null}
+        </div>
       </div>
       <p className="text-sm text-ink/85 break-words leading-snug">{comment}</p>
       {errorMessage ? (
@@ -84,92 +106,78 @@ export function SubmissionCard({
       <div className="mt-2.5 flex gap-1.5 flex-wrap">
         {status === 'pending' ? (
           <>
-            <ActionButton
-              variant="primary"
+            <Btn
+              kind="primary"
               disabled={pending}
               onClick={() => start(() => approveSubmission(id).then(() => undefined))}
             >
               Aprovar
-            </ActionButton>
-            <ActionButton
-              variant="subtle"
+            </Btn>
+            <Btn
+              kind="ghost"
               disabled={pending}
               onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
             >
               Rejeitar
-            </ActionButton>
+            </Btn>
           </>
         ) : null}
+
         {status === 'approved' ? (
           <>
-            <ActionButton
-              variant="primary"
+            <Btn
+              kind="primary"
               disabled={pending}
               onClick={() =>
                 start(async () => {
                   const r = await pinSubmission(id);
                   if (r.ok) onPinChange?.(id);
-                  showFeedback(r.ok ? 'Fixada no telão' : r.error);
+                  showFeedback(r.ok ? 'Mostrando no telão' : r.error);
                 })
               }
             >
-              📌 Mostrar no telão
-            </ActionButton>
-            <ActionButton
-              variant="subtle"
+              ▶ Mostrar no telão
+            </Btn>
+            <Btn
+              kind="secondary"
               disabled={pending}
               onClick={() =>
                 start(async () => {
                   const r = await dispatchToTelao(id);
-                  showFeedback(r.ok ? `Exibindo (auto)` : r.error);
+                  showFeedback(r.ok ? 'Exibindo (auto)' : r.error);
                 })
               }
             >
-              ↻ Exibir auto
-            </ActionButton>
-            <ActionButton
-              variant="subtle"
+              ↻ Auto
+            </Btn>
+            <Btn
+              kind="ghost"
               disabled={pending}
               onClick={() => start(() => rejectSubmission(id).then(() => undefined))}
             >
               ✕
-            </ActionButton>
+            </Btn>
           </>
         ) : null}
+
         {status === 'sent' ? (
           <>
-            {!pinnedLocal ? (
-              <ActionButton
-                variant="subtle"
-                disabled={pending}
-                onClick={() =>
-                  start(async () => {
-                    const r = await removeFromTelao(id);
-                    showFeedback(r.ok ? 'Tirada do telão' : r.error);
-                  })
-                }
-              >
-                ⏹ Tirar
-              </ActionButton>
-            ) : null}
-            {pinnedLocal ? (
-              <ActionButton
-                variant="primary"
-                disabled={pending}
-                onClick={() => {
-                  if (!eventId) return;
-                  start(async () => {
-                    const r = await unpinSubmission(eventId);
-                    if (r.ok) onPinChange?.(null);
-                    showFeedback(r.ok ? 'Solta' : r.error);
-                  });
-                }}
-              >
-                📌 Soltar
-              </ActionButton>
-            ) : (
-              <ActionButton
-                variant="subtle"
+            <Btn
+              kind="primary"
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  const r = await removeFromTelao(id);
+                  if (r.ok && isPinned) onPinChange?.(null);
+                  showFeedback(r.ok ? 'Tirada do telão' : r.error);
+                })
+              }
+            >
+              ⏹ Tirar do telão
+            </Btn>
+            {!isPinned ? (
+              <Btn
+                kind="secondary"
                 disabled={pending}
                 onClick={() =>
                   start(async () => {
@@ -180,18 +188,19 @@ export function SubmissionCard({
                 }
               >
                 📌 Fixar
-              </ActionButton>
-            )}
+              </Btn>
+            ) : null}
           </>
         ) : null}
+
         {status === 'failed' ? (
-          <ActionButton
-            variant="primary"
+          <Btn
+            kind="primary"
             disabled={pending}
             onClick={() => start(() => retrySubmission(id).then(() => undefined))}
           >
             Tentar novamente
-          </ActionButton>
+          </Btn>
         ) : null}
       </div>
       {feedback ? (
@@ -201,27 +210,28 @@ export function SubmissionCard({
   );
 }
 
-function ActionButton({
-  variant,
+function Btn({
+  kind,
   disabled,
   onClick,
   children,
 }: {
-  variant: 'primary' | 'subtle';
+  kind: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
-  const cls =
-    variant === 'primary'
-      ? 'bg-primary text-paper hover:bg-primary/90'
-      : 'bg-transparent text-ink/65 hover:bg-ink/5';
+  const cls = {
+    primary: 'bg-primary text-paper hover:bg-primary/90 shadow-sm',
+    secondary: 'bg-ink/[0.06] text-ink hover:bg-ink/[0.1]',
+    ghost: 'bg-transparent text-ink/55 hover:bg-ink/5 hover:text-ink',
+  }[kind];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`text-xs h-7 px-2.5 rounded-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
+      className={`text-xs h-7 px-3 rounded-md font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {children}
     </button>

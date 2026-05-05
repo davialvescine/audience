@@ -155,18 +155,28 @@ export async function dispatchToTelao(submissionId: string): Promise<Result> {
   return { ok: true, status: 'sent' };
 }
 
-// Tira a mensagem do telao (volta pra fila approved). Operador pode
-// re-disparar depois com "Mostrar no telão".
+// Tira a mensagem do telao (volta pra fila approved). Tambem unpinna se
+// for a fixada do evento.
 export async function removeFromTelao(submissionId: string): Promise<Result> {
   await requireUser();
   const supabase = await getSupabaseServerClient();
+  const { data: row } = await supabase
+    .from('submissions')
+    .select('event_id')
+    .eq('id', submissionId)
+    .single();
+  if (row) {
+    await supabase
+      .from('events')
+      .update({ pinned_submission_id: null })
+      .eq('id', row.event_id)
+      .eq('pinned_submission_id', submissionId);
+  }
   const { error } = await supabase
     .from('submissions')
     .update({ status: 'approved', sent_at: null })
     .eq('id', submissionId)
-    .eq('status', 'sent')
-    .select('id')
-    .maybeSingle();
+    .eq('status', 'sent');
   if (error) return { ok: false, error: 'Falha ao tirar.' };
   return { ok: true, status: 'sent' };
 }
