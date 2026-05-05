@@ -241,6 +241,7 @@ export type Database = {
           approved_at: string | null
           comment: string
           created_at: string
+          display_count: number
           error_message: string | null
           event_id: string
           id: string
@@ -254,6 +255,7 @@ export type Database = {
           approved_at?: string | null
           comment: string
           created_at?: string
+          display_count?: number
           error_message?: string | null
           event_id: string
           id?: string
@@ -267,6 +269,7 @@ export type Database = {
           approved_at?: string | null
           comment?: string
           created_at?: string
+          display_count?: number
           error_message?: string | null
           event_id?: string
           id?: string

@@ -20,6 +20,7 @@ type Item = {
   status: SubmissionStatus;
   created_at: string;
   error_message: string | null;
+  display_count?: number;
 };
 
 type Props = { eventId: string; initial: Item[] };
@@ -321,6 +322,7 @@ export function ModerationQueue({ eventId, initial }: Props) {
                 status={i.status}
                 createdAt={i.created_at}
                 errorMessage={i.error_message}
+                displayCount={i.display_count ?? 0}
               />
             </motion.div>
           ))}

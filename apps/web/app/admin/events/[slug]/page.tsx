@@ -50,7 +50,7 @@ export default async function EventModerationPage({
 
   const { data: subs } = await supabase
     .from('submissions')
-    .select('id, name, comment, status, created_at, error_message')
+    .select('id, name, comment, status, created_at, error_message, display_count')
     .eq('event_id', event.id)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -89,7 +89,7 @@ export default async function EventModerationPage({
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-display font-bold text-success">{counts.sent}</p>
-              <p className="text-xs text-ink/60 uppercase tracking-wide">No telão</p>
+              <p className="text-xs text-ink/60 uppercase tracking-wide">Exibidas</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-display font-bold text-danger">{counts.failed}</p>

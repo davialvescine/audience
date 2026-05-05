@@ -20,18 +20,24 @@ type Props = {
   status: SubmissionStatus;
   createdAt: string;
   errorMessage: string | null;
+  displayCount?: number;
 };
 
-export function SubmissionCard({ id, name, comment, status, createdAt, errorMessage }: Props) {
+export function SubmissionCard({ id, name, comment, status, createdAt, errorMessage, displayCount = 0 }: Props) {
   const [pending, start] = useTransition();
 
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-ink truncate">{name}</span>
             <Badge status={status} />
+            {displayCount > 0 ? (
+              <span className="text-[10px] uppercase tracking-wide bg-success/15 text-success px-1.5 py-0.5 rounded">
+                Exibida {displayCount}x
+              </span>
+            ) : null}
           </div>
           <p className="text-ink/80 break-words">{comment}</p>
           <p className="mt-2 text-xs text-ink/55" suppressHydrationWarning>
