@@ -75,6 +75,8 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       if (data.type === 'telao-play-queue' && data.samples) {
         // Empilha as amostras na queue real — vai sair pelo tick live
         // respeitando maxConcurrent, displaySeconds e transitionMode.
+        // Limpa o card estatico do preview pra nao contar no maxConcurrent.
+        setVisible([]);
         const ts = Date.now();
         for (let i = 0; i < data.samples.length; i += 1) {
           const s = data.samples[i]!;
