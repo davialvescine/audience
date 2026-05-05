@@ -28,11 +28,6 @@ type Props = { eventId: string; initial: Item[]; telaoConfig?: TelaoConfig | und
 export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
   const [items, setItems] = useState(initial);
   const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  // Diagnostic log of realtime events so the operator can share with us
-  // when something fails — easier than asking for DevTools console copy.
-  const [rtLog, setRtLog] = useState<string[]>([]);
-  const appendLog = (msg: string) =>
-    setRtLog((prev) => [...prev.slice(-9), `${new Date().toLocaleTimeString('pt-BR')} ${msg}`]);
   const [tab, setTab] = useState<SubmissionFilter['tab']>('all');
   const [query, setQuery] = useState('');
 
@@ -176,9 +171,6 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
     void supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) {
         void rt.realtime.setAuth(session.access_token);
-        appendLog(`auth set (jwt len=${session.access_token.length})`);
-      } else {
-        appendLog('NO session — anon');
       }
       channel = rt
         .channel(`event:${eventId}`)
@@ -196,13 +188,7 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
             });
           },
         )
-        // System events trazem detalhes do servidor — codigo de erro,
-        // mensagem, etc. Nao logam por default no console.
-        .on('system', {}, (msg: { extension?: string; status?: string; message?: string }) => {
-          appendLog(`sys ${msg.extension ?? ''} ${msg.status ?? ''} ${msg.message ?? ''}`.trim());
-        })
-        .subscribe((status, err) => {
-          appendLog(`sub ${status} ${err?.message ?? ''}`.trim());
+        .subscribe((status) => {
           if (status === 'SUBSCRIBED') setRtStatus('connected');
           else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED')
             setRtStatus('error');
@@ -297,23 +283,7 @@ export function ModerationQueue({ eventId, initial, telaoConfig }: Props) {
           >
             {soundOn ? '🔔 Som' : '🔕 Som'}
           </button>
-          <details className="relative">
-            <summary className="cursor-pointer list-none">
-              <RealtimeStatusBadge status={rtStatus} />
-            </summary>
-            <div className="absolute right-0 top-7 z-30 w-96 max-w-[90vw] p-3 rounded-md border border-ink/15 bg-paper shadow-lg text-[11px] font-mono">
-              <p className="text-ink/60 mb-2">Diagnóstico Realtime:</p>
-              {rtLog.length === 0 ? (
-                <p className="text-ink/50">Aguardando eventos…</p>
-              ) : (
-                <ul className="space-y-0.5 text-ink/85">
-                  {rtLog.map((line, i) => (
-                    <li key={i} className="break-all">{line}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </details>
+          <RealtimeStatusBadge status={rtStatus} />
         </div>
       </div>
       <input

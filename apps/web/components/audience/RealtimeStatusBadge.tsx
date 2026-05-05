@@ -2,8 +2,8 @@ type Status = 'connecting' | 'connected' | 'error';
 
 const VARIANTS: Record<Status, { dot: string; text: string; label: string }> = {
   connecting: {
-    dot: 'bg-warning',
-    text: 'text-warning',
+    dot: 'bg-ink/30',
+    text: 'text-ink/55',
     label: 'Conectando…',
   },
   connected: {
@@ -12,9 +12,12 @@ const VARIANTS: Record<Status, { dot: string; text: string; label: string }> = {
     label: 'Ao vivo',
   },
   error: {
-    dot: 'bg-danger',
-    text: 'text-danger',
-    label: 'Offline (polling)',
+    // Em produção o WebSocket Realtime não conecta de forma confiável;
+    // polling de 2s cobre tudo. Visualmente neutro pra não alarmar —
+    // sistema funciona bem com polling.
+    dot: 'bg-ink/30',
+    text: 'text-ink/55',
+    label: 'Polling 2s',
   },
 };
 

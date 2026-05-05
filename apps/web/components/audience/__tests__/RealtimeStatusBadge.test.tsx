@@ -14,7 +14,7 @@ describe('RealtimeStatusBadge', () => {
     expect(screen.getByText(/conectando/i)).toBeTruthy();
   });
 
-  it('renders "Polling" when error', () => {
+  it('renders polling label when error', () => {
     render(<RealtimeStatusBadge status="error" />);
     expect(screen.getByText(/polling/i)).toBeTruthy();
   });
