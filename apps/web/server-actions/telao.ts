@@ -23,6 +23,42 @@ export async function updateTelaoConfig(eventId: string, config: TelaoConfig): P
   return { ok: true };
 }
 
+// Salva ou remove um override por modo de exibição. Quando config=null,
+// remove o override e o modo passa a herdar do telao_config global.
+export async function setTelaoConfigOverride(
+  eventId: string,
+  mode: TelaoDisplayMode,
+  config: TelaoConfig | null,
+): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  // Read current overrides map
+  const { data: current, error: readErr } = await supabase
+    .from('events')
+    .select('slug, telao_configs')
+    .eq('id', eventId)
+    .single();
+  if (readErr || !current) return { ok: false, error: 'Evento não encontrado.' };
+
+  const map = (current.telao_configs as Record<string, TelaoConfig> | null) ?? {};
+  const next = { ...map };
+  if (config === null) {
+    delete next[mode];
+  } else {
+    next[mode] = config;
+  }
+
+  const { error } = await supabase
+    .from('events')
+    .update({ telao_configs: next })
+    .eq('id', eventId);
+  if (error) return { ok: false, error: 'Falha ao salvar override.' };
+
+  revalidatePath(`/admin/events/${current.slug}`);
+  revalidatePath(`/telao/${current.slug}`);
+  return { ok: true };
+}
+
 export async function updateDisplayModes(
   eventId: string,
   modes: TelaoDisplayMode[],

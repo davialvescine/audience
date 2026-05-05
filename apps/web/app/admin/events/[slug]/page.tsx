@@ -27,7 +27,7 @@ export default async function EventModerationPage({
   const supabase = await getSupabaseServerClient();
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, enabled_display_modes')
+    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes')
     .eq('slug', slug)
     .single();
   if (!event) notFound();
@@ -113,6 +113,9 @@ export default async function EventModerationPage({
             ...((event.telao_config as Partial<TelaoConfig>) ?? {}),
           }}
           initialModes={(event.enabled_display_modes as TelaoDisplayMode[] | null) ?? ['h2r']}
+          initialOverrides={
+            (event.telao_configs as Partial<Record<TelaoDisplayMode, TelaoConfig>> | null) ?? {}
+          }
           publicTelaoUrl={`${proto}://${host}/telao/${event.slug}`}
           h2r={{
             alreadyPaired: Boolean(event.h2r_paired_at),

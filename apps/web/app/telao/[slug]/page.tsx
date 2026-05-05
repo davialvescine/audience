@@ -23,9 +23,14 @@ export default async function TelaoPage({
   const event = data?.[0];
   if (!event) notFound();
 
+  // Per-mode override: se ?mode=X estiver no URL e telao_configs[X] estiver
+  // setado, usa esse config. Senão herda do telao_config global.
+  const overrides = (event.configs as Record<string, Partial<TelaoConfig>> | null) ?? {};
+  const modeOverride = mode && overrides[mode] ? overrides[mode] : undefined;
   const config: TelaoConfig = {
     ...DEFAULT_TELAO_CONFIG,
     ...((event.config as Partial<TelaoConfig>) ?? {}),
+    ...(modeOverride ?? {}),
   };
 
   const isPreview = preview === '1';

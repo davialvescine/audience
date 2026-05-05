@@ -16,7 +16,7 @@ import {
   type TelaoDisplayMode,
   type TelaoShadow,
 } from '@/lib/telao/config';
-import { updateDisplayModes, updateTelaoConfig } from '@/server-actions/telao';
+import { setTelaoConfigOverride, updateDisplayModes, updateTelaoConfig } from '@/server-actions/telao';
 
 const ANIMATIONS: TelaoAnimation[] = ['slide-up', 'slide-down', 'slide-left', 'slide-right', 'fade', 'scale', 'bounce'];
 
@@ -45,11 +45,19 @@ const SAMPLE_PRESETS = [
 const SHADOWS: TelaoShadow[] = ['none', 'subtle', 'medium', 'dramatic'];
 const ALL_MODES: TelaoDisplayMode[] = ['h2r', 'browser_source', 'chrome_pip', 'desktop_app'];
 
+const MODE_SHORT_LABELS: Record<TelaoDisplayMode, string> = {
+  h2r: 'H2R',
+  browser_source: 'OBS / Browser Source',
+  chrome_pip: 'Chrome PiP',
+  desktop_app: 'Desktop App',
+};
+
 type Props = {
   eventId: string;
   slug: string;
   initialConfig: TelaoConfig;
   initialModes: TelaoDisplayMode[];
+  initialOverrides: Partial<Record<TelaoDisplayMode, TelaoConfig>>;
   publicTelaoUrl: string;
   h2r: {
     alreadyPaired: boolean;
@@ -58,15 +66,34 @@ type Props = {
   };
 };
 
+type EditingMode = 'global' | TelaoDisplayMode;
+
 export function TelaoTab({
   eventId,
   slug,
   initialConfig,
   initialModes,
+  initialOverrides,
   publicTelaoUrl,
   h2r,
 }: Props) {
-  const [config, setConfig] = useState<TelaoConfig>(initialConfig);
+  const [editingMode, setEditingMode] = useState<EditingMode>('global');
+  const [globalConfig, setGlobalConfig] = useState<TelaoConfig>(initialConfig);
+  const [overrides, setOverrides] = useState<Partial<Record<TelaoDisplayMode, TelaoConfig>>>(initialOverrides);
+  const config: TelaoConfig =
+    editingMode === 'global' ? globalConfig : (overrides[editingMode] ?? globalConfig);
+  const setConfig: React.Dispatch<React.SetStateAction<TelaoConfig>> = (updater) => {
+    if (editingMode === 'global') {
+      setGlobalConfig(updater);
+    } else {
+      setOverrides((prev) => {
+        const current = prev[editingMode] ?? globalConfig;
+        const next = typeof updater === 'function' ? updater(current) : updater;
+        return { ...prev, [editingMode]: next };
+      });
+    }
+  };
+  const isOverrideActive = editingMode !== 'global' && overrides[editingMode] !== undefined;
   const [modes, setModes] = useState<TelaoDisplayMode[]>(initialModes);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sample, setSample] = useState({
@@ -89,7 +116,11 @@ export function TelaoTab({
     return () => ro.disconnect();
   }, []);
   // Snapshot of last-saved values so we don't loop on the same data
-  const lastSavedRef = useRef({ config: initialConfig, modes: initialModes });
+  const lastSavedRef = useRef({
+    globalConfig: initialConfig,
+    overrides: initialOverrides,
+    modes: initialModes,
+  });
   // Monotonic version of the most recently dispatched save. When a save
   // promise resolves, we only commit lastSavedRef if its version is still
   // current — otherwise a slow request from earlier could overwrite a
@@ -150,24 +181,47 @@ export function TelaoTab({
 
   // Debounced autosave: fires 600ms after the last config / modes change
   useEffect(() => {
-    const cfgUnchanged = JSON.stringify(config) === JSON.stringify(lastSavedRef.current.config);
+    const last = lastSavedRef.current;
+    const globalUnchanged =
+      JSON.stringify(globalConfig) === JSON.stringify(last.globalConfig);
+    const overridesUnchanged =
+      JSON.stringify(overrides) === JSON.stringify(last.overrides);
     const modesUnchanged =
-      JSON.stringify([...modes].sort()) === JSON.stringify([...lastSavedRef.current.modes].sort());
-    if (cfgUnchanged && modesUnchanged) return;
+      JSON.stringify([...modes].sort()) === JSON.stringify([...last.modes].sort());
+    if (globalUnchanged && overridesUnchanged && modesUnchanged) return;
 
     const t = setTimeout(() => {
       saveVersionRef.current += 1;
       const myVersion = saveVersionRef.current;
       setAutoSaveStatus('saving');
+
+      // Find which overrides changed (added/removed/modified)
+      const changedOverrides: TelaoDisplayMode[] = [];
+      const allKeys = new Set<TelaoDisplayMode>([
+        ...(Object.keys(last.overrides) as TelaoDisplayMode[]),
+        ...(Object.keys(overrides) as TelaoDisplayMode[]),
+      ]);
+      for (const k of allKeys) {
+        if (JSON.stringify(last.overrides[k]) !== JSON.stringify(overrides[k])) {
+          changedOverrides.push(k);
+        }
+      }
+
       void Promise.all([
-        cfgUnchanged ? Promise.resolve({ ok: true } as const) : updateTelaoConfig(eventId, config),
-        modesUnchanged ? Promise.resolve({ ok: true } as const) : updateDisplayModes(eventId, modes),
-      ]).then(([r1, r2]) => {
-        // If a newer save was dispatched while we were in flight, drop
-        // this result — the newer one is authoritative.
+        globalUnchanged
+          ? Promise.resolve({ ok: true } as const)
+          : updateTelaoConfig(eventId, globalConfig),
+        modesUnchanged
+          ? Promise.resolve({ ok: true } as const)
+          : updateDisplayModes(eventId, modes),
+        ...changedOverrides.map((mode) =>
+          setTelaoConfigOverride(eventId, mode, overrides[mode] ?? null),
+        ),
+      ]).then((results) => {
         if (myVersion < saveVersionRef.current) return;
-        if (r1.ok && r2.ok) {
-          lastSavedRef.current = { config, modes };
+        const allOk = results.every((r) => r.ok);
+        if (allOk) {
+          lastSavedRef.current = { globalConfig, overrides, modes };
           setAutoSaveStatus('saved');
           setTimeout(() => setAutoSaveStatus('idle'), 1500);
         } else {
@@ -178,10 +232,11 @@ export function TelaoTab({
     }, 600);
 
     return () => clearTimeout(t);
-  }, [config, modes, eventId]);
+  }, [globalConfig, overrides, modes, eventId]);
 
   const dirty =
-    JSON.stringify(config) !== JSON.stringify(lastSavedRef.current.config) ||
+    JSON.stringify(globalConfig) !== JSON.stringify(lastSavedRef.current.globalConfig) ||
+    JSON.stringify(overrides) !== JSON.stringify(lastSavedRef.current.overrides) ||
     JSON.stringify([...modes].sort()) !== JSON.stringify([...lastSavedRef.current.modes].sort());
 
   const updateField = <K extends keyof TelaoConfig>(key: K, value: TelaoConfig[K]) => {
@@ -293,6 +348,61 @@ export function TelaoTab({
             <p className="text-sm text-ink/60 mt-1">
               Tudo que você muda aqui aparece no preview ao lado em tempo real. Salve no final pra aplicar de verdade.
             </p>
+          </div>
+
+          {/* Per-mode editing selector */}
+          <div className="rounded-lg bg-ink/[0.03] dark:bg-ink/[0.08] p-3">
+            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Editando configuração</p>
+            <div className="flex flex-wrap gap-1.5">
+              {(['global', ...ALL_MODES] as EditingMode[]).map((m) => {
+                const label = m === 'global' ? 'Global (padrão)' : MODE_SHORT_LABELS[m];
+                const hasOverride = m !== 'global' && overrides[m] !== undefined;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setEditingMode(m)}
+                    className={`px-3 h-8 rounded-md text-xs border transition inline-flex items-center gap-1.5 ${
+                      editingMode === m
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-ink/15 text-ink/60 hover:border-ink/30'
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {hasOverride ? <span className="h-1.5 w-1.5 rounded-full bg-accent" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+            {editingMode !== 'global' ? (
+              <div className="mt-3 flex items-center gap-2 text-xs">
+                {!isOverrideActive ? (
+                  <span className="text-ink/60">
+                    Herda do <strong>Global</strong>. Mexa em qualquer controle pra criar um override só pra <strong>{MODE_SHORT_LABELS[editingMode]}</strong>.
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-accent">●</span>
+                    <span className="text-ink/70">
+                      Override ativo pra <strong>{MODE_SHORT_LABELS[editingMode]}</strong>.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOverrides((prev) => {
+                          const next = { ...prev };
+                          delete next[editingMode];
+                          return next;
+                        })
+                      }
+                      className="ml-auto text-primary hover:underline"
+                    >
+                      Resetar pro Global
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {/* Width / Height */}
