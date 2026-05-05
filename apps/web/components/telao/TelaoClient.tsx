@@ -260,6 +260,10 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
   const lastRemovedAtRef = useRef(0);
   const visibleCountRef = useRef(0);
   const removeTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Limite efetivo de cards visiveis. Comeca como config.maxConcurrent, mas
+  // diminui se a pilha exceder a tela (cards nao cabem). Nesse caso o tick
+  // nao tenta mais empilhar — o novo espera na fila ate sobrar espaco.
+  const effectiveMaxRef = useRef(initialConfig.maxConcurrent);
   useEffect(() => {
     // Em preview, o tick tambem roda — alimentado por demo queue (postMessage).
     // IMPORTANTE: nao fazer shift() de queueRef dentro de setState updater.
@@ -268,7 +272,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     const tick = setInterval(() => {
       if (pinned) return;
       if (queueRef.current.length === 0) return;
-      if (visibleCountRef.current >= config.maxConcurrent) return;
+      if (visibleCountRef.current >= Math.min(config.maxConcurrent, effectiveMaxRef.current)) return;
       if (
         config.transitionMode === 'sequential' &&
         visibleCountRef.current === 0 &&
@@ -293,30 +297,41 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     return () => clearInterval(tick);
   }, [preview, config.maxConcurrent, config.displaySeconds, config.transitionMode, pinned]);
 
-  // Auto-cull: se a pilha de cards exceder a area util (90% da viewport),
-  // remove o mais antigo pra dar lugar ao novo. Tambem cancela seu timeout
-  // pra nao tentar remove-lo de novo depois.
+  // Detecta overflow: se a pilha exceder ~90% da viewport, o ultimo card
+  // adicionado nao cabe. Remove ele (volta pra fila como front) e diminui
+  // o limite efetivo. O tick para de tentar empilhar ate alguem sair.
   useEffect(() => {
-    if (preview) {
-      // No iframe de preview, viewport e 1080. Cull baseado nisso.
-    }
     const el = rootRef.current;
     if (!el) return;
     const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
     const maxAllowed = vh * 0.9;
-    if (el.offsetHeight > maxAllowed && visible.length > 1) {
-      const oldest = visible[0];
-      if (oldest) {
-        const t = removeTimeoutsRef.current.get(oldest.id);
+    if (el.offsetHeight > maxAllowed && visible.length > 0) {
+      const newest = visible[visible.length - 1];
+      if (newest) {
+        const t = removeTimeoutsRef.current.get(newest.id);
         if (t) {
           clearTimeout(t);
-          removeTimeoutsRef.current.delete(oldest.id);
+          removeTimeoutsRef.current.delete(newest.id);
         }
+        queueRef.current.unshift(newest); // espera proxima vaga
         visibleCountRef.current = Math.max(0, visibleCountRef.current - 1);
-        setVisible((cur) => cur.slice(1));
+        effectiveMaxRef.current = Math.max(1, visible.length - 1);
+        setVisible((cur) => cur.slice(0, -1));
       }
     }
-  }, [visible, preview]);
+  }, [visible]);
+
+  // Reset do limite efetivo quando o usuario muda a config (ex.: aumenta
+  // tamanho da fonte ou mexe no maxConcurrent — vamos tentar empilhar de novo).
+  useEffect(() => {
+    effectiveMaxRef.current = config.maxConcurrent;
+  }, [
+    config.maxConcurrent,
+    config.fontSizePx,
+    config.heightPx,
+    config.widthPct,
+    config.position,
+  ]);
 
   const variants = animationVariants(config.animation);
   // Pra anchors superiores, novos no topo (empilha pra baixo).
