@@ -8,10 +8,14 @@ Sentry.init({
   ...(dsn ? { dsn } : {}),
   enabled: Boolean(dsn),
   tracesSampleRate: 0.1,
-  // Replay desligado temporariamente — investigando se o replay
-  // integration interfere com o WebSocket do Supabase Realtime em prod.
-  // Reativar apos confirmar.
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
+  // Replay: 10% das sessões normais, 100% das que tiveram erro.
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+  integrations: [
+    Sentry.replayIntegration({
+      maskAllText: true,
+      blockAllMedia: true,
+    }),
+  ],
   beforeSend: (event) => scrubPII(event),
 });

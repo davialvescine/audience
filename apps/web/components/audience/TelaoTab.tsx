@@ -333,10 +333,24 @@ export function TelaoTab({
             title="Audience Desktop"
             url={publicTelaoUrl}
             instructions={[
-              'Em breve: app nativo Mac/Windows pra exibir o telão sem precisar de OBS.',
+              'Baixe o app Audience Desktop pro seu sistema (Mac/Windows/Linux).',
+              `Abra o app, cole o slug do evento (${slug}) e clique Conectar.`,
+              'Posicione a janela transparente onde quiser na tela.',
+              'Inicie sua apresentação — a janela permanece por cima.',
             ]}
             extraButtons={[
-              { label: 'Em desenvolvimento', href: '#', disabled: true },
+              {
+                label: '⬇ Baixar (Mac · Apple Silicon)',
+                href: 'https://github.com/davialvescine/audience/releases/latest/download/Audience.Desktop_aarch64.dmg',
+              },
+              {
+                label: '⬇ Baixar (Mac · Intel)',
+                href: 'https://github.com/davialvescine/audience/releases/latest/download/Audience.Desktop_x64.dmg',
+              },
+              {
+                label: '⬇ Baixar (Windows)',
+                href: 'https://github.com/davialvescine/audience/releases/latest/download/Audience.Desktop_x64.exe',
+              },
             ]}
           />
         ) : null}
@@ -796,7 +810,7 @@ function describeMode(mode: TelaoDisplayMode): string {
     case 'chrome_pip':
       return 'Janela flutuante always-on-top no Chrome. 1 clique pra ativar, sem instalação.';
     case 'desktop_app':
-      return 'App proprietário Audience Desktop com janela transparente. Em desenvolvimento.';
+      return 'App proprietário Audience Desktop — janela transparente always-on-top, sem precisar de OBS.';
   }
 }
 

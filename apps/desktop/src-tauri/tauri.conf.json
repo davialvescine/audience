@@ -2,38 +2,46 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Audience Desktop",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "app.audience.desktop",
   "build": {
-    "frontendDist": "../dist",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Audience",
-        "width": 800,
-        "height": 600,
+        "url": "index.html",
+        "width": 1280,
+        "height": 720,
+        "minWidth": 480,
+        "minHeight": 200,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "alwaysOnTop": true,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false,
+        "skipTaskbar": false
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Telão de comentários da audiência sempre por cima",
+    "longDescription": "Janela transparente always-on-top que mostra os comentários aprovados da audiência em qualquer apresentação ou software de transmissão.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
-    }
+    ]
   }
 }
