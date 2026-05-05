@@ -475,10 +475,9 @@ export function TelaoTab({
           </p>
 
           {/* Timing */}
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <Slider label="Tempo de exibição" suffix="s" min={3} max={30} value={config.displaySeconds} onChange={(v) => updateField('displaySeconds', v)} />
             <IntervalSlider eventId={eventId} initial={h2r.dispatchIntervalSeconds} />
-            <Slider label="Mensagens visíveis" suffix="" min={1} max={5} value={config.maxConcurrent} onChange={(v) => updateField('maxConcurrent', v)} />
           </div>
 
           {/* Extras */}
