@@ -169,13 +169,16 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
     // workaround pra "transport failure" no WS em prod com Vercel.
     const rt = getSupabaseRealtimeClient();
     let channel: ReturnType<typeof rt.channel> | null = null;
+    let cancelled = false;
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
       if (session?.access_token) {
         void rt.realtime.setAuth(session.access_token);
       }
+      // Channel name unico por mount pra evitar reusar handle stale.
       channel = rt
-        .channel(`event:${eventId}`)
+        .channel(`event:${eventId}:${Date.now()}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'submissions', filter: `event_id=eq.${eventId}` },
@@ -223,6 +226,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
     const t = setInterval(() => { void refresh(); }, 2000);
 
     return () => {
+      cancelled = true;
       if (channel) void rt.removeChannel(channel);
       clearInterval(t);
     };
