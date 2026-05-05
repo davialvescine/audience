@@ -27,6 +27,7 @@ type Props = { eventId: string; initial: Item[]; pinnedSubmissionId?: string | n
 
 export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props) {
   const [items, setItems] = useState(initial);
+  const [pinnedId, setPinnedId] = useState<string | null>(pinnedSubmissionId ?? null);
   const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [tab, setTab] = useState<SubmissionFilter['tab']>('all');
   const [query, setQuery] = useState('');
@@ -323,8 +324,9 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
                 createdAt={i.created_at}
                 errorMessage={i.error_message}
                 displayCount={i.display_count ?? 0}
-                isPinned={i.id === pinnedSubmissionId}
+                isPinned={i.id === pinnedId}
                 eventId={eventId}
+                onPinChange={setPinnedId}
               />
             </motion.div>
           ))}

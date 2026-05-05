@@ -25,6 +25,7 @@ type Props = {
   displayCount?: number;
   isPinned?: boolean;
   eventId?: string;
+  onPinChange?: (pinnedId: string | null) => void;
 };
 
 export function SubmissionCard({
@@ -37,9 +38,11 @@ export function SubmissionCard({
   displayCount = 0,
   isPinned = false,
   eventId,
+  onPinChange,
 }: Props) {
   const [pending, start] = useTransition();
   const [reshowFeedback, setReshowFeedback] = useState<string | null>(null);
+  const pinnedLocal = isPinned;
 
   return (
     <Card>
@@ -48,7 +51,7 @@ export function SubmissionCard({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-ink truncate">{name}</span>
             <Badge status={status} />
-            {isPinned ? (
+            {pinnedLocal ? (
               <span className="text-[10px] uppercase tracking-wide bg-primary/20 text-primary px-1.5 py-0.5 rounded">
                 📌 Fixada
               </span>
@@ -101,7 +104,7 @@ export function SubmissionCard({
             >
               ↻ Mostrar novamente
             </Button>
-            {isPinned ? (
+            {pinnedLocal ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -110,6 +113,7 @@ export function SubmissionCard({
                   if (!eventId) return;
                   start(async () => {
                     const r = await unpinSubmission(eventId);
+                    if (r.ok) onPinChange?.(null);
                     setReshowFeedback(r.ok ? '✓ Solta' : `✗ ${r.error}`);
                     setTimeout(() => setReshowFeedback(null), 4000);
                   });
@@ -125,6 +129,7 @@ export function SubmissionCard({
                 onClick={() =>
                   start(async () => {
                     const r = await pinSubmission(id);
+                    if (r.ok) onPinChange?.(id);
                     setReshowFeedback(r.ok ? '✓ Fixada no telão' : `✗ ${r.error}`);
                     setTimeout(() => setReshowFeedback(null), 4000);
                   })
