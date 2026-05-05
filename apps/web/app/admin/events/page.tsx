@@ -7,13 +7,20 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { requireUser } from '@/lib/auth/requireUser';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminEventsPage() {
   const user = await requireUser();
   const supabase = await getSupabaseServerClient();
-  const { data: events } = await supabase
+  const { data: events, error: eventsErr } = await supabase
     .from('events')
     .select('id, slug, name, h2r_paired_at, h2r_last_heartbeat, submissions_open, created_at')
     .order('created_at', { ascending: false });
+  if (eventsErr) {
+    console.error('[events list] query failed', { userId: user.id, err: eventsErr });
+  }
+  console.log('[events list] user', user.id, 'email', user.email, 'count', events?.length ?? 0);
 
   return (
     <AdminShell userEmail={user.email ?? ''}>
