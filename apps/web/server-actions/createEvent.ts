@@ -50,6 +50,13 @@ export async function createEvent(formData: FormData): Promise<void> {
     .select('slug')
     .single();
 
-  if (error || !data) redirect('/admin/events/new?error=unknown');
+  if (error || !data) {
+    console.error('[createEvent] failed', {
+      userId: user.id,
+      slug: candidate,
+      error: error ? { message: error.message, code: error.code, details: error.details, hint: error.hint } : 'no-data-no-error',
+    });
+    redirect('/admin/events/new?error=unknown');
+  }
   redirect(`/admin/events/${data.slug}/settings`);
 }

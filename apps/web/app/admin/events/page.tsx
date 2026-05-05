@@ -22,8 +22,24 @@ export default async function AdminEventsPage() {
   }
   console.log('[events list] user', user.id, 'email', user.email, 'count', events?.length ?? 0);
 
+  // Debug: chama RPC que retorna o auth.uid() que o PostgREST ve
+  const { data: authProbe, error: authProbeErr } = await supabase.rpc(
+    'whoami_probe' as never,
+  );
+  const debugInfo = {
+    userIdFromCookie: user.id,
+    userEmail: user.email,
+    eventsCount: events?.length ?? 0,
+    authUidFromRPC: authProbe,
+    authProbeError: authProbeErr?.message ?? null,
+    eventsError: eventsErr?.message ?? null,
+  };
+
   return (
     <AdminShell userEmail={user.email ?? ''}>
+      <pre className="mb-4 p-3 bg-yellow-100 text-xs overflow-x-auto rounded">
+        DEBUG: {JSON.stringify(debugInfo, null, 2)}
+      </pre>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-display text-ink">Eventos</h1>
