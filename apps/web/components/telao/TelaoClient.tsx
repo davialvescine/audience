@@ -336,6 +336,26 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     config.position,
   ]);
 
+  // Se maxConcurrent baixou abaixo do que esta visivel, remove os mais
+  // antigos ate respeitar o novo limite.
+  useEffect(() => {
+    if (visible.length > config.maxConcurrent) {
+      const toRemove = visible.length - config.maxConcurrent;
+      for (let i = 0; i < toRemove; i++) {
+        const oldest = visible[i];
+        if (oldest) {
+          const t = removeTimeoutsRef.current.get(oldest.id);
+          if (t) {
+            clearTimeout(t);
+            removeTimeoutsRef.current.delete(oldest.id);
+          }
+        }
+      }
+      visibleCountRef.current = Math.max(0, visibleCountRef.current - toRemove);
+      setVisible((cur) => cur.slice(toRemove));
+    }
+  }, [config.maxConcurrent, visible]);
+
   const variants = animationVariants(config.animation);
   // Pra anchors superiores, novos no topo (empilha pra baixo).
   // Pra anchors inferiores, novos embaixo (empilha pra cima).
