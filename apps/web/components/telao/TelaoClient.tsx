@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   animationVariants,
   customPositionStyles,
+  DEFAULT_TELAO_CONFIG,
   positionStyles,
   shadowStyle,
   type TelaoConfig,
@@ -111,8 +112,30 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     };
     const pollTimer = setInterval(() => { void poll(); }, 2000);
 
+    // Poll config tambem — quando o dono muda cor/posicao no admin,
+    // todas as telas /telao abertas (OBS, PiP, desktop) atualizam em
+    // ate 5s sem precisar recarregar.
+    const pollConfig = async () => {
+      const { data, error } = await supabase.rpc('get_telao_config', { p_slug: slug });
+      if (error || !data || data.length === 0) return;
+      const event = data[0];
+      if (!event) return;
+      const overrides = (event.configs as Record<string, Partial<TelaoConfig>> | null) ?? {};
+      // mode no preview e ignorado; em live, usamos o config global.
+      // (per-mode override e aplicado no SSR via page.tsx, podemos
+      // honrar tambem aqui depois se precisar.)
+      const fresh: TelaoConfig = {
+        ...DEFAULT_TELAO_CONFIG,
+        ...((event.config as Partial<TelaoConfig>) ?? {}),
+        ...(overrides.global ?? {}),
+      };
+      setConfig((cur) => (JSON.stringify(cur) === JSON.stringify(fresh) ? cur : fresh));
+    };
+    const cfgTimer = setInterval(() => { void pollConfig(); }, 5000);
+
     return () => {
       clearInterval(pollTimer);
+      clearInterval(cfgTimer);
     };
   }, [eventId, slug, preview]);
 

@@ -39,6 +39,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_members: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_members_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string
@@ -216,6 +245,7 @@ export type Database = {
           event_id: string
           id: string
           ip_hash: string | null
+          moderated_by: string | null
           name: string
           sent_at: string | null
           status: Database["public"]["Enums"]["submission_status"]
@@ -228,6 +258,7 @@ export type Database = {
           event_id: string
           id?: string
           ip_hash?: string | null
+          moderated_by?: string | null
           name: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
@@ -240,6 +271,7 @@ export type Database = {
           event_id?: string
           id?: string
           ip_hash?: string | null
+          moderated_by?: string | null
           name?: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
@@ -283,6 +315,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_event_member: {
+        Args: { p_email: string; p_event_id: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       claim_submission_for_send: {
         Args: { p_submission_id: string }
         Returns: {
@@ -305,6 +344,7 @@ export type Database = {
           theme_id: string
         }[]
       }
+      get_moderator_email: { Args: { p_user_id: string }; Returns: string }
       get_submissions_via_token: {
         Args: { p_status_filter?: string; p_token: string }
         Returns: {
@@ -336,6 +376,15 @@ export type Database = {
           sent_at: string
         }[]
       }
+      list_event_members: {
+        Args: { p_event_id: string }
+        Returns: {
+          added_at: string
+          email: string
+          is_owner: boolean
+          user_id: string
+        }[]
+      }
       mark_submission_failed: {
         Args: { p_error: string; p_submission_id: string }
         Returns: undefined
@@ -362,6 +411,10 @@ export type Database = {
       }
       reject_submission: {
         Args: { p_submission_id: string }
+        Returns: undefined
+      }
+      remove_event_member: {
+        Args: { p_event_id: string; p_user_id: string }
         Returns: undefined
       }
       reset_submission_for_retry: {

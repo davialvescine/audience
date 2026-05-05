@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AdminShell } from '@/components/audience/AdminShell';
+import { EventMembers } from '@/components/audience/EventMembers';
 import { EventSettings } from '@/components/audience/EventSettings';
 import { FlushQueueButton } from '@/components/audience/FlushQueueButton';
 import { H2RStatusBadge } from '@/components/audience/H2RStatusBadge';
@@ -33,10 +34,15 @@ export default async function EventModerationPage({
   const supabase = await getSupabaseServerClient();
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes')
+    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes, owner_id')
     .eq('slug', slug)
     .single();
   if (!event) notFound();
+  const isOwner = event.owner_id === user.id;
+
+  const { data: members } = await supabase.rpc('list_event_members', {
+    p_event_id: event.id,
+  });
 
   const { data: subs } = await supabase
     .from('submissions')
@@ -167,6 +173,12 @@ export default async function EventModerationPage({
       content: (
         <div className="space-y-4">
           <EventSettings eventId={event.id} initialName={event.name} />
+          <EventMembers
+            eventId={event.id}
+            currentUserId={user.id}
+            initialMembers={(members ?? []) as Array<{ user_id: string; email: string; added_at: string; is_owner: boolean }>}
+            isOwner={isOwner}
+          />
           <ModeratorLinks
             eventId={event.id}
             baseUrl={`${proto}://${host}`}
