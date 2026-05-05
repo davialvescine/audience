@@ -107,10 +107,13 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
 
   // Beep + title update on new pending items
   const seenIdsRef = useRef<string[]>(initial.filter((i) => i.status === 'pending').map((i) => i.id));
-  const [soundOn, setSoundOn] = useState<boolean>(() => {
-    if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem('moderation-sound') === '1';
-  });
+  // Inicia false em ambos os lados pra evitar hydration mismatch.
+  // Hidrata do localStorage logo apos mount.
+  const [soundOn, setSoundOn] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof localStorage === 'undefined') return;
+    setSoundOn(localStorage.getItem('moderation-sound') === '1');
+  }, []);
 
   useEffect(() => {
     const newCount = detectNewPending(seenIdsRef.current, items);
