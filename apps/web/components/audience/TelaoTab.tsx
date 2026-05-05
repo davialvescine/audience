@@ -475,10 +475,21 @@ export function TelaoTab({
           </p>
 
           {/* Timing */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <Slider label="Tempo de exibição" suffix="s" min={3} max={30} value={config.displaySeconds} onChange={(v) => updateField('displaySeconds', v)} />
             <IntervalSlider eventId={eventId} initial={h2r.dispatchIntervalSeconds} />
+            <Slider
+              label="Cards visíveis"
+              suffix=""
+              min={1}
+              max={5}
+              value={config.maxConcurrent}
+              onChange={(v) => updateField('maxConcurrent', v)}
+            />
           </div>
+          <p className="text-xs text-ink/55 -mt-3">
+            Mais de 1 = empilhadas verticalmente na mesma posição. Útil pra mostrar histórico recente.
+          </p>
 
           {/* Modo de transicao */}
           <div>
