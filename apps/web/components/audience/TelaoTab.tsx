@@ -480,6 +480,37 @@ export function TelaoTab({
             <IntervalSlider eventId={eventId} initial={h2r.dispatchIntervalSeconds} />
           </div>
 
+          {/* Modo de transicao */}
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Modo de transição</p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => updateField('transitionMode', 'sequential')}
+                className={`px-3 h-9 rounded-md text-sm border transition text-left ${
+                  config.transitionMode === 'sequential'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-ink/15 text-ink/70 hover:border-ink/30'
+                }`}
+              >
+                <span className="block font-medium">Sequencial</span>
+                <span className="block text-[10px] opacity-70">sai → intervalo → entra próxima</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updateField('transitionMode', 'overlap')}
+                className={`px-3 h-9 rounded-md text-sm border transition text-left ${
+                  config.transitionMode === 'overlap'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-ink/15 text-ink/70 hover:border-ink/30'
+                }`}
+              >
+                <span className="block font-medium">Sobrepor</span>
+                <span className="block text-[10px] opacity-70">próxima entra empurrando a anterior</span>
+              </button>
+            </div>
+          </div>
+
           {/* Extras */}
           <div>
             <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Mostrar no card</p>

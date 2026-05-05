@@ -27,10 +27,13 @@ type Props = {
   eventId: string;
   eventName: string;
   config: TelaoConfig;
+  intervalSeconds?: number;
   preview?: boolean;
 };
 
-export function TelaoClient({ slug, eventId, eventName, config: initialConfig, preview = false }: Props) {
+export function TelaoClient({ slug, eventId, eventName, config: initialConfig, intervalSeconds = 3, preview = false }: Props) {
+  const intervalRef = useRef(intervalSeconds);
+  intervalRef.current = intervalSeconds;
   // Config comes from SSR (page.tsx is force-dynamic so F5 always picks
   // up DB changes). Preview mode receives live updates via postMessage
   // from the admin TelaoTab. For non-preview /telao tabs, refresh after
@@ -225,28 +228,41 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, p
     };
   }, [playCycleId, preview, previewSample, config.displaySeconds]);
 
-  // Live tick (non-preview): pull from queue, respect maxConcurrent and displaySeconds
+  // Live tick: pull from queue. Dois modos de transicao:
+  // - 'sequential': mensagem sai completamente, espera intervalSeconds,
+  //   so depois entra a proxima. Mantem visible=[].
+  // - 'overlap': a nova entra empurrando a antiga pra cima durante a
+  //   saida (sobrepoe momentaneamente).
+  const lastRemovedAtRef = useRef(0);
   useEffect(() => {
     if (preview) return;
     const tick = setInterval(() => {
-      // Pinned: nao avanca a fila. Mensagens recem-aprovadas acumulam
-      // ate o operador "Soltar" — quando pinned vira null, reabre o
-      // fluxo normal e a fila comeca a sair.
       if (pinned) return;
       if (queueRef.current.length === 0) return;
       setVisible((cur) => {
         if (cur.length >= config.maxConcurrent) return cur;
+        // Sequential: depois de remover, espera o intervalo antes de
+        // colocar a proxima. Permite pausa visual entre mensagens.
+        if (
+          config.transitionMode === 'sequential' &&
+          cur.length === 0 &&
+          lastRemovedAtRef.current > 0 &&
+          Date.now() - lastRemovedAtRef.current < intervalRef.current * 1000
+        ) {
+          return cur;
+        }
         const next = queueRef.current.shift();
         if (!next) return cur;
         const removeAfter = config.displaySeconds * 1000;
         setTimeout(() => {
+          lastRemovedAtRef.current = Date.now();
           setVisible((cur2) => cur2.filter((m) => m.id !== next.id));
         }, removeAfter);
         return [...cur, next];
       });
-    }, 500);
+    }, 250);
     return () => clearInterval(tick);
-  }, [preview, config.maxConcurrent, config.displaySeconds, pinned]);
+  }, [preview, config.maxConcurrent, config.displaySeconds, config.transitionMode, pinned]);
 
   const variants = animationVariants(config.animation);
   const hasCustomPos =

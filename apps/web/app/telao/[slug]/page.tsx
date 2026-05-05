@@ -36,12 +36,20 @@ export default async function TelaoPage({
   const isPreview = preview === '1';
   const isPip = mode === 'chrome_pip';
 
+  // Pega o intervalo do evento pra passar pro client (sequencial usa).
+  const { data: ev } = await supabase
+    .from('events')
+    .select('dispatch_interval_seconds')
+    .eq('id', event.event_id)
+    .single();
+
   const telao = (
     <TelaoClient
       slug={slug}
       eventId={event.event_id}
       eventName={event.event_name}
       config={config}
+      intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
       preview={isPreview}
     />
   );

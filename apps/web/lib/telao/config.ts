@@ -13,6 +13,11 @@ export type TelaoAnimation = 'slide-up' | 'slide-down' | 'slide-left' | 'slide-r
 
 export type TelaoShadow = 'none' | 'subtle' | 'medium' | 'dramatic';
 
+// Modo de transicao entre mensagens em rotacao automatica:
+// - 'sequential': uma sai completamente, espera o intervalo, ai a proxima entra
+// - 'overlap': a nova entra empurrando a anterior pra cima durante a saida
+export type TelaoTransitionMode = 'sequential' | 'overlap';
+
 export type TelaoConfig = {
   position: TelaoPosition;
   /** Custom X position (0–100, % of 1920 stage). When set together with
@@ -33,6 +38,7 @@ export type TelaoConfig = {
   animation: TelaoAnimation;
   displaySeconds: number;
   maxConcurrent: number;
+  transitionMode: TelaoTransitionMode;
   showAvatar: boolean;
   showTimestamp: boolean;
   showEventName: boolean;
@@ -52,6 +58,7 @@ export const DEFAULT_TELAO_CONFIG: TelaoConfig = {
   animation: 'slide-up',
   displaySeconds: 7,
   maxConcurrent: 1,
+  transitionMode: 'sequential',
   showAvatar: false,
   showTimestamp: false,
   showEventName: false,
