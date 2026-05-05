@@ -296,18 +296,23 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
         placeholder="Buscar por nome ou comentário…"
         className="h-9 px-3 rounded-md border border-ink/15 bg-transparent text-sm text-ink focus:border-primary focus:outline-none"
       />
-      <div className="text-[11px] text-ink/45">
-        Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/<kbd className="px-1 rounded bg-ink/10">K</kbd> navegar ·{' '}
-        <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar ·{' '}
-        <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar ·{' '}
-        <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
+      <div className="rounded-lg border border-ink/8 bg-ink/[0.02] dark:bg-ink/5 px-3 py-2 text-[11px] text-ink/65 space-y-1">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <span><strong className="text-ink/85">▶ Exibir</strong> · entra, fica e sai sozinho (tempo configurado)</span>
+          <span><strong className="text-ink/85">Mostrar no telão</strong> · fixa, fica até clicar Tirar</span>
+          <span><strong className="text-ink/85">Tirar do telão</strong> · remove agora, volta pra fila</span>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-ink/8">
+          <span>Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/<kbd className="px-1 rounded bg-ink/10">K</kbd> navegar · <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar · <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar · <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer</span>
+        </div>
       </div>
       {tab === 'all' ? (
         <div className="grid lg:grid-cols-2 gap-4">
           <Column
             title="Chegando"
-            subtitle="Aguardando aprovação · rejeitadas ficam aqui"
-            items={visible.filter((i) => i.status === 'pending' || i.status === 'rejected')}
+            subtitle="Pendentes (cinza) e rejeitadas (vermelho)"
+            accent="pending"
+            items={[...visible.filter((i) => i.status === 'pending'), ...visible.filter((i) => i.status === 'rejected')]}
             empty="Sem novos comentários."
             renderCard={(i) => (
               <SubmissionCard
@@ -326,8 +331,9 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
           />
           <Column
             title="Fila"
-            subtitle="Aprovadas. Cinza = não exibida · Verde = já foi · Roxo = fixada"
-            items={visible.filter((i) => i.status === 'approved' || i.status === 'sent')}
+            subtitle="Amarelo = aguardando · Verde = já exibida · Roxo = fixada"
+            accent="queue"
+            items={[...visible.filter((i) => i.status === 'approved'), ...visible.filter((i) => i.status === 'sent')]}
             empty="Aprove uma mensagem pra ela aparecer aqui."
             renderCard={(i) => (
               <SubmissionCard
@@ -414,26 +420,40 @@ function Column({
   items,
   empty,
   renderCard,
+  accent,
 }: {
   title: string;
   subtitle: string;
   items: Item[];
   empty: string;
   renderCard: (item: Item) => React.ReactNode;
+  accent?: 'pending' | 'queue';
 }) {
+  const accentBar =
+    accent === 'pending'
+      ? 'bg-ink/15'
+      : accent === 'queue'
+        ? 'bg-amber-400'
+        : 'bg-ink/15';
   return (
-    <section>
-      <div className="flex items-baseline justify-between mb-3 pb-2 border-b border-ink/10">
-        <div>
-          <h3 className="font-display text-sm uppercase tracking-wider text-ink/80">
+    <section className="rounded-xl border border-ink/8 bg-paper/60 dark:bg-ink/[0.02] p-3.5">
+      <header className="flex items-center gap-3 mb-3 pb-2.5 border-b border-ink/8">
+        <span className={`block w-1 h-7 rounded-full ${accentBar}`} aria-hidden />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-display text-sm font-semibold text-ink leading-tight">
             {title}
           </h3>
-          <p className="text-xs text-ink/50">{subtitle}</p>
+          <p className="text-[11px] text-ink/50 leading-tight">{subtitle}</p>
         </div>
-        <span className="text-xs font-medium text-ink/60 tabular-nums">{items.length}</span>
-      </div>
+        <span className="text-xs font-semibold text-ink tabular-nums bg-ink/5 dark:bg-ink/10 px-2 py-0.5 rounded-md">
+          {items.length}
+        </span>
+      </header>
       {items.length === 0 ? (
-        <p className="text-sm text-ink/40 py-6 text-center italic">{empty}</p>
+        <div className="py-12 flex flex-col items-center gap-2 text-ink/35">
+          <span className="text-2xl opacity-50">·</span>
+          <p className="text-xs italic max-w-[28ch] text-center">{empty}</p>
+        </div>
       ) : (
         <div className="grid gap-2">
           <AnimatePresence initial={false}>
@@ -441,7 +461,7 @@ function Column({
               <motion.div
                 key={i.id}
                 layout
-                initial={{ opacity: 0, y: -8 }}
+                initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
                 transition={{ duration: 0.2 }}
