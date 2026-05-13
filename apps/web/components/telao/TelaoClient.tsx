@@ -20,6 +20,10 @@ type Submission = {
   name: string;
   comment: string;
   created_at: string;
+  // Base submission id (sem o sufixo de sent_at). Usado pra remover
+  // entradas da fila quando a mensagem e fixada — fixada nao deve
+  // aparecer em rotacao automatica.
+  submissionId?: string;
 };
 
 type Props = {
@@ -43,6 +47,10 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
   const [pinned, setPinned] = useState<Submission | null>(null);
   const queueRef = useRef<Submission[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
+  // Id da submission atualmente fixada. Atualizado no pollPinned. Usado
+  // pelo enqueue pra nao colocar na fila de rotacao a propria fixada
+  // (senao reaparece sozinha quando o operador clica "Tirar do telao").
+  const pinnedIdRef = useRef<string | null>(null);
 
   const [previewSample, setPreviewSample] = useState<{ name: string; comment: string }>({
     name: 'João da Silva',
@@ -111,8 +119,13 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     // submissions com sent_at maior que o ultimo visto. Reshow gera novo
     // sent_at, entao volta como entrada nova.
     const enqueue = (row: Submission & { sent_at?: string | null }) => {
+      // Se a mensagem ja esta fixada, nao entra na rotacao — ela e
+      // renderizada via o slot `pinned`. Sem esse guard, ao "Tirar do
+      // telao" a mensagem reapareceria pelo tick consumindo a fila.
+      if (pinnedIdRef.current && row.id === pinnedIdRef.current) return;
       queueRef.current.push({
         id: `${row.id}-${row.sent_at ?? Date.now()}`,
+        submissionId: row.id,
         name: row.name,
         comment: row.comment,
         created_at: row.created_at,
@@ -170,9 +183,16 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       if (error) return;
       const row = data?.[0];
       if (!row) {
+        pinnedIdRef.current = null;
         setPinned((cur) => (cur === null ? cur : null));
         return;
       }
+      pinnedIdRef.current = row.id;
+      // Limpa entradas da fila com a mesma submission (a pinada entra como
+      // 'sent' no get_telao_submissions_since e foi enfileirada antes do
+      // pollPinned detectar a fixacao — sem esse drain, reapareceria
+      // assim que o operador clicasse "Tirar do telao").
+      queueRef.current = queueRef.current.filter((q) => q.submissionId !== row.id);
       setPinned((cur) => {
         if (cur && cur.id === row.id) return cur;
         return {
