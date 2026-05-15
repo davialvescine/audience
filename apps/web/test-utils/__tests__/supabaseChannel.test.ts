@@ -62,4 +62,43 @@ describe('createFakeChannel', () => {
     ch.emit({ eventType: 'INSERT', new: {}, old: {}, table: 'events' });
     expect(cb).not.toHaveBeenCalled();
   });
+
+  describe('presence support', () => {
+    it('delivers sync event to subscribers with current presenceState', () => {
+      const ch = createFakeChannel();
+      const sync = vi.fn();
+      ch.on('presence', { event: 'sync' }, sync);
+      ch.subscribe();
+      ch.simulatePresence({ 'k1': [{ joinedAt: 1 }], 'k2': [{ joinedAt: 2 }] });
+      expect(sync).toHaveBeenCalledTimes(1);
+      expect(ch.presenceState()).toEqual({
+        k1: [{ joinedAt: 1 }],
+        k2: [{ joinedAt: 2 }],
+      });
+    });
+
+    it('does not fire sync until subscribe()', () => {
+      const ch = createFakeChannel();
+      const sync = vi.fn();
+      ch.on('presence', { event: 'sync' }, sync);
+      ch.simulatePresence({ 'k1': [{}] });
+      expect(sync).not.toHaveBeenCalled();
+    });
+
+    it('track() records the local payload', async () => {
+      const ch = createFakeChannel();
+      ch.subscribe();
+      const result = await ch.track({ joinedAt: 42 });
+      expect(result).toBe('ok');
+      expect(ch.lastTrack()).toEqual({ joinedAt: 42 });
+    });
+
+    it('untrack() clears the local payload', async () => {
+      const ch = createFakeChannel();
+      ch.subscribe();
+      await ch.track({ joinedAt: 1 });
+      await ch.untrack();
+      expect(ch.lastTrack()).toBeNull();
+    });
+  });
 });
