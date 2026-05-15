@@ -10,7 +10,11 @@ import { uploadEventAsset } from '@/server-actions/uploadEventAsset';
 
 type Props = {
   slide: Slide;
+  /** Salva no servidor (debounced). */
   onChange: (config: WordcloudConfig) => void;
+  /** Notifica mudanças locais SEM debounce — pra preview/canvas refletir
+   *  instantâneo enquanto user digita/clica. */
+  onLiveChange?: (config: WordcloudConfig) => void;
 };
 
 const DEBOUNCE_MS = 500;
@@ -21,7 +25,7 @@ const PALETTE_DARK = [
   '#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF',
 ];
 
-export function SlidePropsPanel({ slide, onChange }: Props) {
+export function SlidePropsPanel({ slide, onChange, onLiveChange }: Props) {
   const initial = slide.config as WordcloudConfig;
   const [config, setConfig] = useState<WordcloudConfig>(initial);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,12 +47,15 @@ export function SlidePropsPanel({ slide, onChange }: Props) {
       skipNext.current = false;
       return;
     }
+    // Live update instantâneo pro canvas/preview (sem debounce).
+    onLiveChange?.(config);
+    // Save no servidor com debounce pra não martelar a RPC a cada keystroke.
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => onChange(config), DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [config, onChange]);
+  }, [config, onChange, onLiveChange]);
 
   const setBg = (bg: WordcloudBackground) => setConfig((c) => ({ ...c, background: bg }));
   const bg = (config.background ?? { type: 'none' }) as WordcloudBackground;

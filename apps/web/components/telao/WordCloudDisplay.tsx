@@ -67,6 +67,10 @@ type Props = {
   presenceChannel?: PresenceChannelLike | undefined;
   showBackground?: boolean | undefined;
   joinUrl?: string | undefined;
+  /** Quando true, pinta o background no <html>/<body> pra eliminar letterbox.
+   *  Default false — só ative na rota /telao real, não em preview/canvas
+   *  do admin (senão pinta o admin inteiro). */
+  paintBodyBackground?: boolean | undefined;
 };
 
 export function WordCloudDisplay({
@@ -77,6 +81,7 @@ export function WordCloudDisplay({
   presenceChannel,
   showBackground = false,
   joinUrl,
+  paintBodyBackground = false,
 }: Props) {
   const { entries, totalSubmissions } = useWordCounts(eventId, {
     channel,
@@ -114,8 +119,10 @@ export function WordCloudDisplay({
   // Pinta o background do slide direto no <html>/<body> pra eliminar as
   // barras brancas que aparecem em letterbox quando o TelaoStage escala
   // 1920×1080 numa viewport com aspect-ratio diferente. Só aplica quando
-  // showBackground (browser_source/H2R/PiP precisam continuar transparentes).
+  // paintBodyBackground=true (rota /telao real). Em preview/canvas do
+  // admin, sempre false — senão pinta o admin inteiro com o bg do slide.
   useEffect(() => {
+    if (!paintBodyBackground) return;
     if (!showBackground) return;
     if (typeof document === 'undefined') return;
     const style = backgroundStyle(config.background);
@@ -133,7 +140,7 @@ export function WordCloudDisplay({
       html.setAttribute('style', prevHtml);
       body.setAttribute('style', prevBody);
     };
-  }, [showBackground, config.background]);
+  }, [paintBodyBackground, showBackground, config.background]);
 
   const bgStyle = showBackground ? backgroundStyle(config.background) : undefined;
   const lightBg = showBackground && isBackgroundLight(config.background);

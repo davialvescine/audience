@@ -56,6 +56,9 @@ export function SlidesTab({
     initialActiveSlideId ?? initialSlides[0]?.id ?? null,
   );
   const [creating, startCreate] = useTransition();
+  // Live overlay do config sendo editado — reflete keystrokes no canvas
+  // imediatamente, sem esperar autosave + realtime.
+  const [liveConfig, setLiveConfig] = useState<WordcloudConfig | null>(null);
   const { isTauri, invoke } = useTauri();
 
   useEffect(() => {
@@ -97,6 +100,11 @@ export function SlidesTab({
   const onConfigChange = async (slideId: string, config: WordcloudConfig) => {
     await updateSlide(slideId, config as unknown as Record<string, unknown>);
   };
+
+  // Reset liveConfig quando troca de slide selecionado.
+  useEffect(() => {
+    setLiveConfig(null);
+  }, [selectedId]);
 
   const onMove = async (slideId: string, dir: -1 | 1) => {
     const idx = slides.findIndex((s) => s.id === slideId);
@@ -297,7 +305,11 @@ export function SlidesTab({
         {/* Canvas central */}
         <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink/[0.02]">
           {selected ? (
-            <SlideCanvas slide={selected} telaoUrl={telaoUrl} />
+            <SlideCanvas
+              slide={selected}
+              liveConfig={liveConfig ?? undefined}
+              telaoUrl={telaoUrl}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-ink/50">
               <p>Crie um slide pra começar.</p>
@@ -311,6 +323,7 @@ export function SlidesTab({
             <SlidePropsPanel
               slide={selected}
               onChange={(cfg) => onConfigChange(selected.id, cfg)}
+              onLiveChange={(cfg) => setLiveConfig(cfg)}
             />
           ) : selected ? (
             <p className="text-sm text-ink/60 p-4">
