@@ -27,10 +27,16 @@ export function SlidePropsPanel({ slide, onChange }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNext = useRef(true);
 
+  // IMPORTANT: depend ONLY on slide.id, NOT slide.config. Cada autosave
+  // dispara updateSlide → server responde → realtime UPDATE → slide.config
+  // muda. Se resetássemos config local aqui, o user perderia o que estava
+  // digitando no meio. O config local fica "fonte da verdade" enquanto o
+  // user edita o slide; só sincroniza com server quando muda de slide.
   useEffect(() => {
     setConfig(slide.config as WordcloudConfig);
     skipNext.current = true;
-  }, [slide.id, slide.config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slide.id]);
 
   useEffect(() => {
     if (skipNext.current) {

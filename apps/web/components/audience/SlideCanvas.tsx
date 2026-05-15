@@ -9,6 +9,8 @@ import type { WordEntry } from '@/lib/wordcloud/types';
 
 type Props = {
   slide: Slide;
+  /** Optional override pra refletir edições locais antes do server confirmar. */
+  liveConfig?: WordcloudConfig | undefined;
   telaoUrl: string;
 };
 
@@ -28,7 +30,7 @@ const SAMPLE_ENTRIES: WordEntry[] = [
  * componente real do telão sem iframe — atualiza instantâneo conforme o
  * usuário edita props no painel direito.
  */
-export function SlideCanvas({ slide }: Props) {
+export function SlideCanvas({ slide, liveConfig }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.45);
 
@@ -69,7 +71,7 @@ export function SlideCanvas({ slide }: Props) {
           {slide.type === 'wordcloud' ? (
             <WordCloudDisplay
               eventId={slide.event_id}
-              config={slide.config as WordcloudConfig}
+              config={liveConfig ?? (slide.config as WordcloudConfig)}
               initialEntries={SAMPLE_ENTRIES}
               channel={makeNoopChannel()}
               showBackground

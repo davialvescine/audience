@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
+import { QRCodeSVG } from 'qrcode.react';
+
 import { SlideCanvas } from '@/components/audience/SlideCanvas';
 import { SlidePropsPanel } from '@/components/audience/SlidePropsPanel';
 import { SlideThumbnail } from '@/components/audience/SlideThumbnail';
@@ -154,8 +156,91 @@ export function SlidesTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides, activeId, isTauri, invoke]);
 
+  const [showQr, setShowQr] = useState(false);
+  const audienceShort = publicUrl.replace(/^https?:\/\//, '');
+  const telaoFullUrl = `${telaoUrl}?mode=fullscreen`;
+
+  const copy = (text: string) => {
+    void navigator.clipboard.writeText(text);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] gap-3">
+      {/* Quick links: audiência (QR) + telão */}
+      <div className="grid md:grid-cols-2 gap-3">
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowQr((v) => !v)}
+            className="shrink-0 h-16 w-16 rounded-md bg-paper border border-ink/10 flex items-center justify-center hover:bg-ink/5"
+            title="Mostrar/esconder QR"
+          >
+            <QRCodeSVG value={publicUrl} size={56} level="M" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-wide font-bold text-primary mb-0.5">
+              Link da audiência
+            </p>
+            <p className="font-mono text-sm text-ink truncate" title={publicUrl}>
+              {audienceShort}
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => copy(publicUrl)}
+                className="text-xs text-primary hover:underline"
+              >
+                Copiar
+              </button>
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noopener"
+                className="text-xs text-primary hover:underline"
+              >
+                Abrir ↗
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 flex items-center gap-3">
+          <div className="shrink-0 h-16 w-16 rounded-md bg-paper border border-ink/10 flex items-center justify-center text-2xl">
+            🖥
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-wide font-bold text-accent mb-0.5">
+              Telão / Projetor
+            </p>
+            <p className="font-mono text-sm text-ink truncate" title={telaoFullUrl}>
+              {telaoFullUrl.replace(/^https?:\/\//, '')}
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => copy(telaoFullUrl)}
+                className="text-xs text-primary hover:underline"
+              >
+                Copiar
+              </button>
+              <button
+                type="button"
+                onClick={openTelao}
+                className="text-xs text-primary hover:underline"
+              >
+                Abrir tela cheia ↗
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showQr ? (
+        <div className="rounded-lg border border-ink/10 bg-paper p-4 flex items-center justify-center">
+          <QRCodeSVG value={publicUrl} size={240} level="M" />
+        </div>
+      ) : null}
+
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -197,17 +282,7 @@ export function SlidesTab({
               </button>
             </div>
           ) : null}
-          <a
-            href={publicUrl}
-            target="_blank"
-            rel="noopener"
-            className="text-sm font-mono text-primary hover:underline"
-          >
-            {publicUrl.replace(/^https?:\/\//, '')}
-          </a>
-          <Button variant="ghost" size="sm" onClick={openTelao} title="Abrir tela cheia (F)">
-            Tela cheia ↗
-          </Button>
+          <span className="text-xs text-ink/50">← → navega · F tela cheia</span>
         </div>
       </div>
 
