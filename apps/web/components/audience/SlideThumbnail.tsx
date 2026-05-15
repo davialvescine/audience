@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+
+import { WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import type { Slide } from '@/lib/slides/types';
-import type { WordcloudBackground, WordcloudConfig } from '@/hooks/useWordcloudActive';
-import { backgroundStyle } from '@/components/telao/WordCloudDisplay';
+import type { WordEntry } from '@/lib/wordcloud/types';
 
 type Props = {
   slide: Slide;
@@ -17,6 +20,14 @@ type Props = {
   onMove: (dir: -1 | 1) => void;
 };
 
+// Sample mais leve do que SlideCanvas pra layout rápido em N thumbnails.
+const SAMPLE_ENTRIES: WordEntry[] = [
+  { text: 'amor', count: 5 },
+  { text: 'paz', count: 4 },
+  { text: 'fé', count: 3 },
+  { text: 'alegria', count: 2 },
+];
+
 export function SlideThumbnail({
   slide,
   index,
@@ -29,16 +40,6 @@ export function SlideThumbnail({
   onDelete,
   onMove,
 }: Props) {
-  const cfg = (slide.config ?? {}) as WordcloudConfig;
-  const bg = (cfg.background ?? { type: 'none' }) as WordcloudBackground;
-  const isLight = (() => {
-    if (bg.type === 'color' && bg.value.toUpperCase() === '#FFFFFF') return true;
-    if (bg.type === 'color') return false;
-    return false;
-  })();
-  const thumbBgStyle = backgroundStyle(bg) ?? { background: '#0A2540' };
-  const textColor = isLight ? '#0A1834' : '#FFFFFF';
-
   return (
     <div className="group relative">
       <button
@@ -57,16 +58,14 @@ export function SlideThumbnail({
             </span>
           ) : null}
         </div>
-        <div
-          className="aspect-video flex items-center justify-center p-2 text-center"
-          style={{ ...thumbBgStyle, color: textColor }}
-        >
-          <p
-            className="font-bold leading-tight line-clamp-3"
-            style={{ fontSize: 11, color: textColor }}
-          >
-            {cfg.question || '(sem pergunta)'}
-          </p>
+        <div className="relative aspect-video bg-ink/5">
+          {slide.type === 'wordcloud' ? (
+            <ScaledSlidePreview slide={slide} />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] text-ink/40">
+              {slide.type}
+            </div>
+          )}
         </div>
       </button>
       <div className="flex gap-1 mt-1">
@@ -114,4 +113,62 @@ export function SlideThumbnail({
       </div>
     </div>
   );
+}
+
+function ScaledSlidePreview({ slide }: { slide: Slide }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.1);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const sx = el.clientWidth / 1920;
+      const sy = el.clientHeight / 1080;
+      setScale(Math.max(0.01, Math.min(sx, sy)));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="absolute inset-0 overflow-hidden">
+      <div
+        style={{
+          width: 1920,
+          height: 1080,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
+      >
+        <WordCloudDisplay
+          eventId={slide.event_id}
+          config={slide.config as WordcloudConfig}
+          initialEntries={SAMPLE_ENTRIES}
+          channel={makeNoopChannel()}
+          showBackground
+        />
+      </div>
+    </div>
+  );
+}
+
+type ChannelLike = Parameters<typeof WordCloudDisplay>[0]['channel'];
+
+function makeNoopChannel(): ChannelLike {
+  const self: ChannelLike = {
+    on() {
+      return self;
+    },
+    subscribe() {
+      return self;
+    },
+    unsubscribe() {},
+  };
+  return self;
 }
