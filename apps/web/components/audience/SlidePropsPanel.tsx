@@ -174,7 +174,10 @@ function ImageUpload({
         setError(
           r.error === 'too_large' ? 'Imagem muito grande (máx 8 MB)'
           : r.error === 'unsupported_type' ? 'Use PNG, JPG, WEBP ou GIF'
-          : 'Não rolou subir.',
+          : r.error === 'not_authenticated' ? 'Faça login pra subir imagem.'
+          : r.error === 'forbidden' ? 'Sem permissão neste evento.'
+          : r.error === 'event_not_found' ? 'Evento não encontrado.'
+          : `Erro: ${r.error}`,
         );
         return;
       }
