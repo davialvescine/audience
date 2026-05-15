@@ -3,8 +3,20 @@ import { notFound } from 'next/navigation';
 import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { TelaoStage } from '@/components/telao/TelaoStage';
+import { TelaoWordcloudSwitcher } from '@/components/telao/TelaoWordcloudSwitcher';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
+import type { WordEntry } from '@/lib/wordcloud/types';
+
+const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
+  question: 'Em uma palavra, o que você espera deste evento?',
+  maxWordsPerSubmission: 1,
+  filterStopwords: true,
+  filterProfanity: true,
+  palette: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF'],
+  showTotal: true,
+};
 
 type Params = { slug: string };
 type SearchParams = { preview?: string; mode?: string };
@@ -43,15 +55,52 @@ export default async function TelaoPage({
     .eq('id', event.event_id)
     .single();
 
+  // Wordcloud SSR seed — cast until pnpm db:types runs post-migration.
+  const supabaseUntyped = supabase as unknown as {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          maybeSingle: () => Promise<{
+            data: { wordcloud_active?: boolean; wordcloud_config?: WordcloudConfig } | null;
+          }>;
+        };
+      };
+    };
+    rpc: (
+      name: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: Array<{ word: string; count: number }> | null }>;
+  };
+  const { data: wcRow } = await supabaseUntyped
+    .from('events')
+    .select('wordcloud_active, wordcloud_config')
+    .eq('id', event.event_id)
+    .maybeSingle();
+  const wordcloudActive = wcRow?.wordcloud_active ?? false;
+  const wordcloudConfig = wcRow?.wordcloud_config ?? DEFAULT_WORDCLOUD_CONFIG;
+
+  let initialEntries: WordEntry[] = [];
+  if (wordcloudActive) {
+    const { data: wcState } = await supabaseUntyped.rpc('get_wordcloud_state', { p_slug: slug });
+    initialEntries = (wcState ?? []).map((r) => ({ text: r.word, count: Number(r.count) }));
+  }
+
   const telao = (
-    <TelaoClient
-      slug={slug}
+    <TelaoWordcloudSwitcher
       eventId={event.event_id}
-      eventName={event.event_name}
-      config={config}
-      intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
-      preview={isPreview}
-    />
+      initialWordcloudActive={wordcloudActive}
+      initialWordcloudConfig={wordcloudConfig}
+      initialWordcloudEntries={initialEntries}
+    >
+      <TelaoClient
+        slug={slug}
+        eventId={event.event_id}
+        eventName={event.event_name}
+        config={config}
+        intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
+        preview={isPreview}
+      />
+    </TelaoWordcloudSwitcher>
   );
 
   // Only wrap with PipLauncher when:
