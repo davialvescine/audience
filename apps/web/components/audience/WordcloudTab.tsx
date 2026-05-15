@@ -27,6 +27,29 @@ type Props = {
 const SAVE_DEBOUNCE_MS = 600;
 const DEFAULT_BG_COLOR = '#0A2540';
 
+const PALETTE_DARK = [
+  '#FF6B6B',
+  '#4ECDC4',
+  '#FFE66D',
+  '#95E1D3',
+  '#F38181',
+  '#AA96DA',
+  '#FCBAD3',
+  '#A8E6CF',
+];
+
+// Vivid colors that read well over a white/light background — Mentimeter-style.
+const PALETTE_LIGHT = [
+  '#E63946',
+  '#1D3557',
+  '#2A9D8F',
+  '#E76F51',
+  '#6A4C93',
+  '#0077B6',
+  '#06A77D',
+  '#D62828',
+];
+
 export function WordcloudTab({
   eventId,
   initialActive,
@@ -188,6 +211,23 @@ export function WordcloudTab({
               <button
                 type="button"
                 onClick={() =>
+                  setConfig((c) => ({
+                    ...c,
+                    background: { type: 'color', value: '#FFFFFF' },
+                    palette: PALETTE_LIGHT,
+                  }))
+                }
+                className={`h-10 px-3 rounded-md border text-sm font-medium ${
+                  bg.type === 'color' && bg.value.toUpperCase() === '#FFFFFF'
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-ink/20 text-ink/70 hover:bg-ink/5'
+                }`}
+              >
+                Branco (Menti)
+              </button>
+              <button
+                type="button"
+                onClick={() =>
                   setBackground({
                     type: 'color',
                     value: bg.type === 'color' ? bg.value : DEFAULT_BG_COLOR,
@@ -295,6 +335,36 @@ export function WordcloudTab({
             ) : null}
           </div>
 
+          {/* Preview embutido sempre visível pra ver o resultado da config */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-ink">Preview ao vivo do telão</p>
+              <a
+                href={`${telaoUrl}?mode=fullscreen`}
+                target="_blank"
+                rel="noopener"
+                className="text-xs text-primary hover:underline"
+              >
+                Abrir em nova aba ↗
+              </a>
+            </div>
+            <div
+              className="relative w-full overflow-hidden rounded-lg border border-ink/15"
+              style={{ aspectRatio: '16 / 9' }}
+            >
+              <iframe
+                title="Preview da nuvem"
+                src={`${telaoUrl}?mode=fullscreen`}
+                className="absolute inset-0 w-full h-full"
+                sandbox="allow-scripts allow-same-origin"
+              />
+            </div>
+            <p className="text-xs text-ink/60 mt-2">
+              Mostra exatamente como vai ficar no projetor / tela cheia, atualizando em tempo
+              real conforme você muda fundo e pergunta acima.
+            </p>
+          </div>
+
           <label className="flex items-center gap-3 text-sm">
             <input
               type="checkbox"
@@ -358,37 +428,7 @@ export function WordcloudTab({
         </div>
       </Card>
 
-      {/* 6. Preview embutido — usa o modo tela cheia pra ver o fundo */}
-      {active ? (
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-lg text-ink">Preview ao vivo</h3>
-            <a
-              href={`${telaoUrl}?mode=fullscreen`}
-              target="_blank"
-              rel="noopener"
-              className="text-sm text-primary hover:underline"
-            >
-              Abrir em nova aba ↗
-            </a>
-          </div>
-          <p className="text-xs text-ink/60 mb-3">
-            Como a galera vai ver no telão tela cheia. Atualiza em tempo real conforme você
-            edita a pergunta e o fundo aqui em cima.
-          </p>
-          <div
-            className="relative w-full overflow-hidden rounded-lg border border-ink/15"
-            style={{ aspectRatio: '16 / 9' }}
-          >
-            <iframe
-              title="Preview da nuvem"
-              src={`${telaoUrl}?mode=fullscreen`}
-              className="absolute inset-0 w-full h-full"
-              sandbox="allow-scripts allow-same-origin"
-            />
-          </div>
-        </Card>
-      ) : null}
+      {/* Preview foi movido pra dentro do card de Aparência. */}
 
       {/* 7. Zerar */}
       <Card>
