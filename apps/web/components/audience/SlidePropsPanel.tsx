@@ -15,6 +15,8 @@ type Props = {
   /** Notifica mudanças locais SEM debounce — pra preview/canvas refletir
    *  instantâneo enquanto user digita/clica. */
   onLiveChange?: (config: WordcloudConfig) => void;
+  /** Aplica o config atual a todos os outros slides do evento. */
+  onApplyToAll?: (() => void) | undefined;
 };
 
 const DEBOUNCE_MS = 500;
@@ -25,7 +27,7 @@ const PALETTE_DARK = [
   '#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF',
 ];
 
-export function SlidePropsPanel({ slide, onChange, onLiveChange }: Props) {
+export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }: Props) {
   const initial = slide.config as WordcloudConfig;
   const [config, setConfig] = useState<WordcloudConfig>(initial);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -150,6 +152,45 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange }: Props) {
           onChange={(v) => setConfig((c) => ({ ...c, filterProfanity: v }))}
         />
       </Section>
+
+      <div className="flex flex-col gap-1.5 px-1">
+        {onApplyToAll ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Aplicar essas configurações a todos os outros slides?')) {
+                onApplyToAll();
+              }
+            }}
+            className="text-xs text-primary hover:underline text-left"
+          >
+            Aplicar a todos os slides
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            if (!window.confirm('Resetar este slide pro tema padrão (fundo branco)?')) return;
+            setConfig((c) => ({
+              ...c,
+              background: { type: 'color', value: '#FFFFFF' },
+              palette: [
+                '#E63946',
+                '#1D3557',
+                '#2A9D8F',
+                '#E76F51',
+                '#6A4C93',
+                '#0077B6',
+                '#06A77D',
+                '#D62828',
+              ],
+            }));
+          }}
+          className="text-xs text-ink/55 hover:text-primary hover:underline text-left"
+        >
+          Resetar pro tema padrão
+        </button>
+      </div>
     </div>
   );
 }

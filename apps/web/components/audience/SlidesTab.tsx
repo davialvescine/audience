@@ -213,8 +213,8 @@ export function SlidesTab({
         </div>
       ) : null}
 
-      {/* Top bar */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Top bar Mentimeter-style */}
+      <div className="flex items-center justify-between gap-3 bg-paper rounded-lg border border-ink/10 px-3 py-2">
         <div className="flex items-center gap-3">
           <Button onClick={onCreate} loading={creating} variant="accent" size="sm">
             + Novo slide
@@ -254,7 +254,28 @@ export function SlidesTab({
               </button>
             </div>
           ) : null}
-          <span className="text-xs text-ink/50">← → navega · F tela cheia</span>
+          <span className="text-xs text-ink/50 mr-3 hidden lg:inline">
+            ← → navega · F tela cheia
+          </span>
+          <button
+            type="button"
+            onClick={openTelao}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-ink/20 text-sm font-medium text-ink hover:bg-ink/5"
+          >
+            Preview ↗
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (selected && !activeId) {
+                void onActivate(selected.id);
+              }
+              openTelao();
+            }}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-paper text-sm font-bold hover:bg-primary-deep"
+          >
+            ▶ Iniciar apresentação
+          </button>
         </div>
       </div>
 
@@ -307,6 +328,18 @@ export function SlidesTab({
               slide={selected}
               onChange={(cfg) => onConfigChange(selected.id, cfg)}
               onLiveChange={(cfg) => setLiveConfig(cfg)}
+              onApplyToAll={
+                slides.length > 1
+                  ? () => {
+                      const cfg = liveConfig ?? (selected.config as WordcloudConfig);
+                      void Promise.all(
+                        slides
+                          .filter((s) => s.id !== selected.id && s.type === 'wordcloud')
+                          .map((s) => updateSlide(s.id, cfg as unknown as Record<string, unknown>)),
+                      );
+                    }
+                  : undefined
+              }
             />
           ) : selected ? (
             <p className="text-sm text-ink/60 p-4">
