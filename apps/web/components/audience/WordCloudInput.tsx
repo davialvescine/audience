@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -31,15 +31,16 @@ export function WordCloudInput({ slug, config }: Props) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [words, setWords] = useState<string[]>(() => Array(maxWords).fill(''));
 
-  // Quando maxWords muda (operador altera 1↔2↔3 em tempo real), reslice array
-  // sem perder o que o user já digitou.
-  if (words.length !== maxWords) {
+  // Sincroniza tamanho do array com maxWords quando operador muda 1↔2↔3
+  // em tempo real. Preserva o que o user já digitou nos índices comuns.
+  useEffect(() => {
     setWords((prev) => {
+      if (prev.length === maxWords) return prev;
       const next = Array(maxWords).fill('');
       for (let i = 0; i < Math.min(prev.length, maxWords); i += 1) next[i] = prev[i] ?? '';
       return next;
     });
-  }
+  }, [maxWords]);
 
   if (outcome === 'success') {
     return (
