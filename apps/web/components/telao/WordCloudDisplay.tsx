@@ -111,6 +111,30 @@ export function WordCloudDisplay({
     };
   }, [entries, config.palette.length]);
 
+  // Pinta o background do slide direto no <html>/<body> pra eliminar as
+  // barras brancas que aparecem em letterbox quando o TelaoStage escala
+  // 1920×1080 numa viewport com aspect-ratio diferente. Só aplica quando
+  // showBackground (browser_source/H2R/PiP precisam continuar transparentes).
+  useEffect(() => {
+    if (!showBackground) return;
+    if (typeof document === 'undefined') return;
+    const style = backgroundStyle(config.background);
+    if (!style) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.getAttribute('style') ?? '';
+    const prevBody = body.getAttribute('style') ?? '';
+    Object.entries(style).forEach(([k, v]) => {
+      const css = k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+      html.style.setProperty(css, String(v));
+      body.style.setProperty(css, String(v));
+    });
+    return () => {
+      html.setAttribute('style', prevHtml);
+      body.setAttribute('style', prevBody);
+    };
+  }, [showBackground, config.background]);
+
   const bgStyle = showBackground ? backgroundStyle(config.background) : undefined;
   const lightBg = showBackground && isBackgroundLight(config.background);
   const textColor = lightBg ? '#0A1834' : '#FFFFFF';
@@ -130,17 +154,20 @@ export function WordCloudDisplay({
     <div className="absolute inset-0 overflow-hidden" style={{ ...bgStyle, color: textColor }}>
       {/* Pergunta colada no topo, sem barra */}
       <header
-        className="relative z-10 px-16 text-center flex items-start justify-center"
+        className="relative z-10 px-20 flex items-start justify-center"
         style={{ height: HEADER_H, paddingTop: 56 }}
       >
         <h1
-          className="font-display font-bold tracking-tight"
+          className="font-display font-bold tracking-tight text-center break-words"
           style={{
             fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: 96,
+            fontSize: 88,
             lineHeight: 1.05,
+            maxWidth: '100%',
+            width: '100%',
             color: textColor,
             textShadow: lightBg ? 'none' : '0 2px 12px rgba(0,0,0,0.35)',
+            textWrap: 'balance',
           }}
         >
           {config.question}
@@ -192,7 +219,7 @@ export function WordCloudDisplay({
                 palavras
               </span>
             ) : null}
-            {presenceChannel && presence.count > 0 ? (
+            {presenceChannel ? (
               <span className="flex items-center gap-2">
                 <svg
                   className="h-5 w-5"

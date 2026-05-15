@@ -165,7 +165,7 @@ export function SlidesTab({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)] gap-3">
+    <div className="flex flex-col h-[calc(100vh-180px)] gap-3">
       {/* Quick links: audiência (QR) + telão */}
       <div className="grid md:grid-cols-2 gap-3">
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-center gap-3">
