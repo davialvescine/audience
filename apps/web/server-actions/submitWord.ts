@@ -35,8 +35,7 @@ export async function submitWord(slug: string, formData: FormData): Promise<Resu
   const ipHash = hashIp(ip);
 
   const sb = await getSupabaseServerClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (sb as any).rpc('submit_word', {
+  const { error } = await sb.rpc('submit_word', {
     p_slug: slug,
     p_word: v.word,
     p_ip_hash: ipHash,

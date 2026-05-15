@@ -55,33 +55,18 @@ export default async function TelaoPage({
     .eq('id', event.event_id)
     .single();
 
-  // Wordcloud SSR seed — cast until pnpm db:types runs post-migration.
-  const supabaseUntyped = supabase as unknown as {
-    from: (table: string) => {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          maybeSingle: () => Promise<{
-            data: { wordcloud_active?: boolean; wordcloud_config?: WordcloudConfig } | null;
-          }>;
-        };
-      };
-    };
-    rpc: (
-      name: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: Array<{ word: string; count: number }> | null }>;
-  };
-  const { data: wcRow } = await supabaseUntyped
+  const { data: wcRow } = await supabase
     .from('events')
     .select('wordcloud_active, wordcloud_config')
     .eq('id', event.event_id)
     .maybeSingle();
   const wordcloudActive = wcRow?.wordcloud_active ?? false;
-  const wordcloudConfig = wcRow?.wordcloud_config ?? DEFAULT_WORDCLOUD_CONFIG;
+  const wordcloudConfig =
+    (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
 
   let initialEntries: WordEntry[] = [];
   if (wordcloudActive) {
-    const { data: wcState } = await supabaseUntyped.rpc('get_wordcloud_state', { p_slug: slug });
+    const { data: wcState } = await supabase.rpc('get_wordcloud_state', { p_slug: slug });
     initialEntries = (wcState ?? []).map((r) => ({ text: r.word, count: Number(r.count) }));
   }
 

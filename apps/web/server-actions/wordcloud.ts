@@ -9,39 +9,42 @@ type Result =
   | { ok: true }
   | { ok: false; error: 'forbidden' | 'event_not_found' | 'unknown' };
 
-async function callRpc(name: string, args: Record<string, unknown>): Promise<Result> {
-  const sb = await getSupabaseServerClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (sb as any).rpc(name, args);
-  if (error) {
-    const msg = error.message ?? '';
-    if (msg.includes('forbidden')) return { ok: false, error: 'forbidden' };
-    if (msg.includes('event_not_found')) return { ok: false, error: 'event_not_found' };
-    return { ok: false, error: 'unknown' };
-  }
-  return { ok: true };
+function mapError(message: string | undefined): Result {
+  const msg = message ?? '';
+  if (msg.includes('forbidden')) return { ok: false, error: 'forbidden' };
+  if (msg.includes('event_not_found')) return { ok: false, error: 'event_not_found' };
+  return { ok: false, error: 'unknown' };
 }
 
 export async function setWordcloudActive(eventId: string, active: boolean): Promise<Result> {
-  const r = await callRpc('set_wordcloud_active', { p_event_id: eventId, p_active: active });
-  if (r.ok) revalidatePath('/admin/events/[slug]', 'page');
-  return r;
+  const sb = await getSupabaseServerClient();
+  const { error } = await sb.rpc('set_wordcloud_active', {
+    p_event_id: eventId,
+    p_active: active,
+  });
+  if (error) return mapError(error.message);
+  revalidatePath('/admin/events/[slug]', 'page');
+  return { ok: true };
 }
 
 export async function updateWordcloudConfig(
   eventId: string,
   config: WordcloudConfig,
 ): Promise<Result> {
-  const r = await callRpc('update_wordcloud_config', {
+  const sb = await getSupabaseServerClient();
+  const { error } = await sb.rpc('update_wordcloud_config', {
     p_event_id: eventId,
     p_config: config,
   });
-  if (r.ok) revalidatePath('/admin/events/[slug]', 'page');
-  return r;
+  if (error) return mapError(error.message);
+  revalidatePath('/admin/events/[slug]', 'page');
+  return { ok: true };
 }
 
 export async function resetWordcloud(eventId: string): Promise<Result> {
-  const r = await callRpc('reset_wordcloud', { p_event_id: eventId });
-  if (r.ok) revalidatePath('/admin/events/[slug]', 'page');
-  return r;
+  const sb = await getSupabaseServerClient();
+  const { error } = await sb.rpc('reset_wordcloud', { p_event_id: eventId });
+  if (error) return mapError(error.message);
+  revalidatePath('/admin/events/[slug]', 'page');
+  return { ok: true };
 }

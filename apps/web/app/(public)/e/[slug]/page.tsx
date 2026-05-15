@@ -24,27 +24,15 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
   const event = events?.[0];
   if (!event) notFound();
 
-  // Wordcloud fields are not yet in generated DB types; fetch via direct
-  // table query with a cast until `pnpm db:types` is re-run after the
-  // 00330000/00340000 migrations are applied.
-  const { data: wcRow } = await (supabase as unknown as {
-    from: (table: string) => {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          maybeSingle: () => Promise<{
-            data: { wordcloud_active?: boolean; wordcloud_config?: WordcloudConfig } | null;
-          }>;
-        };
-      };
-    };
-  })
+  const { data: wcRow } = await supabase
     .from('events')
     .select('wordcloud_active, wordcloud_config')
     .eq('slug', slug)
     .maybeSingle();
 
   const wordcloudActive = wcRow?.wordcloud_active ?? false;
-  const wordcloudConfig = wcRow?.wordcloud_config ?? DEFAULT_WORDCLOUD_CONFIG;
+  const wordcloudConfig =
+    (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
 
   const theme = await loadTheme(event.theme_id);
   if (!theme) notFound();

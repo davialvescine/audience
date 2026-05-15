@@ -50,24 +50,14 @@ export default async function EventModerationPage({
     .single();
   if (!event) notFound();
 
-  // Wordcloud columns not in generated DB types yet — cast.
-  const { data: wcRow } = await (supabase as unknown as {
-    from: (table: string) => {
-      select: (cols: string) => {
-        eq: (col: string, val: string) => {
-          maybeSingle: () => Promise<{
-            data: { wordcloud_active?: boolean; wordcloud_config?: WordcloudConfig } | null;
-          }>;
-        };
-      };
-    };
-  })
+  const { data: wcRow } = await supabase
     .from('events')
     .select('wordcloud_active, wordcloud_config')
     .eq('id', event.id)
     .maybeSingle();
   const wordcloudActive = wcRow?.wordcloud_active ?? false;
-  const wordcloudConfig = wcRow?.wordcloud_config ?? DEFAULT_WORDCLOUD_CONFIG;
+  const wordcloudConfig =
+    (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
   const isOwner = event.owner_id === user.id;
 
   const { data: members } = await supabase.rpc('list_event_members', {
