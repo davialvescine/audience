@@ -96,6 +96,28 @@ export function SlidePropsPanel({ slide, onChange }: Props) {
         {bg.type === 'image' ? <ImageUpload eventId={slide.event_id} bg={bg} setBg={setBg} /> : null}
       </Section>
 
+      <Section title="Palavras por envio">
+        <div className="flex gap-2">
+          {[1, 2, 3].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setConfig((c) => ({ ...c, maxWordsPerSubmission: n as 1 | 2 | 3 }))}
+              className={`h-10 w-10 rounded-md border text-sm font-bold transition ${
+                config.maxWordsPerSubmission === n
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-ink/20 text-ink/70 hover:bg-ink/5'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-ink/55">
+          Quantas palavras cada pessoa pode mandar de uma vez no celular.
+        </p>
+      </Section>
+
       <Section title="Filtros">
         <Check
           label="Filtrar palavras comuns"

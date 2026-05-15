@@ -46,7 +46,13 @@ export function SlideCanvas({ slide, liveConfig }: Props) {
   );
 }
 
-function TelaoFrame({ slide, liveConfig }: { slide: Slide; liveConfig?: WordcloudConfig }) {
+function TelaoFrame({
+  slide,
+  liveConfig,
+}: {
+  slide: Slide;
+  liveConfig?: WordcloudConfig | undefined;
+}) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.4);
 
@@ -100,7 +106,13 @@ function TelaoFrame({ slide, liveConfig }: { slide: Slide; liveConfig?: Wordclou
   );
 }
 
-function PhoneFrame({ slide, liveConfig }: { slide: Slide; liveConfig?: WordcloudConfig }) {
+function PhoneFrame({
+  slide,
+  liveConfig,
+}: {
+  slide: Slide;
+  liveConfig?: WordcloudConfig | undefined;
+}) {
   const cfg = (liveConfig ?? slide.config) as WordcloudConfig;
   const maxWords = cfg.maxWordsPerSubmission ?? 1;
   const inputs = Array.from({ length: maxWords });
