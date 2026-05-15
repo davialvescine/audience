@@ -1,79 +1,79 @@
 # Wordcloud — Follow-ups e Roadmap
 
-Tudo que ficou fora do release inicial da nuvem de palavras, em ordem de prioridade.
+Status pós-sessão de 2026-05-15. Itens marcados ✅ já foram shipados.
 
-## 1. Aplicar migrations em produção (BLOQUEANTE)
+## 1. Migrations em produção ✅ APLICADAS
 
-A feature **não funciona em produção** até as migrations serem aplicadas. Estão escritas e commitadas mas NÃO foram aplicadas.
+`supabase db push` aplicou 00330000 + 00340000 em `ogfalobvfofcrazaeydr`. Tipos regenerados, casts temporários removidos.
 
-```bash
-cd /Users/davialves/development/Audience
-supabase db push          # aplica 00330000_wordcloud.sql + 00340000_wordcloud_rpcs.sql
-pnpm db:types             # regenera packages/shared-types/src/database.ts
-```
+## 2. Contador de "pessoas online" ✅ SHIPADO
 
-Depois remover os casts `as unknown as ...` em:
-- `apps/web/app/telao/[slug]/page.tsx`
-- `apps/web/app/admin/events/[slug]/page.tsx`
-- `apps/web/app/(public)/e/[slug]/page.tsx`
-- `apps/web/server-actions/submitWord.ts`
-- `apps/web/server-actions/wordcloud.ts`
+- `apps/web/hooks/useOnlinePresence.ts` (telão)
+- `apps/web/hooks/usePresenceJoin.ts` (audiência, clientId estável em localStorage)
+- `apps/web/components/telao/OnlineBadge.tsx`
+- Wire em `TelaoWordcloudSwitcher` + `AudienceInputSwitcher` no canal `presence:event:<eventId>`
 
-E remover o `// eslint-disable-next-line` correspondente.
+Cobertura: 16 testes dedicados, 193 testes no total.
 
-## 2. Habilitar specs E2E
+## 3. UX "tudo dentro da aba Nuvem" ✅ SHIPADO
 
-Após aplicar migrations:
+Aba Nuvem agora tem:
+- ShareCard (link público + QR)
+- 2 links distintos de telão: `?mode=browser_source` (transparente, OBS) e `?mode=fullscreen` (com fundo, projetor)
+- Pergunta editável
+- Plano de fundo: transparente / cor sólida / gradiente (color pickers nativos)
+- Filtros + max-words
+- Preview embutido (iframe 16:9) quando ativa
+- Reset / zerar
 
-1. Seedar evento de teste: `pnpm tsx scripts/seed-wordcloud-test-event.ts` (criar)
-2. Salvar storage state do operador: `pnpm exec playwright codegen` → login → salvar em `apps/web/e2e/.auth/operator.json`
-3. Remover `.skip` de:
-   - `apps/web/e2e/wordcloud-flow.spec.ts`
-   - `apps/web/e2e/wordcloud-visual.spec.ts`
+`WordcloudConfig.background` (tagged union) persiste em `events.wordcloud_config` jsonb — sem migration nova.
+
+## 4. Desktop app Mac ✅ BUILD + RELEASE PARCIAL
+
+- aarch64 + x64 DMGs buildados (Tauri 2.11 + Rust 1.95)
+- GitHub Release `v0.1.0` publicada com os 2 DMGs
+- **Bloqueio:** repo é **PRIVADO** → links `releases/latest/download/...` dão 404 pra qualquer não-colaborador. Solução pendente:
+  - **(a)** Tornar o repo público (decisão do Davi)
+  - **(b)** Hospedar DMGs em Supabase Storage bucket público `desktop-releases` (autorização pendente)
+  - **(c)** Criar `/api/desktop/[platform]` que faz proxy autenticado dos releases (precisa `GITHUB_TOKEN` no Vercel)
+- Windows build pendente — precisa GitHub Actions matrix (macOS runner não cross-compila pra Windows trivialmente)
+- Auto-update via Tauri updater não wirado
+
+## 5. Habilitar specs E2E (Playwright)
+
+Após qualquer mudança grande na nuvem rodar:
+1. Seedar evento de teste via service-role
+2. Salvar `apps/web/e2e/.auth/operator.json` via `playwright codegen`
+3. Remover `.skip` de `wordcloud-flow.spec.ts` e `wordcloud-visual.spec.ts`
 4. Adicionar `webServer` block ao `playwright.config.ts` pra subir `pnpm dev` automaticamente
 
-## 3. Contador de pessoas online no slide da nuvem (pedido do Davi)
+Adicionar cobertura E2E pra:
+- Toggle ON/OFF + audience UI swap
+- Submit de palavra e aparição no telão dentro de ~3s
+- Trocar background e ver no preview
+- 3 audience contexts → badge mostra 3 → fechar 1 → vira 2
 
-Quando wordcloud_active=true, mostrar no canto do telão um badge tipo "X pessoas online" via Supabase Realtime Presence.
+## 6. Limpezas / dívidas técnicas
 
-### Implementação
-
-Shipped:
-- `apps/web/hooks/useOnlinePresence.ts` — telão escuta `sync` e retorna `{ count, isConnected }`
-- `apps/web/hooks/usePresenceJoin.ts` — audiência faz `track({ clientId, joinedAt })` com UUID estável em localStorage (`audience.clientId`)
-- `apps/web/components/telao/OnlineBadge.tsx` — pill top-right com animação de pulso quando o count muda
-- Wire em `TelaoWordcloudSwitcher` e `AudienceInputSwitcher` no canal compartilhado `presence:event:<eventId>`
-
-Cobertura adicionada: 20 testes (5 fake-channel + 5 useOnlinePresence + 6 usePresenceJoin + 5 OnlineBadge - 1 já contado). Total geral pulou pra 193 testes.
-
-E2E ainda **não** cobre presença — adicionar ao `wordcloud-flow.spec.ts` quando habilitar os specs (item #2 acima).
-
-## 4. Limpeza pós-deploy
-
-- Remover comentário `(cast until pnpm db:types runs post-migration)` dos 5 arquivos listados em #1
-- Remover o eslint-disable `@typescript-eslint/no-explicit-any` em `submitWord.ts` e `wordcloud.ts`
+- `pnpm lint` quebra em Next 16 (`next lint --max-warnings 0` flag deprecada) — não relacionado à nuvem mas precisa de fix
 - Adicionar coverage threshold no vitest config (≥85% nas pastas `lib/wordcloud`, `hooks`, `server-actions`)
-- Verificar/corrigir o pre-existente `pnpm lint` que quebra em Next 16 (`next lint --max-warnings 0` flag deprecada) — não relacionado à wordcloud mas vai bloquear CI
+- `desktop-release.yml` foi mantido mas hoje está sem trigger funcional — alinhar com release flow real
 
-## 5. Roadmap maior (não wordcloud — adiar)
+## 7. Roadmap maior (não wordcloud — adiar)
 
 ### Sistema multi-slide (Mentimeter/AhaSlides-style)
 
-Transformar `events.wordcloud_active` (1 toggle) em sistema de N slides ordenados. Plano completo já documentado no plan file (`/Users/davialves/.claude/plans/eager-doodling-feather.md` seção "Fase 2.1").
+Transformar `events.wordcloud_active` (1 toggle) em sistema de N slides ordenados. Plano completo em `/Users/davialves/.claude/plans/eager-doodling-feather.md` seção "Fase 2.1".
 
-Pontos chave quando for fazer:
-- Migration aditiva primeiro (slides table). NÃO remover `wordcloud_active` ainda — backfill cria slide `wordcloud` pra eventos que estavam ativos.
-- `useActiveSlide` substitui `useWordcloudActive`.
-- `ActiveSlideInput` (audience) / `ActiveSlideDisplay` (telão) roteiam por tipo.
-- Migration final remove `events.wordcloud_active` e `events.wordcloud_config` após release estável.
+Migração aditiva primeiro (slides table). NÃO remover `wordcloud_active` ainda — backfill cria slide `wordcloud` pra eventos que estavam ativos. `useActiveSlide` substitui `useWordcloudActive`. `ActiveSlideInput` (audience) / `ActiveSlideDisplay` (telão) roteiam por tipo. Migration final remove `events.wordcloud_active/_config` após release estável.
 
 ### QR Code slide
 
 Slide dedicado com QR gigante + URL + nome do evento + texto custom. Usa `qrcode.react` (já no projeto).
 
-### Background customizável
+### Background avançado
 
-Tipos: none / color / gradient / image. Upload pra Supabase Storage. Aplicar só em `browser_source` e `desktop_app` (H2R e Chrome PiP precisam transparente).
+Adicionar tipo `image` (upload pra Supabase Storage). Aplicar só em `fullscreen` / `desktop_app` (H2R, Browser Source e Chrome PiP precisam transparente).
 
 ### Outros tipos de slide (em ordem sugerida)
 
@@ -81,7 +81,6 @@ Tipos: none / color / gradient / image. Upload pra Supabase Storage. Aplicar só
 
 ### Polish / quality of life
 
-- Live preview no operator
 - Histórico de slides passados (timeline do evento)
 - Export de resultados (CSV/PNG)
 - Slide de intervalo com countdown
