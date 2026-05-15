@@ -1,7 +1,17 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions",
-  "windows": ["main"],
-  "permissions": ["core:default"]
+  "description": "Grant default permissions + custom telão commands to the main window and the audience-opal.vercel.app remote origin.",
+  "windows": ["main", "telao"],
+  "remote": {
+    "urls": [
+      "https://audience-opal.vercel.app/*",
+      "https://*.vercel.app/*"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "core:webview:default",
+    "core:window:default"
+  ]
 }

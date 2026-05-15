@@ -11,10 +11,27 @@ import { useWordCounts } from '@/hooks/useWordCounts';
 import { runLayout } from '@/lib/wordcloud/runLayout';
 import type { LaidOutWord, WordEntry } from '@/lib/wordcloud/types';
 
-export function backgroundStyle(bg: WordcloudBackground | undefined): React.CSSProperties | undefined {
+export function backgroundStyle(
+  bg: WordcloudBackground | undefined,
+): React.CSSProperties | undefined {
   if (!bg || bg.type === 'none') return undefined;
   if (bg.type === 'color') return { background: bg.value };
-  if (bg.type === 'gradient') return { background: `linear-gradient(135deg, ${bg.from}, ${bg.to})` };
+  if (bg.type === 'gradient')
+    return { background: `linear-gradient(135deg, ${bg.from}, ${bg.to})` };
+  if (bg.type === 'image') {
+    const opacity = bg.opacity ?? 1;
+    const blur = bg.blurPx ?? 0;
+    const fit = bg.fit ?? 'cover';
+    return {
+      backgroundImage: `url(${JSON.stringify(bg.url)})`,
+      backgroundSize: fit,
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundColor: '#0A2540',
+      filter: blur > 0 ? `blur(${blur}px)` : undefined,
+      opacity,
+    };
+  }
   return undefined;
 }
 

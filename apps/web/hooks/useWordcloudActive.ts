@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 export type WordcloudBackground =
   | { type: 'none' }
   | { type: 'color'; value: string }
-  | { type: 'gradient'; from: string; to: string };
+  | { type: 'gradient'; from: string; to: string }
+  | { type: 'image'; url: string; fit?: 'cover' | 'contain'; opacity?: number; blurPx?: number };
 
 export type WordcloudConfig = {
   question: string;

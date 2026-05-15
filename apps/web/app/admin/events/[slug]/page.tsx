@@ -142,6 +142,7 @@ export default async function EventModerationPage({
       content: (
         <WordcloudTab
           eventId={event.id}
+          slug={event.slug}
           initialActive={wordcloudActive}
           initialConfig={wordcloudConfig}
           publicUrl={publicUrl}

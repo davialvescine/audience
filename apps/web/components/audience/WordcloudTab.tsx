@@ -6,7 +6,9 @@ import { ShareCard } from '@/components/audience/ShareCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { useTauri } from '@/hooks/useTauri';
 import type { WordcloudBackground, WordcloudConfig } from '@/hooks/useWordcloudActive';
+import { uploadEventAsset } from '@/server-actions/uploadEventAsset';
 import {
   resetWordcloud,
   setWordcloudActive,
@@ -19,6 +21,7 @@ type Props = {
   initialConfig: WordcloudConfig;
   publicUrl: string;
   telaoUrl: string;
+  slug: string;
 };
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -30,7 +33,9 @@ export function WordcloudTab({
   initialConfig,
   publicUrl,
   telaoUrl,
+  slug,
 }: Props) {
+  const { isTauri, invoke } = useTauri();
   const [active, setActive] = useState(initialActive);
   const [config, setConfig] = useState<WordcloudConfig>(initialConfig);
   const [toggling, startToggle] = useTransition();
@@ -126,12 +131,26 @@ export function WordcloudTab({
           label="OBS / Browser Source (transparente)"
           hint="Sobrepõe a nuvem no OBS, vMix, Streamlabs sem fundo."
           url={`${telaoUrl}?mode=browser_source`}
+          onOpen={
+            isTauri && invoke
+              ? () => {
+                  void invoke('open_telao_window', { slug, mode: 'browser_source' });
+                }
+              : undefined
+          }
         />
         <div className="h-3" />
         <TelaoLinkRow
           label="Tela cheia (com fundo)"
           hint="Abre direto no navegador / projetor. Usa o fundo configurado abaixo."
           url={`${telaoUrl}?mode=fullscreen`}
+          onOpen={
+            isTauri && invoke
+              ? () => {
+                  void invoke('open_telao_window', { slug, mode: 'fullscreen' });
+                }
+              : undefined
+          }
         />
       </Card>
 
@@ -199,6 +218,25 @@ export function WordcloudTab({
               >
                 Gradiente
               </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setBackground({
+                    type: 'image',
+                    url: bg.type === 'image' ? bg.url : '',
+                    fit: bg.type === 'image' ? (bg.fit ?? 'cover') : 'cover',
+                    opacity: bg.type === 'image' ? (bg.opacity ?? 1) : 1,
+                    blurPx: bg.type === 'image' ? (bg.blurPx ?? 0) : 0,
+                  })
+                }
+                className={`h-10 px-3 rounded-md border text-sm font-medium ${
+                  bg.type === 'image'
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-ink/20 text-ink/70 hover:bg-ink/5'
+                }`}
+              >
+                Imagem
+              </button>
             </div>
 
             {bg.type === 'color' ? (
@@ -246,6 +284,14 @@ export function WordcloudTab({
                   aria-hidden="true"
                 />
               </div>
+            ) : null}
+
+            {bg.type === 'image' ? (
+              <BackgroundImageEditor
+                eventId={eventId}
+                bg={bg}
+                setBackground={setBackground}
+              />
             ) : null}
           </div>
 
@@ -358,7 +404,176 @@ export function WordcloudTab({
   );
 }
 
-function TelaoLinkRow({ label, hint, url }: { label: string; hint: string; url: string }) {
+type ImageBackground = Extract<WordcloudBackground, { type: 'image' }>;
+
+function BackgroundImageEditor({
+  eventId,
+  bg,
+  setBackground,
+}: {
+  eventId: string;
+  bg: ImageBackground;
+  setBackground: (b: WordcloudBackground) => void;
+}) {
+  const [uploading, startUpload] = useTransition();
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFile = (file: File | null | undefined) => {
+    if (!file) return;
+    setUploadError(null);
+    const formData = new FormData();
+    formData.set('file', file);
+    startUpload(async () => {
+      const r = await uploadEventAsset(eventId, formData);
+      if (!r.ok) {
+        setUploadError(
+          r.error === 'too_large'
+            ? 'Imagem muito grande (máx 8 MB).'
+            : r.error === 'unsupported_type'
+              ? 'Use PNG, JPG, WEBP ou GIF.'
+              : r.error === 'forbidden'
+                ? 'Sem permissão pra subir aqui.'
+                : 'Não rolou subir a imagem. Tente de novo.',
+        );
+        return;
+      }
+      setBackground({
+        type: 'image',
+        url: r.url,
+        fit: bg.fit ?? 'cover',
+        opacity: bg.opacity ?? 1,
+        blurPx: bg.blurPx ?? 0,
+      });
+    });
+  };
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="accent"
+          loading={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {bg.url ? 'Trocar imagem' : 'Subir imagem'}
+        </Button>
+        {bg.url ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              setBackground({
+                type: 'image',
+                url: '',
+                fit: bg.fit ?? 'cover',
+                opacity: bg.opacity ?? 1,
+                blurPx: bg.blurPx ?? 0,
+              })
+            }
+          >
+            Remover imagem
+          </Button>
+        ) : null}
+        <p className="text-xs text-ink/60">
+          PNG, JPG, WEBP ou GIF — até 8 MB. Ideal 1920×1080.
+        </p>
+      </div>
+
+      {uploadError ? (
+        <p role="alert" className="text-sm text-danger">
+          {uploadError}
+        </p>
+      ) : null}
+
+      {bg.url ? (
+        <>
+          <div className="relative overflow-hidden rounded-md border border-ink/15">
+            <img
+              src={bg.url}
+              alt="Preview do fundo"
+              className="w-full h-32 object-cover"
+              style={{ opacity: bg.opacity ?? 1 }}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-ink/60">Encaixe</span>
+              <select
+                value={bg.fit ?? 'cover'}
+                onChange={(e) =>
+                  setBackground({
+                    ...bg,
+                    fit: (e.target.value as 'cover' | 'contain'),
+                  })
+                }
+                className="h-9 rounded-md border border-ink/20 bg-paper text-ink px-2 text-sm"
+              >
+                <option value="cover">Preencher (cover)</option>
+                <option value="contain">Caber inteira (contain)</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-ink/60">Opacidade</span>
+              <input
+                type="range"
+                min={0.2}
+                max={1}
+                step={0.05}
+                value={bg.opacity ?? 1}
+                onChange={(e) =>
+                  setBackground({ ...bg, opacity: Number(e.target.value) })
+                }
+              />
+              <span className="text-xs text-ink/60 w-10 text-right">
+                {Math.round((bg.opacity ?? 1) * 100)}%
+              </span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-ink/60">Desfoque</span>
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step={1}
+                value={bg.blurPx ?? 0}
+                onChange={(e) =>
+                  setBackground({ ...bg, blurPx: Number(e.target.value) })
+                }
+              />
+              <span className="text-xs text-ink/60 w-10 text-right">
+                {bg.blurPx ?? 0}px
+              </span>
+            </label>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function TelaoLinkRow({
+  label,
+  hint,
+  url,
+  onOpen,
+}: {
+  label: string;
+  hint: string;
+  url: string;
+  onOpen?: (() => void) | undefined;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -379,14 +594,24 @@ function TelaoLinkRow({ label, hint, url }: { label: string; hint: string; url: 
         >
           {copied ? '✓ Copiado' : 'Copiar'}
         </Button>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex items-center justify-center h-9 px-3 text-sm rounded-sm font-medium bg-primary text-paper hover:bg-primary-deep"
-        >
-          Abrir ↗
-        </a>
+        {onOpen ? (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="inline-flex items-center justify-center h-9 px-3 text-sm rounded-sm font-medium bg-primary text-paper hover:bg-primary-deep"
+          >
+            Abrir janela
+          </button>
+        ) : (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex items-center justify-center h-9 px-3 text-sm rounded-sm font-medium bg-primary text-paper hover:bg-primary-deep"
+          >
+            Abrir ↗
+          </a>
+        )}
       </div>
     </div>
   );
