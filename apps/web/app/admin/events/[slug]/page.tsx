@@ -12,11 +12,22 @@ import { QueueControls } from '@/components/audience/QueueControls';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { ShareCard } from '@/components/audience/ShareCard';
 import { TelaoTab } from '@/components/audience/TelaoTab';
+import { WordcloudTab } from '@/components/audience/WordcloudTab';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { requireUser } from '@/lib/auth/requireUser';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
+
+const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
+  question: 'Em uma palavra, o que você espera deste evento?',
+  maxWordsPerSubmission: 1,
+  filterStopwords: true,
+  filterProfanity: true,
+  palette: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF'],
+  showTotal: true,
+};
 
 // Sempre fresh: evento e global, multiplos moderadores. Cada GET puxa
 // DB pra refletir mudancas que outro moderador fez (polling de 2s
@@ -38,6 +49,15 @@ export default async function EventModerationPage({
     .eq('slug', slug)
     .single();
   if (!event) notFound();
+
+  const { data: wcRow } = await supabase
+    .from('events')
+    .select('wordcloud_active, wordcloud_config')
+    .eq('id', event.id)
+    .maybeSingle();
+  const wordcloudActive = wcRow?.wordcloud_active ?? false;
+  const wordcloudConfig =
+    (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
   const isOwner = event.owner_id === user.id;
 
   const { data: members } = await supabase.rpc('list_event_members', {
@@ -112,6 +132,17 @@ export default async function EventModerationPage({
             pinnedSubmissionId={event.pinned_submission_id}
           />
         </div>
+      ),
+    },
+    {
+      id: 'wordcloud',
+      label: wordcloudActive ? 'Nuvem ●' : 'Nuvem',
+      content: (
+        <WordcloudTab
+          eventId={event.id}
+          initialActive={wordcloudActive}
+          initialConfig={wordcloudConfig}
+        />
       ),
     },
     {

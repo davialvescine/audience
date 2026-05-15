@@ -1,0 +1,54 @@
+// Brazilian Portuguese stopwords (already normalized: lowercase, no diacritics).
+// Source: composite of snowball + nltk pt-BR lists, lightly trimmed for
+// audience-engagement context (kept common pronouns and modal verbs).
+//
+// All entries here are matched against `normalize(input)` output. Callers must
+// normalize their input first; the list itself is ASCII-only by design.
+
+export const STOPWORDS: ReadonlySet<string> = new Set([
+  'a', 'agora', 'ainda', 'algo', 'algum', 'alguma', 'algumas', 'alguns',
+  'ali', 'ano', 'anos', 'ante', 'antes', 'ao', 'aos', 'apenas', 'apos',
+  'aquela', 'aquelas', 'aquele', 'aqueles', 'aqui', 'aquilo', 'as', 'ate',
+  'atras', 'bem', 'cada', 'cento', 'certa', 'certas', 'certo', 'certos',
+  'cima', 'com', 'como', 'contra', 'contudo', 'da', 'daquela', 'daquelas',
+  'daquele', 'daqueles', 'das', 'de', 'dela', 'delas', 'dele', 'deles',
+  'demais', 'dentro', 'depois', 'desde', 'dessa', 'dessas', 'desse',
+  'desses', 'desta', 'destas', 'deste', 'destes', 'deve', 'devem', 'devera',
+  'deverao', 'deveria', 'deveriam', 'devo', 'dez', 'dezena', 'dezenas',
+  'dia', 'dias', 'disse', 'disso', 'disto', 'dito', 'diz', 'dizem', 'do',
+  'dois', 'dos', 'duas', 'durante', 'e', 'ela', 'elas', 'ele', 'eles', 'em',
+  'embora', 'enquanto', 'entao', 'entre', 'era', 'eram', 'essa', 'essas',
+  'esse', 'esses', 'esta', 'estas', 'estamos', 'estao', 'estar', 'estara',
+  'estarao', 'estaria', 'estariam', 'estas', 'estava', 'estavam',
+  'estavamos', 'este', 'esteja', 'estejam', 'estejamos', 'estes', 'esteve',
+  'estive', 'estivemos', 'estiver', 'estivera', 'estiveram', 'estiverem',
+  'estivermos', 'estivesse', 'estivessem', 'estivessemos', 'estou', 'eu',
+  'fazem', 'fazendo', 'fazer', 'faz', 'fez', 'foi', 'fomos', 'for', 'fora',
+  'foram', 'forem', 'formos', 'fosse', 'fossem', 'fossemos', 'fui', 'ha',
+  'hao', 'havemos', 'haver', 'havia', 'hei', 'isso', 'isto', 'ja', 'la',
+  'lhe', 'lhes', 'logo', 'mais', 'mas', 'me', 'mesma', 'mesmas', 'mesmo',
+  'mesmos', 'meu', 'meus', 'minha', 'minhas', 'muita', 'muitas', 'muito',
+  'muitos', 'na', 'nada', 'nao', 'nas', 'nem', 'nenhum', 'nenhuma', 'nessa',
+  'nessas', 'nesse', 'nesses', 'nesta', 'nestas', 'neste', 'nestes', 'no',
+  'nos', 'nossa', 'nossas', 'nosso', 'nossos', 'nove', 'numa', 'numas',
+  'num', 'nuns', 'o', 'oito', 'os', 'ou', 'outra', 'outras', 'outro',
+  'outros', 'para', 'parte', 'partes', 'pela', 'pelas', 'pelo', 'pelos',
+  'perante', 'pode', 'podem', 'poderia', 'poderiam', 'pois', 'por', 'porem',
+  'porque', 'posso', 'pouca', 'poucas', 'pouco', 'poucos', 'pra', 'pras',
+  'pro', 'pros', 'qual', 'quais', 'quando', 'quanta', 'quantas', 'quanto',
+  'quantos', 'quase', 'que', 'quem', 'sao', 'se', 'seis', 'seja', 'sejam',
+  'sejamos', 'sem', 'sempre', 'sendo', 'sera', 'serao', 'seria', 'seriam',
+  'seriamos', 'sete', 'seu', 'seus', 'si', 'so', 'sob', 'sobre', 'somos',
+  'sou', 'sua', 'suas', 'tais', 'tal', 'talvez', 'tambem', 'tampouco', 'te',
+  'tem', 'tendo', 'tenha', 'tenham', 'tenhamos', 'tenho', 'ter', 'tera',
+  'terao', 'teria', 'teriam', 'tinha', 'tinham', 'tive', 'tivemos', 'tiver',
+  'tiveram', 'tiverem', 'tivermos', 'tivesse', 'tivessem', 'tivessemos',
+  'toda', 'todas', 'todo', 'todos', 'tres', 'tu', 'tua', 'tuas', 'tudo',
+  'um', 'uma', 'umas', 'uns', 'vai', 'vamos', 'vao', 'vez', 'vezes', 'vinda',
+  'vindo', 'voce', 'voces', 'vos', 'vossa', 'vossas', 'vosso', 'vossos',
+]);
+
+export function isStopword(word: string): boolean {
+  if (!word) return false;
+  return STOPWORDS.has(word.toLowerCase());
+}

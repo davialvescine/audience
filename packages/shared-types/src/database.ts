@@ -86,6 +86,8 @@ export type Database = {
           telao_config: Json
           telao_configs: Json
           theme_id: string
+          wordcloud_active: boolean
+          wordcloud_config: Json
         }
         Insert: {
           created_at?: string
@@ -104,6 +106,8 @@ export type Database = {
           telao_config?: Json
           telao_configs?: Json
           theme_id: string
+          wordcloud_active?: boolean
+          wordcloud_config?: Json
         }
         Update: {
           created_at?: string
@@ -122,6 +126,8 @@ export type Database = {
           telao_config?: Json
           telao_configs?: Json
           theme_id?: string
+          wordcloud_active?: boolean
+          wordcloud_config?: Json
         }
         Relationships: [
           {
@@ -323,6 +329,38 @@ export type Database = {
         }
         Relationships: []
       }
+      wordcloud_words: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          ip_hash: string | null
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          ip_hash?: string | null
+          word: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          ip_hash?: string | null
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wordcloud_words_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -408,6 +446,21 @@ export type Database = {
           sent_at: string
         }[]
       }
+      get_wordcloud_settings: {
+        Args: { p_slug: string }
+        Returns: {
+          active: boolean
+          config: Json
+          event_id: string
+        }[]
+      }
+      get_wordcloud_state: {
+        Args: { p_slug: string }
+        Returns: {
+          count: number
+          word: string
+        }[]
+      }
       list_event_members: {
         Args: { p_event_id: string }
         Returns: {
@@ -461,6 +514,36 @@ export type Database = {
         Args: { p_submission_id: string }
         Returns: undefined
       }
+      reset_wordcloud: { Args: { p_event_id: string }; Returns: undefined }
+      set_wordcloud_active: {
+        Args: { p_active: boolean; p_event_id: string }
+        Returns: {
+          created_at: string
+          dispatch_interval_seconds: number
+          enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
+          h2r_last_heartbeat: string | null
+          h2r_paired_at: string | null
+          h2r_source_id: string | null
+          h2r_webhook_url: string | null
+          id: string
+          name: string
+          owner_id: string
+          pinned_submission_id: string | null
+          slug: string
+          submissions_open: boolean
+          telao_config: Json
+          telao_configs: Json
+          theme_id: string
+          wordcloud_active: boolean
+          wordcloud_config: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       submit_comment: {
         Args: {
           p_comment: string
@@ -470,7 +553,40 @@ export type Database = {
         }
         Returns: string
       }
+      submit_word: {
+        Args: { p_ip_hash: string; p_slug: string; p_word: string }
+        Returns: Json
+      }
       unpin_submission: { Args: { p_event_id: string }; Returns: undefined }
+      update_wordcloud_config: {
+        Args: { p_config: Json; p_event_id: string }
+        Returns: {
+          created_at: string
+          dispatch_interval_seconds: number
+          enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
+          h2r_last_heartbeat: string | null
+          h2r_paired_at: string | null
+          h2r_source_id: string | null
+          h2r_webhook_url: string | null
+          id: string
+          name: string
+          owner_id: string
+          pinned_submission_id: string | null
+          slug: string
+          submissions_open: boolean
+          telao_config: Json
+          telao_configs: Json
+          theme_id: string
+          wordcloud_active: boolean
+          wordcloud_config: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       validate_moderator_token: { Args: { p_token: string }; Returns: string }
       whoami_probe: { Args: never; Returns: string }
     }

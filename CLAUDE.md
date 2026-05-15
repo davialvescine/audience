@@ -43,12 +43,22 @@ All commands run from the monorepo root: `/Users/davialves/development/Audience/
 - Don't recreate the Vercel project unless the Root Directory metadata is wrong. Use the Vercel REST API (`PATCH /v9/projects/...`) to update settings in place when possible.
 - Don't use `--no-verify` on git or skip CI gates.
 
-## Session resume notes (last session: 2026-04-29 night)
+## Session resume notes (last session: 2026-05-15)
 
 When you re-open this project, read in order:
 1. `MEMORY.md` index → start with `audience-pending.md` for the punch list
-2. `docs/superpowers/plans/2026-04-30-telao-modes-multi.md` for the master plan (telão multi-mode)
-3. `git log --oneline -10` to see recent commits
+2. `docs/wordcloud-followups.md` — current open items + roadmap
+3. `git log --oneline -20` to see the wordcloud work shipped on `feature/wordcloud`
+
+**Wordcloud feature shipped (branch `feature/wordcloud`, not yet merged):**
+TDD-built nuvem de palavras estilo Mentimeter (sem multi-slide ainda — só um toggle por evento). 27 tasks, ~25 commits, 173 vitest tests passing. Migrations 00330000/00340000 escritas mas **NÃO APLICADAS** — aplicar antes do merge. Detalhes em `docs/wordcloud-followups.md`.
+
+**Older notes preserved below.**
+
+When you re-open after the wordcloud merge:
+1. `MEMORY.md` index → `audience-pending.md`
+2. `docs/superpowers/plans/2026-04-30-telao-modes-multi.md` (telão multi-mode master plan)
+3. `git log --oneline -10`
 
 **Where we stopped:** ~95% of the multi-mode telão work shipped. 4 modes implemented (H2R, Browser Source, Chrome PiP all 100%; Audience Desktop is the only remaining piece). Autosave + multi-mode broadcast just landed.
 
