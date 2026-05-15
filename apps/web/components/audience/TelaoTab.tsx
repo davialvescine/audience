@@ -268,7 +268,40 @@ export function TelaoTab({
     <div className="grid lg:grid-cols-[1fr_440px] gap-6">
       {/* LEFT: settings stack */}
       <div className="space-y-6 min-w-0">
-        {/* 0. Diagnostic test */}
+        {/* 0. Quick open */}
+        <Card className="bg-primary/5 border-primary/20">
+          <h3 className="font-display text-lg text-ink mb-1">Abrir telão agora</h3>
+          <p className="text-sm text-ink/60 mb-4">
+            Atalhos rápidos pra abrir o telão sem precisar montar configuração.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={`${publicTelaoUrl}?mode=fullscreen&fullscreen=1`}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md font-medium bg-primary text-paper hover:bg-primary-deep"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+              Tela cheia (fullscreen)
+            </a>
+            <a
+              href={`${publicTelaoUrl}?mode=browser_source`}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md font-medium border border-ink/20 text-ink hover:bg-ink/5"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v18M3 12h18" opacity="0.5" />
+              </svg>
+              Browser Source (transparente)
+            </a>
+          </div>
+        </Card>
+
+        {/* 1. Diagnostic test */}
         <DiagnosticTestCard eventId={eventId} />
 
         {/* 1. Modes */}

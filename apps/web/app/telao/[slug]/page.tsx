@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 
+import { FullscreenAuto } from '@/components/telao/FullscreenAuto';
 import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { TelaoStage } from '@/components/telao/TelaoStage';
@@ -73,6 +74,10 @@ export default async function TelaoPage({
   // Background pintado apenas fora dos modos transparentes (OBS/PiP/H2R).
   const showWordcloudBackground = !mode || mode === 'fullscreen' || mode === 'desktop_app';
 
+  // URL pública pra audiência — mostrada no top-bar do telão fullscreen.
+  // Reconstruída a partir do mesmo host do request.
+  const joinUrl = `https://audience-opal.vercel.app/e/${slug}`;
+
   const telao = (
     <TelaoWordcloudSwitcher
       eventId={event.event_id}
@@ -80,6 +85,7 @@ export default async function TelaoPage({
       initialWordcloudConfig={wordcloudConfig}
       initialWordcloudEntries={initialEntries}
       showBackground={showWordcloudBackground}
+      joinUrl={showWordcloudBackground ? joinUrl : undefined}
     >
       <TelaoClient
         slug={slug}
@@ -99,7 +105,12 @@ export default async function TelaoPage({
   // In preview mode the iframe is already sized to 1920x1080, so we skip
   // TelaoStage (which would double-scale).
   if (isPreview) return telao;
-  const staged = <TelaoStage>{telao}</TelaoStage>;
+  const staged = (
+    <>
+      <FullscreenAuto />
+      <TelaoStage>{telao}</TelaoStage>
+    </>
+  );
   if (isPip || !mode) return <PipLauncher>{staged}</PipLauncher>;
   return staged;
 }
