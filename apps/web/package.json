@@ -9,6 +9,7 @@
     "lint": "next lint --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "bench": "vitest bench --run",
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium"
   },

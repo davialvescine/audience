@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { runLayout, __resetWorkerSingleton } from '../runLayout';
-import type { LayoutResponse, WorkerLike } from '../runLayout';
+import type { WorkerLike } from '../runLayout';
+import type { LayoutResponse } from '../types';
 
 function makeFakeWorker(): WorkerLike & { dispatchMessage: (data: LayoutResponse) => void } {
   let handler: ((e: { data: LayoutResponse }) => void) | null = null;
