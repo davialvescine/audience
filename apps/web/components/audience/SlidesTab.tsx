@@ -175,10 +175,11 @@ export function SlidesTab({
 
   return (
     <div className="flex flex-col h-[calc(100vh-180px)] gap-3">
-      {/* Quick links: 3 cards — slides | comentário | telão */}
+      {/* Quick links: 3 cards bem distintos visualmente */}
       <div className="grid md:grid-cols-3 gap-3">
         <LinkCard
-          color="primary"
+          variant="slides"
+          icon="☁"
           label="Audiência · slides (nuvem)"
           url={slidesUrl}
           onShowQr={() => setShowQr((v) => (v === 'slides' ? null : 'slides'))}
@@ -186,42 +187,24 @@ export function SlidesTab({
           onCopy={() => copy(slidesUrl)}
         />
         <LinkCard
-          color="secondary"
+          variant="comments"
+          icon="💬"
           label="Audiência · comentário"
           url={commentsUrl}
           onShowQr={() => setShowQr((v) => (v === 'comments' ? null : 'comments'))}
           showingQr={showQr === 'comments'}
           onCopy={() => copy(commentsUrl)}
         />
-        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 flex items-center gap-3">
-          <div className="shrink-0 h-16 w-16 rounded-md bg-paper border border-ink/10 flex items-center justify-center text-2xl">
-            🖥
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-wide font-bold text-accent mb-0.5">
-              Telão / Projetor
-            </p>
-            <p className="font-mono text-xs text-ink truncate" title={telaoFullUrl}>
-              {telaoFullUrl.replace(/^https?:\/\//, '')}
-            </p>
-            <div className="flex gap-2 mt-1">
-              <button
-                type="button"
-                onClick={() => copy(telaoFullUrl)}
-                className="text-xs text-primary hover:underline"
-              >
-                Copiar
-              </button>
-              <button
-                type="button"
-                onClick={openTelao}
-                className="text-xs text-primary hover:underline"
-              >
-                Abrir tela cheia ↗
-              </button>
-            </div>
-          </div>
-        </div>
+        <LinkCard
+          variant="telao"
+          icon="🖥"
+          label="Telão / Projetor (tela cheia)"
+          url={telaoFullUrl}
+          onShowQr={null}
+          showingQr={false}
+          onCopy={() => copy(telaoFullUrl)}
+          customAction={{ label: 'Abrir tela cheia ↗', onClick: openTelao }}
+        />
       </div>
 
       {showQr ? (
@@ -336,38 +319,69 @@ export function SlidesTab({
   );
 }
 
+const LINK_VARIANTS = {
+  slides: {
+    container: 'border-[#4ECDC4]/40 bg-[#4ECDC4]/10',
+    label: 'text-[#0a8077]',
+    badge: 'bg-[#4ECDC4]/20 text-[#0a8077]',
+  },
+  comments: {
+    container: 'border-[#F5C518]/40 bg-[#F5C518]/10',
+    label: 'text-[#8b6a00]',
+    badge: 'bg-[#F5C518]/20 text-[#8b6a00]',
+  },
+  telao: {
+    container: 'border-[#6A4C93]/40 bg-[#6A4C93]/10',
+    label: 'text-[#4a346b]',
+    badge: 'bg-[#6A4C93]/20 text-[#4a346b]',
+  },
+} as const;
+
 function LinkCard({
-  color,
+  variant,
+  icon,
   label,
   url,
   onShowQr,
   showingQr,
   onCopy,
+  customAction,
 }: {
-  color: 'primary' | 'secondary';
+  variant: keyof typeof LINK_VARIANTS;
+  icon: string;
   label: string;
   url: string;
-  onShowQr: () => void;
+  onShowQr: (() => void) | null;
   showingQr: boolean;
   onCopy: () => void;
+  customAction?: { label: string; onClick: () => void };
 }) {
-  const borderClass =
-    color === 'primary' ? 'border-primary/20 bg-primary/5' : 'border-ink/20 bg-ink/5';
-  const labelClass = color === 'primary' ? 'text-primary' : 'text-ink/70';
+  const v = LINK_VARIANTS[variant];
   return (
-    <div className={`rounded-lg border ${borderClass} p-3 flex items-center gap-3`}>
-      <button
-        type="button"
-        onClick={onShowQr}
-        className={`shrink-0 h-16 w-16 rounded-md bg-paper border ${
-          showingQr ? 'border-accent' : 'border-ink/10'
-        } flex items-center justify-center hover:bg-ink/5`}
-        title="Mostrar/esconder QR"
-      >
-        <QRCodeSVG value={url} size={56} level="M" />
-      </button>
+    <div className={`rounded-lg border ${v.container} p-3 flex items-center gap-3`}>
+      {onShowQr ? (
+        <button
+          type="button"
+          onClick={onShowQr}
+          className={`shrink-0 h-16 w-16 rounded-md bg-paper border ${
+            showingQr ? 'border-accent' : 'border-ink/10'
+          } flex items-center justify-center hover:bg-ink/5 relative`}
+          title="Mostrar/esconder QR"
+        >
+          <QRCodeSVG value={url} size={56} level="M" />
+          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-paper text-xs flex items-center justify-center border border-ink/15">
+            {icon}
+          </span>
+        </button>
+      ) : (
+        <div
+          className={`shrink-0 h-16 w-16 rounded-md ${v.badge} flex items-center justify-center text-3xl`}
+        >
+          {icon}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
-        <p className={`text-[10px] uppercase tracking-wide font-bold mb-0.5 ${labelClass}`}>
+        <p className={`text-[10px] uppercase tracking-wide font-bold mb-0.5 ${v.label}`}>
           {label}
         </p>
         <p className="font-mono text-xs text-ink truncate" title={url}>
@@ -377,14 +391,24 @@ function LinkCard({
           <button type="button" onClick={onCopy} className="text-xs text-primary hover:underline">
             Copiar
           </button>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener"
-            className="text-xs text-primary hover:underline"
-          >
-            Abrir ↗
-          </a>
+          {customAction ? (
+            <button
+              type="button"
+              onClick={customAction.onClick}
+              className="text-xs text-primary hover:underline"
+            >
+              {customAction.label}
+            </button>
+          ) : (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener"
+              className="text-xs text-primary hover:underline"
+            >
+              Abrir ↗
+            </a>
+          )}
         </div>
       </div>
     </div>
