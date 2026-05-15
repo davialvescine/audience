@@ -3,7 +3,9 @@ import { renderHook, act } from '@testing-library/react';
 import { useWordcloudActive } from '../useWordcloudActive';
 import { createFakeChannel } from '../../test-utils/supabaseChannel';
 
-const baseConfig = {
+import type { WordcloudConfig } from '../useWordcloudActive';
+
+const baseConfig: WordcloudConfig = {
   question: 'q',
   maxWordsPerSubmission: 1,
   filterStopwords: true,

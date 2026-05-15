@@ -81,11 +81,11 @@ describe('WordCloudInput', () => {
   });
 
   it('disables submit while pending', async () => {
-    let resolve: ((v: { ok: true }) => void) | null = null;
+    const deferred: { resolve?: (v: { ok: true }) => void } = {};
     vi.spyOn(submitWordModule, 'submitWord').mockReturnValue(
-      new Promise((res) => {
-        resolve = res;
-      }) as Promise<{ ok: true }>,
+      new Promise<{ ok: true }>((res) => {
+        deferred.resolve = res;
+      }),
     );
     const user = userEvent.setup();
     render(<WordCloudInput slug="evt" config={baseConfig} />);
@@ -93,7 +93,7 @@ describe('WordCloudInput', () => {
     const btn = screen.getByRole('button', { name: /enviar/i });
     await user.click(btn);
     await waitFor(() => expect(btn).toBeDisabled());
-    resolve?.({ ok: true });
+    deferred.resolve!({ ok: true });
   });
 
   it('requires a value (button does nothing on empty input)', async () => {

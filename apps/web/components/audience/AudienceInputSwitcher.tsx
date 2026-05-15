@@ -1,0 +1,59 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+
+import { SubmissionForm } from '@/components/audience/SubmissionForm';
+import { WordCloudInput } from '@/components/audience/WordCloudInput';
+import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
+import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
+
+type Props = {
+  slug: string;
+  eventId: string;
+  initialWordcloudActive: boolean;
+  initialWordcloudConfig: WordcloudConfig;
+  submissionsOpen: boolean;
+};
+
+type ChannelLike = Parameters<typeof useWordcloudActive>[1]['channel'];
+
+export function AudienceInputSwitcher({
+  slug,
+  eventId,
+  initialWordcloudActive,
+  initialWordcloudConfig,
+  submissionsOpen,
+}: Props) {
+  const [channel, setChannel] = useState<ChannelLike | undefined>(undefined);
+
+  useEffect(() => {
+    const rt = getSupabaseRealtimeClient();
+    const ch = rt
+      .channel(`event:${eventId}:wc:${Date.now()}`) as unknown as ChannelLike;
+    setChannel(ch);
+    return () => {
+      ch?.unsubscribe();
+    };
+  }, [eventId]);
+
+  const { active, config } = useWordcloudActive(eventId, {
+    initialActive: initialWordcloudActive,
+    initialConfig: initialWordcloudConfig,
+    channel,
+  });
+
+  const view = useMemo(() => {
+    if (active) return <WordCloudInput slug={slug} config={config} />;
+    if (!submissionsOpen) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-2xl font-display text-primary mb-2">⏸️</p>
+          <p className="text-ink/60">Submissões encerradas</p>
+        </div>
+      );
+    }
+    return <SubmissionForm slug={slug} />;
+  }, [active, slug, config, submissionsOpen]);
+
+  return view;
+}

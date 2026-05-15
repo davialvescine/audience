@@ -33,7 +33,7 @@ export type UseWordcloudActiveOptions = {
    * Optional pre-built channel. Tests inject a fake channel; production code
    * builds a real Supabase channel inside this hook (via factory).
    */
-  channel?: ChannelLike;
+  channel?: ChannelLike | undefined;
 };
 
 export function useWordcloudActive(
