@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe('WordcloudTab', () => {
   it('renders the toggle with initial off state', () => {
-    render(<WordcloudTab eventId="evt-1" initialActive={false} initialConfig={baseConfig} />);
+    render(<WordcloudTab eventId="evt-1" initialActive={false} initialConfig={baseConfig} publicUrl="http://x/e/evt" telaoUrl="http://x/telao/evt" />);
     const toggle = screen.getByRole('switch');
     expect(toggle).toHaveAttribute('aria-checked', 'false');
   });
@@ -28,22 +28,22 @@ describe('WordcloudTab', () => {
   it('calls setWordcloudActive when toggled on', async () => {
     const spy = vi.spyOn(actions, 'setWordcloudActive').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(<WordcloudTab eventId="evt-1" initialActive={false} initialConfig={baseConfig} />);
+    render(<WordcloudTab eventId="evt-1" initialActive={false} initialConfig={baseConfig} publicUrl="http://x/e/evt" telaoUrl="http://x/telao/evt" />);
     await user.click(screen.getByRole('switch'));
     await waitFor(() => expect(spy).toHaveBeenCalledWith('evt-1', true));
   });
 
   it('shows the active banner when active=true', () => {
-    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} publicUrl="http://x/e/evt" telaoUrl="http://x/telao/evt" />);
     expect(screen.getByText(/nuvem ativa/i)).toBeInTheDocument();
   });
 
   it('saves config edits via debounced autosave', async () => {
     const spy = vi.spyOn(actions, 'updateWordcloudConfig').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} publicUrl="http://x/e/evt" telaoUrl="http://x/telao/evt" />);
 
-    const questionInput = screen.getByLabelText(/pergunta/i);
+    const questionInput = screen.getByLabelText(/aparecer no celular/i);
     await user.clear(questionInput);
     await user.type(questionInput, 'Nova pergunta?');
 
@@ -61,7 +61,7 @@ describe('WordcloudTab', () => {
     );
     const spy = vi.spyOn(actions, 'resetWordcloud').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} publicUrl="http://x/e/evt" telaoUrl="http://x/telao/evt" />);
     await user.click(screen.getByRole('button', { name: /limpar nuvem/i }));
     await waitFor(() => expect(spy).toHaveBeenCalledWith('evt-1'));
     vi.unstubAllGlobals();
@@ -74,7 +74,7 @@ describe('WordcloudTab', () => {
     );
     const spy = vi.spyOn(actions, 'resetWordcloud').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} publicUrl="http://x/e/evt" telaoUrl="http://x/telao/evt" />);
     await user.click(screen.getByRole('button', { name: /limpar nuvem/i }));
     expect(spy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();

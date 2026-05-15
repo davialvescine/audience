@@ -70,12 +70,16 @@ export default async function TelaoPage({
     initialEntries = (wcState ?? []).map((r) => ({ text: r.word, count: Number(r.count) }));
   }
 
+  // Background pintado apenas fora dos modos transparentes (OBS/PiP/H2R).
+  const showWordcloudBackground = !mode || mode === 'fullscreen' || mode === 'desktop_app';
+
   const telao = (
     <TelaoWordcloudSwitcher
       eventId={event.event_id}
       initialWordcloudActive={wordcloudActive}
       initialWordcloudConfig={wordcloudConfig}
       initialWordcloudEntries={initialEntries}
+      showBackground={showWordcloudBackground}
     >
       <TelaoClient
         slug={slug}

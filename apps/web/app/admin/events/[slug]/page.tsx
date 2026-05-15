@@ -144,6 +144,8 @@ export default async function EventModerationPage({
           eventId={event.id}
           initialActive={wordcloudActive}
           initialConfig={wordcloudConfig}
+          publicUrl={publicUrl}
+          telaoUrl={`${proto}://${host}/telao/${event.slug}`}
         />
       ),
     },

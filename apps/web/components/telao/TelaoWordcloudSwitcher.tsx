@@ -16,6 +16,8 @@ type Props = {
   initialWordcloudActive: boolean;
   initialWordcloudConfig: WordcloudConfig;
   initialWordcloudEntries: WordEntry[];
+  /** When true, WordCloudDisplay paints the configured background (color/gradient). */
+  showBackground?: boolean | undefined;
   children: ReactNode;
 };
 
@@ -33,6 +35,7 @@ export function TelaoWordcloudSwitcher({
   initialWordcloudActive,
   initialWordcloudConfig,
   initialWordcloudEntries,
+  showBackground = false,
   children,
 }: Props) {
   const [eventsChannel, setEventsChannel] = useState<ChannelLike | undefined>(undefined);
@@ -75,6 +78,7 @@ export function TelaoWordcloudSwitcher({
           eventId={eventId}
           config={config}
           initialEntries={initialWordcloudEntries}
+          showBackground={showBackground}
           channel={
             // No-op fake channel: never emits, never throws
             {
@@ -97,6 +101,7 @@ export function TelaoWordcloudSwitcher({
         initialEntries={initialWordcloudEntries}
         channel={wordsChannel}
         presenceChannel={presenceChannel}
+        showBackground={showBackground}
       />
     );
   }, [active, children, config, eventId, initialWordcloudEntries, wordsChannel, presenceChannel]);

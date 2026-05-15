@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+export type WordcloudBackground =
+  | { type: 'none' }
+  | { type: 'color'; value: string }
+  | { type: 'gradient'; from: string; to: string };
+
 export type WordcloudConfig = {
   question: string;
   maxWordsPerSubmission: 1 | 2 | 3;
@@ -9,6 +14,7 @@ export type WordcloudConfig = {
   filterProfanity: boolean;
   palette: string[];
   showTotal: boolean;
+  background?: WordcloudBackground | undefined;
 };
 
 type ChannelLike = {

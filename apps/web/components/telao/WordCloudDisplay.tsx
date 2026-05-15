@@ -6,10 +6,17 @@ import { useEffect, useState } from 'react';
 import { OnlineBadge } from '@/components/telao/OnlineBadge';
 import { WordCloudWord } from '@/components/telao/WordCloudWord';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
-import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { WordcloudBackground, WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { useWordCounts } from '@/hooks/useWordCounts';
 import { runLayout } from '@/lib/wordcloud/runLayout';
 import type { LaidOutWord, WordEntry } from '@/lib/wordcloud/types';
+
+export function backgroundStyle(bg: WordcloudBackground | undefined): React.CSSProperties | undefined {
+  if (!bg || bg.type === 'none') return undefined;
+  if (bg.type === 'color') return { background: bg.value };
+  if (bg.type === 'gradient') return { background: `linear-gradient(135deg, ${bg.from}, ${bg.to})` };
+  return undefined;
+}
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -26,6 +33,12 @@ type Props = {
   channel: ChannelLike;
   /** Optional presence channel. When provided, renders the OnlineBadge. */
   presenceChannel?: PresenceChannelLike | undefined;
+  /**
+   * When true, apply the configured background (color/gradient). When false
+   * (the default — Browser Source / OBS overlay), keep the stage transparent
+   * so the underlying source shows through.
+   */
+  showBackground?: boolean | undefined;
 };
 
 export function WordCloudDisplay({
@@ -34,6 +47,7 @@ export function WordCloudDisplay({
   initialEntries,
   channel,
   presenceChannel,
+  showBackground = false,
 }: Props) {
   const { entries, totalSubmissions } = useWordCounts(eventId, {
     channel,
@@ -69,8 +83,10 @@ export function WordCloudDisplay({
     };
   }, [entries, config.palette.length]);
 
+  const bg = showBackground ? backgroundStyle(config.background) : undefined;
+
   return (
-    <div className="absolute inset-0 overflow-hidden text-paper">
+    <div className="absolute inset-0 overflow-hidden text-paper" style={bg}>
       {presenceChannel ? <OnlineBadge count={presence.count} /> : null}
 
       <header className="relative z-10 px-12 pt-12 text-center">
