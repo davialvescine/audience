@@ -145,8 +145,11 @@ export function WordCloudDisplay({
 
   const bgStyle = showBackground ? backgroundStyle(config.background) : undefined;
   const lightBg = showBackground && isBackgroundLight(config.background);
-  const textColor = lightBg ? '#0A1834' : '#FFFFFF';
+  const autoTextColor = lightBg ? '#0A1834' : '#FFFFFF';
+  const textColor = config.textColorOverride ?? autoTextColor;
   const subtleColor = lightBg ? 'rgba(10,24,52,0.6)' : 'rgba(255,255,255,0.7)';
+  const responsesMode = config.showResponsesMode ?? 'instant';
+  const hideResponses = responsesMode === 'private';
 
   const joinLabel = (() => {
     if (!joinUrl) return null;
@@ -211,6 +214,15 @@ export function WordCloudDisplay({
         </h1>
       </header>
 
+      {/* Imagem de conteúdo opcional — canto inferior esquerdo */}
+      {config.contentImageUrl ? (
+        <img
+          src={config.contentImageUrl}
+          alt=""
+          className="absolute bottom-16 left-16 z-10 max-h-72 max-w-md rounded-lg shadow-2xl"
+        />
+      ) : null}
+
       {/* Nuvem ocupa tudo abaixo da pergunta — encolhe da direita se QR estiver visível */}
       <div
         className="absolute left-0"
@@ -221,18 +233,33 @@ export function WordCloudDisplay({
         }}
       >
         <AnimatePresence>
-          {laid.map((w) => (
-            <WordCloudWord
-              key={w.text}
-              word={w}
-              palette={config.palette}
-              originX={STAGE_W / 2}
-              originY={CLOUD_H / 2}
-            />
-          ))}
+          {hideResponses
+            ? null
+            : laid.map((w) => (
+                <WordCloudWord
+                  key={w.text}
+                  word={w}
+                  palette={config.palette}
+                  originX={STAGE_W / 2}
+                  originY={CLOUD_H / 2}
+                />
+              ))}
         </AnimatePresence>
 
-        {entries.length === 0 ? (
+        {hideResponses ? (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-12"
+            style={{ color: subtleColor }}
+          >
+            <span className="text-7xl">🔒</span>
+            <p className="text-3xl">Coletando respostas em privado</p>
+            <p className="text-xl">
+              {entries.length > 0
+                ? `${entries.length} resposta${entries.length === 1 ? '' : 's'} recebida${entries.length === 1 ? '' : 's'}`
+                : 'As palavras aparecerão quando você liberar.'}
+            </p>
+          </div>
+        ) : entries.length === 0 ? (
           <div
             className="absolute inset-0 flex items-center justify-center text-3xl text-center px-12"
             style={{ color: subtleColor }}

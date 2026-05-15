@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -105,6 +105,18 @@ export function SlidesTab({
   useEffect(() => {
     setLiveConfig(null);
   }, [selectedId]);
+
+  // Auto-cria 1 slide exemplo quando o evento não tem nenhum, pra usuário
+  // já cair direto no editor sem precisar clicar '+ Novo slide'.
+  const autoCreatedRef = useRef(false);
+  useEffect(() => {
+    if (autoCreatedRef.current) return;
+    if (slides.length > 0) return;
+    autoCreatedRef.current = true;
+    void createSlide(eventId, 'wordcloud', { ...DEFAULT_WORDCLOUD_CONFIG }).then((r) => {
+      if (r.ok) setSelectedId(r.data.id);
+    });
+  }, [slides.length, eventId]);
 
   const onMove = async (slideId: string, dir: -1 | 1) => {
     const idx = slides.findIndex((s) => s.id === slideId);

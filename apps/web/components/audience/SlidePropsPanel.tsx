@@ -10,21 +10,57 @@ import { uploadEventAsset } from '@/server-actions/uploadEventAsset';
 
 type Props = {
   slide: Slide;
-  /** Salva no servidor (debounced). */
   onChange: (config: WordcloudConfig) => void;
-  /** Notifica mudanças locais SEM debounce — pra preview/canvas refletir
-   *  instantâneo enquanto user digita/clica. */
-  onLiveChange?: (config: WordcloudConfig) => void;
-  /** Aplica o config atual a todos os outros slides do evento. */
+  onLiveChange?: ((config: WordcloudConfig) => void) | undefined;
   onApplyToAll?: (() => void) | undefined;
 };
 
 const DEBOUNCE_MS = 500;
+
 const PALETTE_LIGHT = [
-  '#E63946', '#1D3557', '#2A9D8F', '#E76F51', '#6A4C93', '#0077B6', '#06A77D', '#D62828',
+  '#E63946',
+  '#1D3557',
+  '#2A9D8F',
+  '#E76F51',
+  '#6A4C93',
+  '#0077B6',
+  '#06A77D',
+  '#D62828',
 ];
 const PALETTE_DARK = [
-  '#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF',
+  '#FF6B6B',
+  '#4ECDC4',
+  '#FFE66D',
+  '#95E1D3',
+  '#F38181',
+  '#AA96DA',
+  '#FCBAD3',
+  '#A8E6CF',
+];
+
+const BACKGROUND_PRESETS: Array<{ label: string; bg: WordcloudBackground; palette: string[] }> = [
+  { label: 'Branco', bg: { type: 'color', value: '#FFFFFF' }, palette: PALETTE_LIGHT },
+  { label: 'Escuro', bg: { type: 'color', value: '#0A2540' }, palette: PALETTE_DARK },
+  {
+    label: 'Sunset',
+    bg: { type: 'gradient', from: '#FF6B6B', to: '#FFE66D' },
+    palette: PALETTE_LIGHT,
+  },
+  {
+    label: 'Ocean',
+    bg: { type: 'gradient', from: '#0077B6', to: '#4ECDC4' },
+    palette: PALETTE_DARK,
+  },
+  {
+    label: 'Forest',
+    bg: { type: 'gradient', from: '#06A77D', to: '#1D3557' },
+    palette: PALETTE_DARK,
+  },
+  {
+    label: 'Purple',
+    bg: { type: 'gradient', from: '#6A4C93', to: '#E63946' },
+    palette: PALETTE_DARK,
+  },
 ];
 
 export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }: Props) {
@@ -33,11 +69,6 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNext = useRef(true);
 
-  // IMPORTANT: depend ONLY on slide.id, NOT slide.config. Cada autosave
-  // dispara updateSlide → server responde → realtime UPDATE → slide.config
-  // muda. Se resetássemos config local aqui, o user perderia o que estava
-  // digitando no meio. O config local fica "fonte da verdade" enquanto o
-  // user edita o slide; só sincroniza com server quando muda de slide.
   useEffect(() => {
     setConfig(slide.config as WordcloudConfig);
     skipNext.current = true;
@@ -49,9 +80,7 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
       skipNext.current = false;
       return;
     }
-    // Live update instantâneo pro canvas/preview (sem debounce).
     onLiveChange?.(config);
-    // Save no servidor com debounce pra não martelar a RPC a cada keystroke.
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => onChange(config), DEBOUNCE_MS);
     return () => {
@@ -64,6 +93,24 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
 
   return (
     <div className="space-y-3 pb-4">
+      <Section title="Tipo da pergunta">
+        <div className="relative">
+          <select
+            className="w-full h-10 rounded-md border border-ink/20 bg-paper text-sm px-3 pr-8 appearance-none cursor-pointer"
+            value={slide.type}
+            disabled
+          >
+            <option value="wordcloud">☁ Nuvem de palavras</option>
+          </select>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none">
+            ▾
+          </span>
+        </div>
+        <p className="text-[11px] text-ink/55">
+          Outros tipos (enquete, pergunta livre, quiz) chegam em breve.
+        </p>
+      </Section>
+
       <Section title="Pergunta">
         <Input
           label=""
@@ -75,64 +122,251 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
         />
       </Section>
 
-      <Section title="Fundo">
-        <div className="grid grid-cols-2 gap-1.5">
-          <BgBtn label="Branco" active={bg.type === 'color' && bg.value.toUpperCase() === '#FFFFFF'} onClick={() => setConfig((c) => ({ ...c, background: { type: 'color', value: '#FFFFFF' }, palette: PALETTE_LIGHT }))} />
-          <BgBtn label="Escuro" active={bg.type === 'color' && bg.value.toUpperCase() === '#0A2540'} onClick={() => setConfig((c) => ({ ...c, background: { type: 'color', value: '#0A2540' }, palette: PALETTE_DARK }))} />
-          <BgBtn label="Cor" active={bg.type === 'color' && bg.value.toUpperCase() !== '#FFFFFF' && bg.value.toUpperCase() !== '#0A2540'} onClick={() => setBg({ type: 'color', value: bg.type === 'color' ? bg.value : '#4ECDC4' })} />
-          <BgBtn label="Gradiente" active={bg.type === 'gradient'} onClick={() => setBg({ type: 'gradient', from: bg.type === 'gradient' ? bg.from : '#0A2540', to: bg.type === 'gradient' ? bg.to : '#4ECDC4' })} />
-          <BgBtn label="Imagem" active={bg.type === 'image'} onClick={() => setBg({ type: 'image', url: bg.type === 'image' ? bg.url : '', fit: 'cover', opacity: 1, blurPx: 0 })} />
-          <BgBtn label="Sem fundo" active={bg.type === 'none'} onClick={() => setBg({ type: 'none' })} />
+      <Section title="Configurações de resposta">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-ink">Palavras por envio</span>
+          <select
+            value={config.maxWordsPerSubmission}
+            onChange={(e) =>
+              setConfig((c) => ({
+                ...c,
+                maxWordsPerSubmission: Number(e.target.value) as 1 | 2 | 3,
+              }))
+            }
+            className="h-9 rounded-md border border-ink/20 bg-paper text-sm px-2"
+          >
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+          </select>
         </div>
-
-        {bg.type === 'color' && bg.value.toUpperCase() !== '#FFFFFF' && bg.value.toUpperCase() !== '#0A2540' ? (
-          <input
-            type="color"
-            value={bg.value}
-            onChange={(e) => setBg({ type: 'color', value: e.target.value })}
-            className="mt-2 h-9 w-full rounded cursor-pointer"
-            aria-label="Cor"
-          />
-        ) : null}
-
-        {bg.type === 'gradient' ? (
-          <div className="mt-2 flex gap-2">
-            <input type="color" value={bg.from} onChange={(e) => setBg({ type: 'gradient', from: e.target.value, to: bg.to })} className="h-9 flex-1 rounded cursor-pointer" aria-label="De" />
-            <input type="color" value={bg.to} onChange={(e) => setBg({ type: 'gradient', from: bg.from, to: e.target.value })} className="h-9 flex-1 rounded cursor-pointer" aria-label="Pra" />
-          </div>
-        ) : null}
-
-        {bg.type === 'image' ? <ImageUpload eventId={slide.event_id} bg={bg} setBg={setBg} /> : null}
       </Section>
 
-      <Section title="Palavras por envio">
-        <div className="flex gap-2">
-          {[1, 2, 3].map((n) => (
+      <Section title="Mostrar respostas">
+        <Radio
+          name="showResponses"
+          value="instant"
+          current={config.showResponsesMode ?? 'instant'}
+          onChange={(v) => setConfig((c) => ({ ...c, showResponsesMode: v }))}
+          label="Imediatamente"
+          recommended
+        />
+        <Radio
+          name="showResponses"
+          value="on_click"
+          current={config.showResponsesMode ?? 'instant'}
+          onChange={(v) => setConfig((c) => ({ ...c, showResponsesMode: v }))}
+          label="Só quando eu liberar"
+        />
+        <Radio
+          name="showResponses"
+          value="private"
+          current={config.showResponsesMode ?? 'instant'}
+          onChange={(v) => setConfig((c) => ({ ...c, showResponsesMode: v }))}
+          label="Privadas (só eu vejo)"
+        />
+      </Section>
+
+      <Section title="Design">
+        <p className="text-[11px] uppercase font-bold text-ink/55 mb-1">Plano de fundo</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {BACKGROUND_PRESETS.map((p) => (
             <button
-              key={n}
+              key={p.label}
               type="button"
-              onClick={() => setConfig((c) => ({ ...c, maxWordsPerSubmission: n as 1 | 2 | 3 }))}
-              className={`h-10 w-10 rounded-md border text-sm font-bold transition ${
-                config.maxWordsPerSubmission === n
-                  ? 'border-accent bg-accent/10 text-accent'
-                  : 'border-ink/20 text-ink/70 hover:bg-ink/5'
-              }`}
+              onClick={() => setConfig((c) => ({ ...c, background: p.bg, palette: p.palette }))}
+              className="h-12 rounded-md border border-ink/15 hover:border-accent text-[10px] font-medium overflow-hidden relative"
+              style={{
+                ...(p.bg.type === 'color' ? { background: p.bg.value } : {}),
+                ...(p.bg.type === 'gradient'
+                  ? { background: `linear-gradient(135deg, ${p.bg.from}, ${p.bg.to})` }
+                  : {}),
+              }}
+              title={p.label}
             >
-              {n}
+              <span
+                className="absolute bottom-0 left-0 right-0 bg-paper/80 backdrop-blur px-1 text-ink truncate"
+                style={{ lineHeight: '14px' }}
+              >
+                {p.label}
+              </span>
             </button>
           ))}
         </div>
-        <p className="text-xs text-ink/55">
-          Quantas palavras cada pessoa pode mandar de uma vez no celular.
-        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <input
+            type="color"
+            aria-label="Cor sólida"
+            value={bg.type === 'color' ? bg.value : '#FFFFFF'}
+            onChange={(e) => setBg({ type: 'color', value: e.target.value })}
+            className="h-9 w-9 rounded cursor-pointer"
+            title="Cor sólida"
+          />
+          {bg.type === 'gradient' ? (
+            <>
+              <input
+                type="color"
+                value={bg.from}
+                onChange={(e) => setBg({ type: 'gradient', from: e.target.value, to: bg.to })}
+                className="h-9 w-9 rounded cursor-pointer"
+                title="Gradiente cor 1"
+              />
+              <input
+                type="color"
+                value={bg.to}
+                onChange={(e) => setBg({ type: 'gradient', from: bg.from, to: e.target.value })}
+                className="h-9 w-9 rounded cursor-pointer"
+                title="Gradiente cor 2"
+              />
+            </>
+          ) : null}
+          <BgImageUploader
+            eventId={slide.event_id}
+            current={bg.type === 'image' ? bg.url : null}
+            onUploaded={(url) =>
+              setBg({ type: 'image', url, fit: 'cover', opacity: 1, blurPx: 0 })
+            }
+            onClear={() => setBg({ type: 'color', value: '#FFFFFF' })}
+            label={bg.type === 'image' ? 'Trocar imagem' : 'Subir imagem 16:9'}
+          />
+        </div>
+
+        {bg.type === 'image' ? (
+          <div className="mt-2 space-y-2">
+            <img
+              src={bg.url}
+              alt=""
+              className="w-full aspect-video object-cover rounded border border-ink/15"
+              style={{ opacity: bg.opacity ?? 1 }}
+            />
+            <label className="block text-[11px] text-ink/55">
+              Opacidade {Math.round((bg.opacity ?? 1) * 100)}%
+              <input
+                type="range"
+                min={0.2}
+                max={1}
+                step={0.05}
+                value={bg.opacity ?? 1}
+                onChange={(e) => setBg({ ...bg, opacity: Number(e.target.value) })}
+                className="w-full"
+              />
+            </label>
+            <label className="block text-[11px] text-ink/55">
+              Desfoque {bg.blurPx ?? 0}px
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step={1}
+                value={bg.blurPx ?? 0}
+                onChange={(e) => setBg({ ...bg, blurPx: Number(e.target.value) })}
+                className="w-full"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        <p className="text-[11px] uppercase font-bold text-ink/55 mt-3 mb-1">Cor do texto</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setConfig((c) => ({ ...c, textColorOverride: undefined }))}
+            className={`h-9 px-2 text-xs rounded border ${
+              config.textColorOverride === undefined
+                ? 'border-accent bg-accent/10 text-accent font-medium'
+                : 'border-ink/15 text-ink/70 hover:bg-ink/5'
+            }`}
+          >
+            Auto
+          </button>
+          <input
+            type="color"
+            value={config.textColorOverride ?? '#000000'}
+            onChange={(e) => setConfig((c) => ({ ...c, textColorOverride: e.target.value }))}
+            className="h-9 w-9 rounded cursor-pointer"
+            aria-label="Cor do texto"
+          />
+        </div>
+
+        <p className="text-[11px] uppercase font-bold text-ink/55 mt-3 mb-1">Paleta da nuvem</p>
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => setConfig((c) => ({ ...c, palette: PALETTE_LIGHT }))}
+            className="flex-1 h-9 rounded-md border border-ink/15 hover:border-accent text-xs font-medium flex items-center justify-center gap-0.5"
+            title="Vivas (fundo claro)"
+          >
+            {PALETTE_LIGHT.slice(0, 5).map((c) => (
+              <span
+                key={c}
+                className="h-4 w-2 rounded-sm"
+                style={{ background: c }}
+                aria-hidden
+              />
+            ))}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfig((c) => ({ ...c, palette: PALETTE_DARK }))}
+            className="flex-1 h-9 rounded-md border border-ink/15 hover:border-accent text-xs font-medium flex items-center justify-center gap-0.5"
+            title="Pastéis (fundo escuro)"
+          >
+            {PALETTE_DARK.slice(0, 5).map((c) => (
+              <span
+                key={c}
+                className="h-4 w-2 rounded-sm"
+                style={{ background: c }}
+                aria-hidden
+              />
+            ))}
+          </button>
+        </div>
+
+        <p className="text-[11px] uppercase font-bold text-ink/55 mt-3 mb-1">Imagem de conteúdo</p>
+        <BgImageUploader
+          eventId={slide.event_id}
+          current={config.contentImageUrl ?? null}
+          onUploaded={(url) => setConfig((c) => ({ ...c, contentImageUrl: url }))}
+          onClear={() => setConfig((c) => ({ ...c, contentImageUrl: undefined }))}
+          label={config.contentImageUrl ? 'Trocar' : '+ Subir imagem'}
+        />
+        {config.contentImageUrl ? (
+          <img
+            src={config.contentImageUrl}
+            alt=""
+            className="mt-2 w-full max-h-32 object-contain rounded border border-ink/15"
+          />
+        ) : null}
       </Section>
 
-      <Section title="No telão">
+      <Section title="Instruções de entrada">
         <Check
           label="QR code visível enquanto apresenta"
           checked={config.showQr === true}
           onChange={(v) => setConfig((c) => ({ ...c, showQr: v }))}
         />
+        <div className="flex items-center justify-between gap-3 mt-2">
+          <span className="text-sm text-ink">Mostrar como</span>
+          <select
+            value={config.joinInfoType ?? 'qr_and_url'}
+            onChange={(e) =>
+              setConfig((c) => ({
+                ...c,
+                joinInfoType: e.target.value as WordcloudConfig['joinInfoType'],
+              }))
+            }
+            className="h-9 rounded-md border border-ink/20 bg-paper text-sm px-2"
+          >
+            <option value="qr_and_url">QR + URL</option>
+            <option value="qr">Apenas QR</option>
+            <option value="url">Apenas URL</option>
+            <option value="code">Apenas código</option>
+          </select>
+        </div>
+      </Section>
+
+      <Section title="No telão">
         <Check
           label="Contador de palavras enviadas"
           checked={config.showTotal}
@@ -150,6 +384,16 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
           label="Bloquear palavrões"
           checked={config.filterProfanity}
           onChange={(v) => setConfig((c) => ({ ...c, filterProfanity: v }))}
+        />
+      </Section>
+
+      <Section title="Notas do apresentador">
+        <textarea
+          value={config.speakerNotes ?? ''}
+          onChange={(e) => setConfig((c) => ({ ...c, speakerNotes: e.target.value }))}
+          placeholder="Anotações privadas pra você lembrar durante a apresentação. Não aparece no telão nem na audiência."
+          rows={3}
+          className="w-full rounded-md border border-ink/20 bg-paper text-sm p-2 resize-y"
         />
       </Section>
 
@@ -174,16 +418,8 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
             setConfig((c) => ({
               ...c,
               background: { type: 'color', value: '#FFFFFF' },
-              palette: [
-                '#E63946',
-                '#1D3557',
-                '#2A9D8F',
-                '#E76F51',
-                '#6A4C93',
-                '#0077B6',
-                '#06A77D',
-                '#D62828',
-              ],
+              palette: PALETTE_LIGHT,
+              textColorOverride: undefined,
             }));
           }}
           className="text-xs text-ink/55 hover:text-primary hover:underline text-left"
@@ -204,21 +440,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function BgBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-9 px-2 text-xs rounded border font-medium ${
-        active ? 'border-accent bg-accent/10 text-accent' : 'border-ink/15 text-ink/70 hover:bg-ink/5'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Check({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label className="flex items-center gap-2 text-sm">
       <input
@@ -232,16 +462,54 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
   );
 }
 
-type ImageBg = Extract<WordcloudBackground, { type: 'image' }>;
+function Radio<V extends string>({
+  name,
+  value,
+  current,
+  onChange,
+  label,
+  recommended,
+}: {
+  name: string;
+  value: V;
+  current: V;
+  onChange: (v: V) => void;
+  label: string;
+  recommended?: boolean;
+}) {
+  return (
+    <label className="flex items-start gap-2 text-sm cursor-pointer">
+      <input
+        type="radio"
+        name={name}
+        checked={current === value}
+        onChange={() => onChange(value)}
+        className="mt-1 h-4 w-4 border-ink/30"
+      />
+      <span className="text-ink leading-tight">
+        {label}
+        {recommended ? (
+          <span className="ml-2 text-[10px] uppercase tracking-wide font-bold text-success">
+            recomendado
+          </span>
+        ) : null}
+      </span>
+    </label>
+  );
+}
 
-function ImageUpload({
+function BgImageUploader({
   eventId,
-  bg,
-  setBg,
+  current,
+  onUploaded,
+  onClear,
+  label,
 }: {
   eventId: string;
-  bg: ImageBg;
-  setBg: (b: WordcloudBackground) => void;
+  current: string | null;
+  onUploaded: (url: string) => void;
+  onClear: () => void;
+  label: string;
 }) {
   const [uploading, startUpload] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -256,47 +524,36 @@ function ImageUpload({
       const r = await uploadEventAsset(eventId, fd);
       if (!r.ok) {
         setError(
-          r.error === 'too_large' ? 'Imagem muito grande (máx 8 MB)'
-          : r.error === 'unsupported_type' ? 'Use PNG, JPG, WEBP ou GIF'
-          : r.error === 'not_authenticated' ? 'Faça login pra subir imagem.'
-          : r.error === 'forbidden' ? 'Sem permissão neste evento.'
-          : r.error === 'event_not_found' ? 'Evento não encontrado.'
-          : `Erro: ${r.error}`,
+          r.error === 'too_large'
+            ? 'Imagem muito grande (máx 8 MB)'
+            : r.error === 'unsupported_type'
+              ? 'Use PNG, JPG, WEBP ou GIF'
+              : `Erro: ${r.error}`,
         );
         return;
       }
-      setBg({ type: 'image', url: r.url, fit: bg.fit ?? 'cover', opacity: bg.opacity ?? 1, blurPx: bg.blurPx ?? 0 });
+      onUploaded(r.url);
     });
   };
 
   return (
-    <div className="mt-2 space-y-2">
-      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-      <div className="flex gap-2">
-        <Button size="sm" variant="accent" loading={uploading} onClick={() => inputRef.current?.click()}>
-          {bg.url ? 'Trocar' : 'Subir imagem 16:9'}
+    <div className="inline-flex items-center gap-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => onFile(e.target.files?.[0])}
+      />
+      <Button size="sm" variant="accent" loading={uploading} onClick={() => inputRef.current?.click()}>
+        {label}
+      </Button>
+      {current ? (
+        <Button size="sm" variant="ghost" onClick={onClear}>
+          Remover
         </Button>
-        {bg.url ? (
-          <Button size="sm" variant="ghost" onClick={() => setBg({ type: 'image', url: '', fit: 'cover', opacity: 1, blurPx: 0 })}>
-            Remover
-          </Button>
-        ) : null}
-      </div>
-      <p className="text-[11px] text-ink/55">PNG/JPG/WEBP até 8 MB · ideal 1920×1080 (16:9).</p>
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
-      {bg.url ? (
-        <>
-          <img src={bg.url} alt="" className="w-full aspect-video object-cover rounded border border-ink/15" style={{ opacity: bg.opacity ?? 1 }} />
-          <label className="block text-xs">
-            <span className="text-ink/60">Opacidade {Math.round((bg.opacity ?? 1) * 100)}%</span>
-            <input type="range" min={0.2} max={1} step={0.05} value={bg.opacity ?? 1} onChange={(e) => setBg({ ...bg, opacity: Number(e.target.value) })} className="w-full" />
-          </label>
-          <label className="block text-xs">
-            <span className="text-ink/60">Desfoque {bg.blurPx ?? 0}px</span>
-            <input type="range" min={0} max={20} step={1} value={bg.blurPx ?? 0} onChange={(e) => setBg({ ...bg, blurPx: Number(e.target.value) })} className="w-full" />
-          </label>
-        </>
       ) : null}
+      {error ? <span className="text-[11px] text-danger">{error}</span> : null}
     </div>
   );
 }
