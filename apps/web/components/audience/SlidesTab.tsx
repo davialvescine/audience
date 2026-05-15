@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
-import { ShareCard } from '@/components/audience/ShareCard';
-import { WordcloudSlideEditor } from '@/components/audience/WordcloudSlideEditor';
+import { SlideCanvas } from '@/components/audience/SlideCanvas';
+import { SlidePropsPanel } from '@/components/audience/SlidePropsPanel';
+import { SlideThumbnail } from '@/components/audience/SlideThumbnail';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { useSlides } from '@/hooks/useSlides';
 import { useTauri } from '@/hooks/useTauri';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
@@ -24,8 +24,9 @@ const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
   maxWordsPerSubmission: 1,
   filterStopwords: true,
   filterProfanity: true,
-  palette: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF'],
+  palette: ['#E63946', '#1D3557', '#2A9D8F', '#E76F51', '#6A4C93', '#0077B6', '#06A77D', '#D62828'],
   showTotal: true,
+  background: { type: 'color', value: '#FFFFFF' },
 };
 
 type Props = {
@@ -70,28 +71,20 @@ export function SlidesTab({
     [slides, selectedId],
   );
 
-  // Pickup active_slide_id changes via short polling — Realtime on events is
-  // already feeding TelaoWordcloudSwitcher; here we just need accurate UI state.
-  // For simplicity we trust whatever the user did locally + revalidate on action success.
-
   const onCreate = () => {
     startCreate(async () => {
       const r = await createSlide(eventId, 'wordcloud', { ...DEFAULT_WORDCLOUD_CONFIG });
-      if (r.ok) {
-        setSelectedId(r.data.id);
-      }
+      if (r.ok) setSelectedId(r.data.id);
     });
   };
 
   const onDelete = async (slideId: string) => {
-    if (!window.confirm('Excluir este slide? Vai apagar as palavras enviadas nele.')) return;
+    if (!window.confirm('Excluir este slide? Apaga as palavras enviadas nele.')) return;
     const r = await deleteSlide(slideId);
     if (r.ok && selectedId === slideId) {
       setSelectedId(slides.find((s) => s.id !== slideId)?.id ?? null);
     }
-    if (r.ok && activeId === slideId) {
-      setActiveId(null);
-    }
+    if (r.ok && activeId === slideId) setActiveId(null);
   };
 
   const onActivate = async (slideId: string | null) => {
@@ -99,7 +92,7 @@ export function SlidesTab({
     await setActiveSlide(eventId, slideId);
   };
 
-  const onSlideConfigChange = async (slideId: string, config: WordcloudConfig) => {
+  const onConfigChange = async (slideId: string, config: WordcloudConfig) => {
     await updateSlide(slideId, config as unknown as Record<string, unknown>);
   };
 
@@ -109,68 +102,133 @@ export function SlidesTab({
     const swapWith = idx + dir;
     if (swapWith < 0 || swapWith >= slides.length) return;
     const reordered = [...slides];
-    const a = reordered[idx]!;
-    const b = reordered[swapWith]!;
-    reordered[idx] = b;
-    reordered[swapWith] = a;
-    await reorderSlides(
-      eventId,
-      reordered.map((s) => s.id),
-    );
+    [reordered[idx], reordered[swapWith]] = [reordered[swapWith]!, reordered[idx]!];
+    await reorderSlides(eventId, reordered.map((s) => s.id));
   };
 
   const openTelao = () => {
-    const url = `${telaoUrl}?mode=fullscreen&fullscreen=1`;
     if (isTauri && invoke) {
       void invoke('open_telao_window', { slug, mode: 'fullscreen' });
     } else {
-      window.open(url, '_blank', 'noopener');
+      window.open(`${telaoUrl}?mode=fullscreen&fullscreen=1`, '_blank', 'noopener');
     }
   };
 
+  const goPrevSlide = async () => {
+    if (slides.length === 0) return;
+    const currentIdx = activeId ? slides.findIndex((s) => s.id === activeId) : -1;
+    const prevIdx = currentIdx <= 0 ? slides.length - 1 : currentIdx - 1;
+    const target = slides[prevIdx]!;
+    await onActivate(target.id);
+    setSelectedId(target.id);
+  };
+
+  const goNextSlide = async () => {
+    if (slides.length === 0) return;
+    const currentIdx = activeId ? slides.findIndex((s) => s.id === activeId) : -1;
+    const nextIdx = currentIdx === -1 || currentIdx === slides.length - 1 ? 0 : currentIdx + 1;
+    const target = slides[nextIdx]!;
+    await onActivate(target.id);
+    setSelectedId(target.id);
+  };
+
+  // Atalhos de teclado: ← → navega slides; espaço = próximo; F = fullscreen.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return;
+      if (t?.isContentEditable) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        void goPrevSlide();
+      } else if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        void goNextSlide();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        openTelao();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slides, activeId, isTauri, invoke]);
+
   return (
-    <div className="space-y-4">
-      <ShareCard publicUrl={publicUrl} />
-
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="font-display text-lg text-ink">Apresentação</h3>
-            <p className="text-sm text-ink/60">
-              Monte uma sequência de slides. Cada um é uma pergunta independente; o telão troca
-              de slide na hora que você ativa.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={onCreate} loading={creating} variant="accent">
-              + Novo slide de nuvem
-            </Button>
-            <Button variant="ghost" onClick={openTelao}>
-              Abrir telão ↗
-            </Button>
-          </div>
+    <div className="flex flex-col h-[calc(100vh-200px)] gap-3">
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button onClick={onCreate} loading={creating} variant="accent" size="sm">
+            + Novo slide
+          </Button>
+          <span className="text-sm text-ink/60">
+            {slides.length} {slides.length === 1 ? 'slide' : 'slides'} ·{' '}
+            {activeId ? (
+              <span className="text-success font-medium">● Slide ao vivo</span>
+            ) : (
+              <span className="text-ink/40">Nenhum ativo</span>
+            )}
+          </span>
         </div>
-      </Card>
+        <div className="flex items-center gap-2">
+          {slides.length > 1 ? (
+            <div className="flex items-center gap-1 mr-2">
+              <button
+                type="button"
+                onClick={() => void goPrevSlide()}
+                className="h-8 w-8 rounded border border-ink/20 hover:bg-ink/5"
+                title="Slide anterior (←)"
+                aria-label="Slide anterior"
+              >
+                ←
+              </button>
+              <span className="text-xs text-ink/55 px-1 tabular-nums">
+                {activeId ? slides.findIndex((s) => s.id === activeId) + 1 : '-'} / {slides.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => void goNextSlide()}
+                className="h-8 w-8 rounded border border-ink/20 hover:bg-ink/5"
+                title="Próximo slide (→ ou espaço)"
+                aria-label="Próximo slide"
+              >
+                →
+              </button>
+            </div>
+          ) : null}
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noopener"
+            className="text-sm font-mono text-primary hover:underline"
+          >
+            {publicUrl.replace(/^https?:\/\//, '')}
+          </a>
+          <Button variant="ghost" size="sm" onClick={openTelao} title="Abrir tela cheia (F)">
+            Tela cheia ↗
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-4">
-        {/* Sidebar com lista */}
-        <div className="space-y-2">
+      {/* 3 colunas: thumbnails | canvas | props */}
+      <div className="grid grid-cols-[200px_minmax(0,1fr)_360px] gap-3 flex-1 min-h-0">
+        {/* Thumbnails sidebar */}
+        <div className="overflow-y-auto space-y-2 bg-ink/[0.02] rounded-lg p-2 border border-ink/10">
           {slides.length === 0 ? (
-            <Card>
-              <p className="text-sm text-ink/60">
-                Nenhum slide ainda. Clique em <strong>Novo slide</strong> pra começar.
-              </p>
-            </Card>
+            <p className="text-xs text-ink/60 text-center py-6">
+              Clique em <strong>+ Novo slide</strong> pra começar.
+            </p>
           ) : (
             slides.map((slide, idx) => (
-              <SlideCard
+              <SlideThumbnail
                 key={slide.id}
                 slide={slide}
                 index={idx}
                 total={slides.length}
                 isSelected={selected?.id === slide.id}
                 isActive={activeId === slide.id}
-                onClick={() => setSelectedId(slide.id)}
+                onSelect={() => setSelectedId(slide.id)}
                 onActivate={() => onActivate(slide.id)}
                 onDeactivate={() => onActivate(null)}
                 onDelete={() => onDelete(slide.id)}
@@ -180,161 +238,31 @@ export function SlidesTab({
           )}
         </div>
 
-        {/* Editor à direita */}
-        <div>
+        {/* Canvas central */}
+        <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink/[0.02]">
           {selected ? (
-            selected.type === 'wordcloud' ? (
-              <WordcloudSlideEditor
-                key={selected.id}
-                slide={selected}
-                slug={slug}
-                telaoUrl={telaoUrl}
-                onChange={(cfg) => onSlideConfigChange(selected.id, cfg)}
-              />
-            ) : (
-              <Card>
-                <p className="text-sm text-ink/60">
-                  Editor pro tipo <code>{selected.type}</code> ainda não foi feito.
-                </p>
-              </Card>
-            )
+            <SlideCanvas slide={selected} telaoUrl={telaoUrl} />
           ) : (
-            <Card>
-              <p className="text-sm text-ink/60 text-center py-10">
-                Crie ou selecione um slide pra começar a editar.
-              </p>
-            </Card>
+            <div className="h-full flex items-center justify-center text-ink/50">
+              <p>Crie um slide pra começar.</p>
+            </div>
           )}
+        </div>
+
+        {/* Props sidebar */}
+        <div className="overflow-y-auto">
+          {selected && selected.type === 'wordcloud' ? (
+            <SlidePropsPanel
+              slide={selected}
+              onChange={(cfg) => onConfigChange(selected.id, cfg)}
+            />
+          ) : selected ? (
+            <p className="text-sm text-ink/60 p-4">
+              Editor pro tipo <code>{selected.type}</code> ainda não foi feito.
+            </p>
+          ) : null}
         </div>
       </div>
     </div>
-  );
-}
-
-function SlideCard({
-  slide,
-  index,
-  total,
-  isSelected,
-  isActive,
-  onClick,
-  onActivate,
-  onDeactivate,
-  onDelete,
-  onMove,
-}: {
-  slide: Slide;
-  index: number;
-  total: number;
-  isSelected: boolean;
-  isActive: boolean;
-  onClick: () => void;
-  onActivate: () => void;
-  onDeactivate: () => void;
-  onDelete: () => void;
-  onMove: (dir: -1 | 1) => void;
-}) {
-  const question = (slide.config as { question?: string } | null)?.question ?? '(sem pergunta)';
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left rounded-lg border p-3 transition ${
-        isSelected
-          ? 'border-accent bg-accent/5'
-          : 'border-ink/15 bg-paper hover:border-ink/30'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="text-xs uppercase tracking-wide font-bold text-primary">
-          Slide {index + 1} · {slide.type}
-        </span>
-        {isActive ? (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-success">
-            <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            Ao vivo
-          </span>
-        ) : null}
-      </div>
-      <p className="text-sm text-ink line-clamp-2">{question}</p>
-      <div className="mt-3 flex flex-wrap gap-1">
-        {isActive ? (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeactivate();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.stopPropagation();
-                onDeactivate();
-              }
-            }}
-            className="px-2 h-7 inline-flex items-center text-xs rounded-md bg-success text-paper cursor-pointer"
-          >
-            ⏸ Pausar
-          </span>
-        ) : (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              onActivate();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.stopPropagation();
-                onActivate();
-              }
-            }}
-            className="px-2 h-7 inline-flex items-center text-xs rounded-md bg-primary text-paper cursor-pointer hover:bg-primary-deep"
-          >
-            ▶ Ativar
-          </span>
-        )}
-        <span
-          role="button"
-          tabIndex={0}
-          aria-disabled={index === 0}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (index > 0) onMove(-1);
-          }}
-          className={`px-2 h-7 inline-flex items-center text-xs rounded-md border border-ink/20 ${
-            index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink/5'
-          }`}
-        >
-          ↑
-        </span>
-        <span
-          role="button"
-          tabIndex={0}
-          aria-disabled={index === total - 1}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (index < total - 1) onMove(1);
-          }}
-          className={`px-2 h-7 inline-flex items-center text-xs rounded-md border border-ink/20 ${
-            index === total - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink/5'
-          }`}
-        >
-          ↓
-        </span>
-        <span
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="px-2 h-7 inline-flex items-center text-xs rounded-md text-danger hover:bg-danger/10 ml-auto"
-        >
-          Excluir
-        </span>
-      </div>
-    </button>
   );
 }

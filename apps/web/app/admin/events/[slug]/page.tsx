@@ -158,20 +158,6 @@ export default async function EventModerationPage({
       ),
     },
     {
-      id: 'wordcloud',
-      label: wordcloudActive ? 'Nuvem (legado) ●' : 'Nuvem (legado)',
-      content: (
-        <WordcloudTab
-          eventId={event.id}
-          slug={event.slug}
-          initialActive={wordcloudActive}
-          initialConfig={wordcloudConfig}
-          publicUrl={publicUrl}
-          telaoUrl={`${proto}://${host}/telao/${event.slug}`}
-        />
-      ),
-    },
-    {
       id: 'telao',
       label: 'Telão',
       content: (
