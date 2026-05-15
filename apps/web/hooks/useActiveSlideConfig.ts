@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 
@@ -22,16 +22,16 @@ type ChannelLike = {
 export type UseActiveSlideOptions = {
   initialActiveSlideId: string | null;
   initialActiveConfig: WordcloudConfig | null;
-  /** Channel pra escutar UPDATE em events (active_slide_id) + slides. */
   channel?: ChannelLike | undefined;
 };
 
 /**
  * Audiência: mantém o slide ativo + sua config sincronizados via Realtime.
- * Escuta:
- *   - events.active_slide_id (UPDATE) — quando operador troca de slide
- *   - slides (UPDATE) — quando operador edita config do slide ativo
- *     (1/2/3 palavras, pergunta, fundo, etc.)
+ *
+ * Critical: subscribe roda UMA vez (deps só [channel, eventId]). O callback
+ * lê activeSlideId via ref pra evitar closure stale — se trocar `activeSlideId`
+ * nas deps do useEffect, cada mudança re-monta o subscribe (Supabase reseta
+ * o canal a cada `on()` novo só funcionando antes do primeiro `subscribe`).
  */
 export function useActiveSlideConfig(
   eventId: string,
@@ -39,6 +39,13 @@ export function useActiveSlideConfig(
 ): { activeSlideId: string | null; config: WordcloudConfig | null } {
   const [activeSlideId, setActiveSlideId] = useState<string | null>(opts.initialActiveSlideId);
   const [config, setConfig] = useState<WordcloudConfig | null>(opts.initialActiveConfig);
+  const activeSlideIdRef = useRef<string | null>(opts.initialActiveSlideId);
+
+  // Mantém ref em sincronia com state — usado dentro do callback de slides UPDATE
+  // pra saber qual slide está ativo agora (sem closure stale).
+  useEffect(() => {
+    activeSlideIdRef.current = activeSlideId;
+  }, [activeSlideId]);
 
   useEffect(() => {
     const ch = opts.channel;
@@ -51,6 +58,7 @@ export function useActiveSlideConfig(
         const row = payload.new as { active_slide_id?: string | null };
         if ('active_slide_id' in row) {
           setActiveSlideId(row.active_slide_id ?? null);
+          activeSlideIdRef.current = row.active_slide_id ?? null;
         }
       },
     )
@@ -59,7 +67,7 @@ export function useActiveSlideConfig(
         { event: 'UPDATE', schema: 'public', table: 'slides', filter: `event_id=eq.${eventId}` },
         (payload) => {
           const row = payload.new as { id?: string; config?: WordcloudConfig };
-          if (row.id && row.id === activeSlideId && row.config) {
+          if (row.id && row.id === activeSlideIdRef.current && row.config) {
             setConfig(row.config);
           }
         },
@@ -69,7 +77,8 @@ export function useActiveSlideConfig(
     return () => {
       ch.unsubscribe();
     };
-  }, [eventId, opts.channel, activeSlideId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, opts.channel]);
 
   return { activeSlideId, config };
 }
