@@ -14,10 +14,7 @@ type Pickable = {
 
 function normalize(s: string): string {
   // Lowercase + strip diacritics so "joao" matches "João".
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 export function filterSubmissions<T extends Pickable>(

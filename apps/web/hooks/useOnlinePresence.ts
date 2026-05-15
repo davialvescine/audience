@@ -31,11 +31,9 @@ export function useOnlinePresence(opts: UseOnlinePresenceOptions): UseOnlinePres
       setCount(Object.keys(channel.presenceState()).length);
     };
 
-    channel
-      .on('presence', { event: 'sync' }, onSync)
-      .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
-      });
+    channel.on('presence', { event: 'sync' }, onSync).subscribe((status) => {
+      setIsConnected(status === 'SUBSCRIBED');
+    });
 
     // Pick up the current state in case sync already fired before mount.
     setCount(Object.keys(channel.presenceState()).length);

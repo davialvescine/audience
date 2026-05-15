@@ -75,7 +75,10 @@ describe('submitWord server action', () => {
 
   it('maps wordcloud_inactive error from RPC', async () => {
     server.use(
-      mockRpc('submit_word', { status: 400, error: { message: 'wordcloud_inactive', code: 'P0001' } }),
+      mockRpc('submit_word', {
+        status: 400,
+        error: { message: 'wordcloud_inactive', code: 'P0001' },
+      }),
     );
     const r = await submitWord('evt', fd('amor'));
     expect(r).toEqual({ ok: false, error: 'wordcloud_inactive' });
@@ -90,9 +93,7 @@ describe('submitWord server action', () => {
   });
 
   it('falls back to unknown on unmapped error', async () => {
-    server.use(
-      mockRpc('submit_word', { status: 500, error: { message: 'boom', code: 'XX000' } }),
-    );
+    server.use(mockRpc('submit_word', { status: 500, error: { message: 'boom', code: 'XX000' } }));
     const r = await submitWord('evt', fd('amor'));
     expect(r).toEqual({ ok: false, error: 'unknown' });
   });

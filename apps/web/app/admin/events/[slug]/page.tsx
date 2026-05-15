@@ -45,7 +45,9 @@ export default async function EventModerationPage({
   const supabase = await getSupabaseServerClient();
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes, owner_id, pinned_submission_id')
+    .select(
+      'id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes, owner_id, pinned_submission_id',
+    )
     .eq('slug', slug)
     .single();
   if (!event) notFound();
@@ -189,10 +191,7 @@ export default async function EventModerationPage({
             <p className="text-sm text-ink/70 mb-3">
               Quer mais alguém moderando junto com você? Convide pela página de usuários.
             </p>
-            <Link
-              href="/admin/users"
-              className="inline-block text-sm text-primary hover:underline"
-            >
+            <Link href="/admin/users" className="inline-block text-sm text-primary hover:underline">
               Ir pra Usuários →
             </Link>
           </Card>
@@ -208,7 +207,14 @@ export default async function EventModerationPage({
           <EventMembers
             eventId={event.id}
             currentUserId={user.id}
-            initialMembers={(members ?? []) as Array<{ user_id: string; email: string; added_at: string; is_owner: boolean }>}
+            initialMembers={
+              (members ?? []) as Array<{
+                user_id: string;
+                email: string;
+                added_at: string;
+                is_owner: boolean;
+              }>
+            }
             platformUsers={(platformUsers ?? []) as Array<{ user_id: string; email: string }>}
             isOwner={isOwner}
           />
@@ -219,7 +225,8 @@ export default async function EventModerationPage({
           />
           <Card>
             <p className="text-xs text-ink/50">
-              Dica: configurações de exibição e disparos pra H2R ficam na aba <strong>Telão</strong>.
+              Dica: configurações de exibição e disparos pra H2R ficam na aba <strong>Telão</strong>
+              .
             </p>
           </Card>
         </div>

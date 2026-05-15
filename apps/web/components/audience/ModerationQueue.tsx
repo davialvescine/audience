@@ -11,7 +11,11 @@ import { SubmissionCard } from './SubmissionCard';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
-import { approveSubmission, rejectSubmission, undoModerationAction } from '@/server-actions/moderation';
+import {
+  approveSubmission,
+  rejectSubmission,
+  undoModerationAction,
+} from '@/server-actions/moderation';
 
 type Item = {
   id: string;
@@ -54,10 +58,11 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
   }, [visible.length, cursor]);
 
   // Undo toast — last action with a 5s window
-  const [undo, setUndo] = useState<
-    | { id: string; action: 'approved' | 'rejected'; expiresAt: number }
-    | null
-  >(null);
+  const [undo, setUndo] = useState<{
+    id: string;
+    action: 'approved' | 'rejected';
+    expiresAt: number;
+  } | null>(null);
   useEffect(() => {
     if (!undo) return;
     const t = setTimeout(() => setUndo(null), Math.max(0, undo.expiresAt - Date.now()));
@@ -69,7 +74,11 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
     const handler = (e: KeyboardEvent) => {
       // Skip when typing in an input/textarea
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      )
+        return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') {
@@ -106,7 +115,9 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
   }, [cursor, visible, undo]);
 
   // Beep + title update on new pending items
-  const seenIdsRef = useRef<string[]>(initial.filter((i) => i.status === 'pending').map((i) => i.id));
+  const seenIdsRef = useRef<string[]>(
+    initial.filter((i) => i.status === 'pending').map((i) => i.id),
+  );
   // Inicia false em ambos os lados pra evitar hydration mismatch.
   // Hidrata do localStorage logo apos mount.
   const [soundOn, setSoundOn] = useState<boolean>(false);
@@ -120,9 +131,10 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
     if (newCount > 0 && soundOn) {
       try {
         // Tiny synthesized beep — no asset required.
-        type WindowWithWebkit = Window & typeof globalThis & {
-          webkitAudioContext?: typeof AudioContext;
-        };
+        type WindowWithWebkit = Window &
+          typeof globalThis & {
+            webkitAudioContext?: typeof AudioContext;
+          };
         const w = window as WindowWithWebkit;
         const Ctor = window.AudioContext ?? w.webkitAudioContext;
         if (!Ctor) return;
@@ -148,7 +160,10 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
   useEffect(() => {
     const original = document.title;
     const pending = items.filter((i) => i.status === 'pending').length;
-    document.title = pending > 0 ? `(${pending}) ${original.replace(/^\(\d+\)\s*/, '')}` : original.replace(/^\(\d+\)\s*/, '');
+    document.title =
+      pending > 0
+        ? `(${pending}) ${original.replace(/^\(\d+\)\s*/, '')}`
+        : original.replace(/^\(\d+\)\s*/, '');
     return () => {
       document.title = original.replace(/^\(\d+\)\s*/, '');
     };
@@ -189,7 +204,9 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
             setItems((prev) => {
               if (payload.eventType === 'INSERT') return [payload.new as Item, ...prev];
               if (payload.eventType === 'UPDATE')
-                return prev.map((i) => (i.id === (payload.new as Item).id ? (payload.new as Item) : i));
+                return prev.map((i) =>
+                  i.id === (payload.new as Item).id ? (payload.new as Item) : i,
+                );
               if (payload.eventType === 'DELETE')
                 return prev.filter((i) => i.id !== (payload.old as { id: string }).id);
               return prev;
@@ -226,7 +243,9 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
         return prev;
       });
     };
-    const t = setInterval(() => { void refresh(); }, 2000);
+    const t = setInterval(() => {
+      void refresh();
+    }, 2000);
 
     return () => {
       cancelled = true;
@@ -274,7 +293,9 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
               }`}
             >
               <span>{t.label}</span>
-              <span className={`text-[10px] px-1.5 rounded-full ${tab === t.id ? 'bg-primary/20' : 'bg-ink/10'}`}>
+              <span
+                className={`text-[10px] px-1.5 rounded-full ${tab === t.id ? 'bg-primary/20' : 'bg-ink/10'}`}
+              >
                 {t.count}
               </span>
             </button>
@@ -305,12 +326,25 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
       />
       <div className="rounded-lg border border-ink/8 bg-ink/[0.02] dark:bg-ink/5 px-3 py-2 text-[11px] text-ink/65 space-y-1">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <span><strong className="text-ink/85">▶ Exibir</strong> · entra, fica e sai sozinho (tempo configurado)</span>
-          <span><strong className="text-ink/85">Mostrar no telão</strong> · fixa, fica até clicar Tirar</span>
-          <span><strong className="text-ink/85">Tirar do telão</strong> · remove agora, volta pra fila</span>
+          <span>
+            <strong className="text-ink/85">▶ Exibir</strong> · entra, fica e sai sozinho (tempo
+            configurado)
+          </span>
+          <span>
+            <strong className="text-ink/85">Mostrar no telão</strong> · fixa, fica até clicar Tirar
+          </span>
+          <span>
+            <strong className="text-ink/85">Tirar do telão</strong> · remove agora, volta pra fila
+          </span>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-ink/8">
-          <span>Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/<kbd className="px-1 rounded bg-ink/10">K</kbd> navegar · <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar · <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar · <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer</span>
+          <span>
+            Atalhos: <kbd className="px-1 rounded bg-ink/10">J</kbd>/
+            <kbd className="px-1 rounded bg-ink/10">K</kbd> navegar ·{' '}
+            <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar ·{' '}
+            <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar ·{' '}
+            <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
+          </span>
         </div>
       </div>
       {tab === 'all' ? (
@@ -319,7 +353,10 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
             title="Chegando"
             subtitle="Pendentes (cinza) e rejeitadas (vermelho)"
             accent="pending"
-            items={[...visible.filter((i) => i.status === 'pending'), ...visible.filter((i) => i.status === 'rejected')]}
+            items={[
+              ...visible.filter((i) => i.status === 'pending'),
+              ...visible.filter((i) => i.status === 'rejected'),
+            ]}
             empty="Sem novos comentários."
             renderCard={(i) => (
               <SubmissionCard
@@ -340,7 +377,10 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
             title="Fila"
             subtitle="Amarelo = aguardando · Verde = já exibida · Roxo = fixada"
             accent="queue"
-            items={[...visible.filter((i) => i.status === 'approved'), ...visible.filter((i) => i.status === 'sent')]}
+            items={[
+              ...visible.filter((i) => i.status === 'approved'),
+              ...visible.filter((i) => i.status === 'sent'),
+            ]}
             empty="Aprove uma mensagem pra ela aparecer aqui."
             renderCard={(i) => (
               <SubmissionCard
@@ -361,7 +401,11 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
       ) : visible.length === 0 ? (
         <EmptyState
           title="Nenhum resultado"
-          description={query ? 'Limpa a busca ou troca a aba pra ver outros itens.' : 'Sem itens nessa categoria.'}
+          description={
+            query
+              ? 'Limpa a busca ou troca a aba pra ver outros itens.'
+              : 'Sem itens nessa categoria.'
+          }
         />
       ) : (
         <div className="grid gap-3 max-w-3xl">
@@ -375,9 +419,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
                 exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
                 className={
-                  idx === cursor
-                    ? 'ring-2 ring-primary/60 rounded-xl transition'
-                    : 'transition'
+                  idx === cursor ? 'ring-2 ring-primary/60 rounded-xl transition' : 'transition'
                 }
                 onClick={() => setCursor(idx)}
               >
@@ -402,9 +444,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
       {undo ? (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
           <div className="flex items-center gap-3 bg-ink text-paper px-4 py-2.5 rounded-lg shadow-lg">
-            <span className="text-sm">
-              {undo.action === 'approved' ? 'Aprovado' : 'Rejeitado'}
-            </span>
+            <span className="text-sm">{undo.action === 'approved' ? 'Aprovado' : 'Rejeitado'}</span>
             <button
               type="button"
               onClick={() => {
@@ -437,19 +477,13 @@ function Column({
   accent?: 'pending' | 'queue';
 }) {
   const accentBar =
-    accent === 'pending'
-      ? 'bg-ink/15'
-      : accent === 'queue'
-        ? 'bg-amber-400'
-        : 'bg-ink/15';
+    accent === 'pending' ? 'bg-ink/15' : accent === 'queue' ? 'bg-amber-400' : 'bg-ink/15';
   return (
     <section className="rounded-xl border border-ink/8 bg-paper/60 dark:bg-ink/[0.02] p-3.5">
       <header className="flex items-center gap-3 mb-3 pb-2.5 border-b border-ink/8">
         <span className={`block w-1 h-7 rounded-full ${accentBar}`} aria-hidden />
         <div className="flex-1 min-w-0">
-          <h3 className="font-display text-sm font-semibold text-ink leading-tight">
-            {title}
-          </h3>
+          <h3 className="font-display text-sm font-semibold text-ink leading-tight">{title}</h3>
           <p className="text-[11px] text-ink/50 leading-tight">{subtitle}</p>
         </div>
         <span className="text-xs font-semibold text-ink tabular-nums bg-ink/5 dark:bg-ink/10 px-2 py-0.5 rounded-md">

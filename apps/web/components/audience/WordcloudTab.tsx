@@ -69,8 +69,8 @@ export function WordcloudTab({ eventId, initialActive, initialConfig }: Props) {
           <div>
             <h3 className="font-display text-lg text-ink">Nuvem de palavras</h3>
             <p className="text-sm text-ink/60">
-              Quando ativa, a audiência envia 1 palavra em vez de comentários.
-              O telão troca pra exibição da nuvem em tempo real.
+              Quando ativa, a audiência envia 1 palavra em vez de comentários. O telão troca pra
+              exibição da nuvem em tempo real.
             </p>
           </div>
           <button

@@ -28,7 +28,9 @@ export function RealtimeStatusBadge({ status }: { status: Status }) {
       className={`inline-flex items-center gap-1.5 text-xs ${v.text}`}
       title={`Realtime: ${v.label}`}
     >
-      <span className={`h-2 w-2 rounded-full ${v.dot} ${status === 'connecting' ? 'animate-pulse' : ''}`} />
+      <span
+        className={`h-2 w-2 rounded-full ${v.dot} ${status === 'connecting' ? 'animate-pulse' : ''}`}
+      />
       {v.label}
     </span>
   );

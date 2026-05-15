@@ -24,7 +24,8 @@ export function FlushQueueButton({ eventId, queuedCount, intervalSeconds }: Prop
     >
       <div className="text-sm">
         <p className="font-medium text-ink">
-          {queuedCount} mensagem{queuedCount === 1 ? '' : 's'} aprovada{queuedCount === 1 ? '' : 's'} aguardando envio
+          {queuedCount} mensagem{queuedCount === 1 ? '' : 's'} aprovada
+          {queuedCount === 1 ? '' : 's'} aguardando envio
         </p>
         <p className="text-ink/60 text-xs mt-0.5">
           Disparo espaçado a cada {intervalSeconds}s · ~{estimatedSeconds}s no total

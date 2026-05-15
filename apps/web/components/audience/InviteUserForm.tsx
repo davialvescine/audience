@@ -45,7 +45,9 @@ export function InviteUserForm() {
         </p>
       ) : null}
       {success ? (
-        <p className="text-sm text-success">✓ Convite enviado! O usuário receberá um email pra criar a senha.</p>
+        <p className="text-sm text-success">
+          ✓ Convite enviado! O usuário receberá um email pra criar a senha.
+        </p>
       ) : null}
       <Button type="submit" loading={pending}>
         Enviar convite

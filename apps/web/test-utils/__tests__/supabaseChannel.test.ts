@@ -5,11 +5,7 @@ describe('createFakeChannel', () => {
   it('routes emit() to registered postgres_changes callback', () => {
     const ch = createFakeChannel();
     const cb = vi.fn();
-    ch.on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'wordcloud_words' },
-      cb,
-    );
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'wordcloud_words' }, cb);
     ch.subscribe();
     ch.emit({
       eventType: 'INSERT',
@@ -69,7 +65,7 @@ describe('createFakeChannel', () => {
       const sync = vi.fn();
       ch.on('presence', { event: 'sync' }, sync);
       ch.subscribe();
-      ch.simulatePresence({ 'k1': [{ joinedAt: 1 }], 'k2': [{ joinedAt: 2 }] });
+      ch.simulatePresence({ k1: [{ joinedAt: 1 }], k2: [{ joinedAt: 2 }] });
       expect(sync).toHaveBeenCalledTimes(1);
       expect(ch.presenceState()).toEqual({
         k1: [{ joinedAt: 1 }],
@@ -81,7 +77,7 @@ describe('createFakeChannel', () => {
       const ch = createFakeChannel();
       const sync = vi.fn();
       ch.on('presence', { event: 'sync' }, sync);
-      ch.simulatePresence({ 'k1': [{}] });
+      ch.simulatePresence({ k1: [{}] });
       expect(sync).not.toHaveBeenCalled();
     });
 

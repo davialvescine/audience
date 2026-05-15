@@ -29,7 +29,8 @@ export default async function AdminUsersPage() {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-display mb-2">Usuários</h1>
         <p className="text-ink/60 mb-8">
-          Convide pessoas pra moderar eventos com você. Quem é convidado recebe um email pra criar a senha.
+          Convide pessoas pra moderar eventos com você. Quem é convidado recebe um email pra criar a
+          senha.
         </p>
 
         <Card className="mb-6">
@@ -38,9 +39,7 @@ export default async function AdminUsersPage() {
         </Card>
 
         <Card className="mb-6">
-          <h2 className="text-xl font-display mb-4">
-            Pessoas com acesso ({users.length})
-          </h2>
+          <h2 className="text-xl font-display mb-4">Pessoas com acesso ({users.length})</h2>
           <UsersList users={users} />
         </Card>
 

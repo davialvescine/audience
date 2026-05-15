@@ -35,7 +35,14 @@ type Props = {
   preview?: boolean;
 };
 
-export function TelaoClient({ slug, eventId, eventName, config: initialConfig, intervalSeconds = 3, preview = false }: Props) {
+export function TelaoClient({
+  slug,
+  eventId,
+  eventName,
+  config: initialConfig,
+  intervalSeconds = 3,
+  preview = false,
+}: Props) {
   const intervalRef = useRef(intervalSeconds);
   intervalRef.current = intervalSeconds;
   // Config comes from SSR (page.tsx is force-dynamic so F5 always picks
@@ -153,7 +160,9 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
         });
       }
     };
-    const pollTimer = setInterval(() => { void poll(); }, 2000);
+    const pollTimer = setInterval(() => {
+      void poll();
+    }, 2000);
 
     // Poll config tambem — quando o dono muda cor/posicao no admin,
     // todas as telas /telao abertas (OBS, PiP, desktop) atualizam em
@@ -174,7 +183,9 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       };
       setConfig((cur) => (JSON.stringify(cur) === JSON.stringify(fresh) ? cur : fresh));
     };
-    const cfgTimer = setInterval(() => { void pollConfig(); }, 5000);
+    const cfgTimer = setInterval(() => {
+      void pollConfig();
+    }, 5000);
 
     // Polling de mensagem fixada. Quando muda, atualiza state. Renderiza
     // por tempo indeterminado ate ser desfixada (server seta null).
@@ -204,7 +215,9 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
       });
     };
     void pollPinned();
-    const pinTimer = setInterval(() => { void pollPinned(); }, 2000);
+    const pinTimer = setInterval(() => {
+      void pollPinned();
+    }, 2000);
 
     return () => {
       clearInterval(pollTimer);
@@ -292,7 +305,8 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     const tick = setInterval(() => {
       if (pinned) return;
       if (queueRef.current.length === 0) return;
-      if (visibleCountRef.current >= Math.min(config.maxConcurrent, effectiveMaxRef.current)) return;
+      if (visibleCountRef.current >= Math.min(config.maxConcurrent, effectiveMaxRef.current))
+        return;
       if (
         config.transitionMode === 'sequential' &&
         visibleCountRef.current === 0 &&
@@ -348,13 +362,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
   // tamanho da fonte ou mexe no maxConcurrent — vamos tentar empilhar de novo).
   useEffect(() => {
     effectiveMaxRef.current = config.maxConcurrent;
-  }, [
-    config.maxConcurrent,
-    config.fontSizePx,
-    config.heightPx,
-    config.widthPct,
-    config.position,
-  ]);
+  }, [config.maxConcurrent, config.fontSizePx, config.heightPx, config.widthPct, config.position]);
 
   // Se maxConcurrent baixou abaixo do que esta visivel, remove os mais
   // antigos ate respeitar o novo limite.
@@ -384,8 +392,7 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
     : config.position.startsWith('top-')
       ? [...visible].reverse()
       : visible;
-  const hasCustomPos =
-    typeof config.posXPct === 'number' && typeof config.posYPct === 'number';
+  const hasCustomPos = typeof config.posXPct === 'number' && typeof config.posYPct === 'number';
   const positionStyle = hasCustomPos
     ? customPositionStyles(config.posXPct as number, config.posYPct as number)
     : positionStyles(config.position);
@@ -489,8 +496,10 @@ export function TelaoClient({ slug, eventId, eventName, config: initialConfig, i
               color: config.cardText,
               borderRadius: `${config.borderRadius}px`,
               boxShadow: shadowStyle(config.shadow),
-              backdropFilter: config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
-              WebkitBackdropFilter: config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
+              backdropFilter:
+                config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
+              WebkitBackdropFilter:
+                config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
               fontSize: `${config.fontSizePx}px`,
               lineHeight: 1.3,

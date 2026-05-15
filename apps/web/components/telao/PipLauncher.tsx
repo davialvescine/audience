@@ -103,8 +103,19 @@ export function PipLauncher({ children }: Props) {
           style={{ background: 'rgba(10, 18, 35, 0.92)', zIndex: 9999 }}
         >
           <div className="text-center px-6 max-w-md pointer-events-auto">
-            <div className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'rgba(16,185,129,0.18)' }}>
-              <svg className="h-7 w-7" style={{ color: '#10B981' }} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+            <div
+              className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl"
+              style={{ background: 'rgba(16,185,129,0.18)' }}
+            >
+              <svg
+                className="h-7 w-7"
+                style={{ color: '#10B981' }}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -112,7 +123,8 @@ export function PipLauncher({ children }: Props) {
               Telão flutuante ativo
             </h1>
             <p className="text-white/70 text-sm mb-4">
-              Os comentários estão aparecendo na janelinha flutuante. Posicione ela onde quiser na tela e inicie sua apresentação.
+              Os comentários estão aparecendo na janelinha flutuante. Posicione ela onde quiser na
+              tela e inicie sua apresentação.
             </p>
             <p className="text-white/50 text-xs">
               Pode minimizar essa aba — não feche enquanto o evento estiver no ar.
@@ -140,15 +152,27 @@ export function PipLauncher({ children }: Props) {
           style={{ background: 'rgba(10, 18, 35, 0.85)', zIndex: 9999 }}
         >
           <div className="text-center px-6 max-w-md pointer-events-auto">
-            <div className="mx-auto mb-5 inline-flex items-center justify-center h-16 w-16 rounded-2xl" style={{ background: 'rgba(245,197,24,0.18)' }}>
-              <svg className="h-8 w-8" style={{ color: '#F5C518' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <div
+              className="mx-auto mb-5 inline-flex items-center justify-center h-16 w-16 rounded-2xl"
+              style={{ background: 'rgba(245,197,24,0.18)' }}
+            >
+              <svg
+                className="h-8 w-8"
+                style={{ color: '#F5C518' }}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <rect x="3" y="3" width="18" height="14" rx="2" />
                 <rect x="11" y="11" width="9" height="6" rx="1" />
               </svg>
             </div>
             <h1 className="text-2xl font-display font-bold text-white mb-2">Janela flutuante</h1>
             <p className="text-white/70 text-sm mb-6">
-              Os comentários da audiência vão aparecer numa janela que fica sempre por cima da sua apresentação.
+              Os comentários da audiência vão aparecer numa janela que fica sempre por cima da sua
+              apresentação.
             </p>
             <button
               type="button"
@@ -160,7 +184,8 @@ export function PipLauncher({ children }: Props) {
             </button>
             {error ? <p className="mt-4 text-sm text-red-300">⚠ {error}</p> : null}
             <p className="mt-6 text-xs text-white/50">
-              Depois de abrir, arraste a janelinha pro canto da tela e inicie sua apresentação normalmente.
+              Depois de abrir, arraste a janelinha pro canto da tela e inicie sua apresentação
+              normalmente.
             </p>
           </div>
         </div>
@@ -178,12 +203,15 @@ export function PipLauncher({ children }: Props) {
           style={{ background: 'rgba(10, 18, 35, 0.95)', zIndex: 9999 }}
         >
           <div className="text-center px-6 max-w-md pointer-events-auto">
-            <h1 className="text-xl font-display font-bold text-white mb-3">Navegador não compatível</h1>
+            <h1 className="text-xl font-display font-bold text-white mb-3">
+              Navegador não compatível
+            </h1>
             <p className="text-white/70 text-sm mb-3">
               A janela flutuante usa uma API moderna do Chrome (Document Picture-in-Picture).
             </p>
             <p className="text-white/60 text-sm mb-4">
-              Use <strong>Chrome</strong>, <strong>Edge</strong> ou <strong>Brave</strong> atualizados (versão 116 ou superior).
+              Use <strong>Chrome</strong>, <strong>Edge</strong> ou <strong>Brave</strong>{' '}
+              atualizados (versão 116 ou superior).
             </p>
             <p className="text-white/50 text-xs">
               Alternativa: abra essa URL como Browser Source no OBS Studio.

@@ -15,10 +15,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const reqHeaders = await headers();
   const host = reqHeaders.get('host') ?? 'localhost:3000';
-  const proto = reqHeaders.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
+  const proto =
+    reqHeaders.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
   const telaoUrl = `${proto}://${host}/telao/${event.slug}?mode=browser_source`;
 
-  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const escape = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   const xml = `<?xml version="1.0" encoding="utf-8"?>
 <vmix>

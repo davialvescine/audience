@@ -31,8 +31,10 @@ export async function submitComment(slug: string, formData: FormData): Promise<R
 
   if (error) {
     const code = error.message;
-    if (code.includes('rate_limited')) return { ok: false, error: 'Muitas mensagens em pouco tempo. Aguarde um instante.' };
-    if (code.includes('submissions_closed')) return { ok: false, error: 'Submissões encerradas para este evento.' };
+    if (code.includes('rate_limited'))
+      return { ok: false, error: 'Muitas mensagens em pouco tempo. Aguarde um instante.' };
+    if (code.includes('submissions_closed'))
+      return { ok: false, error: 'Submissões encerradas para este evento.' };
     if (code.includes('event_not_found')) return { ok: false, error: 'Evento não encontrado.' };
     return { ok: false, error: 'Não foi possível enviar. Tente novamente.' };
   }

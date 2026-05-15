@@ -31,7 +31,11 @@ describe('scrubPII', () => {
         payload: { comment: 'segredo', name: 'José', other: 'ok' },
       },
     });
-    expect(result.extra?.payload).toEqual({ comment: '[redacted]', name: '[redacted]', other: 'ok' });
+    expect(result.extra?.payload).toEqual({
+      comment: '[redacted]',
+      name: '[redacted]',
+      other: 'ok',
+    });
   });
 
   it('returns null when event is null', () => {

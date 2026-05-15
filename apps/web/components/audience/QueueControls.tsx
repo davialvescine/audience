@@ -53,7 +53,9 @@ export function QueueControls({ eventId, initialSubmissionsOpen, pendingCount }:
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-sm text-ink">
-            <strong className="font-medium">{open ? 'Audiência pode enviar' : 'Submissões pausadas'}</strong>
+            <strong className="font-medium">
+              {open ? 'Audiência pode enviar' : 'Submissões pausadas'}
+            </strong>
           </p>
           <p className="text-xs text-ink/60 mt-0.5">
             {open

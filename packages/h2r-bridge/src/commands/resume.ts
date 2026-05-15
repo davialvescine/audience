@@ -9,7 +9,9 @@ const H2R_PORT = 4001;
 export async function resume(): Promise<void> {
   const state = loadState();
   if (!state) {
-    console.error(kleur.red('✗ Nenhum pareamento anterior encontrado. Rode "pair <CODE>" primeiro.'));
+    console.error(
+      kleur.red('✗ Nenhum pareamento anterior encontrado. Rode "pair <CODE>" primeiro.'),
+    );
     process.exit(1);
   }
 
@@ -19,7 +21,11 @@ export async function resume(): Promise<void> {
   console.log(kleur.cyan('↗ Iniciando tunnel...'));
   const tunnel = await startTunnel(bin, H2R_PORT);
   console.log(kleur.green(`✓ Tunnel ativo: ${tunnel.url}`));
-  console.log(kleur.yellow('⚠  Atenção: a URL do tunnel mudou. O bridge anterior precisa ser re-pareado se o evento depender da URL antiga.'));
+  console.log(
+    kleur.yellow(
+      '⚠  Atenção: a URL do tunnel mudou. O bridge anterior precisa ser re-pareado se o evento depender da URL antiga.',
+    ),
+  );
 
   console.log(kleur.green(`✓ Heartbeating evento "${state.event_name}"`));
   const heartbeatTimer = setInterval(() => {

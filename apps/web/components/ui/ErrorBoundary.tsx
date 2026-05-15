@@ -13,8 +13,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: { componentStack?: string }) {
-    if (typeof window !== 'undefined' && (window as { Sentry?: { captureException: (e: Error, c?: unknown) => void } }).Sentry) {
-      (window as unknown as { Sentry: { captureException: (e: Error, c?: unknown) => void } }).Sentry.captureException(error, {
+    if (
+      typeof window !== 'undefined' &&
+      (window as { Sentry?: { captureException: (e: Error, c?: unknown) => void } }).Sentry
+    ) {
+      (
+        window as unknown as { Sentry: { captureException: (e: Error, c?: unknown) => void } }
+      ).Sentry.captureException(error, {
         contexts: { react: info },
       });
     }

@@ -22,27 +22,13 @@ afterEach(() => {
 describe('WordCloudDisplay', () => {
   it('renders the question from config', () => {
     const ch = createFakeChannel();
-    render(
-      <WordCloudDisplay
-        eventId="evt"
-        config={config}
-        initialEntries={[]}
-        channel={ch}
-      />,
-    );
+    render(<WordCloudDisplay eventId="evt" config={config} initialEntries={[]} channel={ch} />);
     expect(screen.getByText('Qual é a vibe?')).toBeInTheDocument();
   });
 
   it('shows empty state when no entries', () => {
     const ch = createFakeChannel();
-    render(
-      <WordCloudDisplay
-        eventId="evt"
-        config={config}
-        initialEntries={[]}
-        channel={ch}
-      />,
-    );
+    render(<WordCloudDisplay eventId="evt" config={config} initialEntries={[]} channel={ch} />);
     expect(screen.getByText(/aguardando palavras/i)).toBeInTheDocument();
   });
 

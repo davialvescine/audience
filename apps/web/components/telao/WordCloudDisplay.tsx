@@ -81,16 +81,11 @@ export function WordCloudDisplay({
           {config.question}
         </h1>
         {config.showTotal && entries.length > 0 ? (
-          <p className="mt-4 text-2xl opacity-80">
-            {totalSubmissions} palavras enviadas
-          </p>
+          <p className="mt-4 text-2xl opacity-80">{totalSubmissions} palavras enviadas</p>
         ) : null}
       </header>
 
-      <div
-        className="absolute left-0 right-0"
-        style={{ top: HEADER_H, height: CLOUD_H }}
-      >
+      <div className="absolute left-0 right-0" style={{ top: HEADER_H, height: CLOUD_H }}>
         <AnimatePresence>
           {laid.map((w) => (
             <WordCloudWord

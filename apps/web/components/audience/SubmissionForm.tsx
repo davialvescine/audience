@@ -32,7 +32,13 @@ export function SubmissionForm({ slug }: Props) {
           transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
           className="mx-auto mb-4 h-16 w-16 rounded-full bg-success/15 flex items-center justify-center"
         >
-          <svg className="h-8 w-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg
+            className="h-8 w-8 text-success"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
             <motion.path
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}

@@ -52,7 +52,11 @@ export function useWordcloudActive(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
         (payload) => {
-          const row = payload.new as { id?: string; wordcloud_active?: boolean; wordcloud_config?: WordcloudConfig };
+          const row = payload.new as {
+            id?: string;
+            wordcloud_active?: boolean;
+            wordcloud_config?: WordcloudConfig;
+          };
           if (!row || row.id !== eventId) return;
           if (typeof row.wordcloud_active === 'boolean') setActive(row.wordcloud_active);
           if (row.wordcloud_config) setConfig(row.wordcloud_config);

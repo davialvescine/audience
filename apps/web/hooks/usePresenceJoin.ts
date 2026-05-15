@@ -33,11 +33,10 @@ function getOrCreateClientId(): string {
     // localStorage unavailable (SSR, privacy mode) — fall through to generate ephemeral
   }
   if (!id) {
-    id = (
+    id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
-        : `cid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
-    );
+        : `cid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     try {
       window.localStorage?.setItem(STORAGE_KEY, id);
     } catch {

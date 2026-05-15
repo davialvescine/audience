@@ -13,11 +13,7 @@ type SearchParams = Promise<{
  * Defender Safe Links, Proofpoint, etc.) from burning the one-time token
  * during automatic pre-fetch checks before the user clicks.
  */
-export default async function AuthConfirmPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function AuthConfirmPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const tokenHash = params.token_hash ?? '';
   const type = params.type ?? '';

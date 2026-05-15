@@ -40,11 +40,7 @@ export async function bulkRejectPending(eventId: string): Promise<Result> {
   if (error) return { ok: false, error: 'Falha ao limpar.' };
 
   // Revalidate event page
-  const { data: ev } = await supabase
-    .from('events')
-    .select('slug')
-    .eq('id', eventId)
-    .single();
+  const { data: ev } = await supabase.from('events').select('slug').eq('id', eventId).single();
   if (ev) revalidatePath(`/admin/events/${ev.slug}`);
 
   return { ok: true, count: data?.length ?? 0 };

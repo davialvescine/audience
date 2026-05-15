@@ -42,9 +42,7 @@ export async function pair(code: string): Promise<void> {
   });
   console.log(kleur.green(`✓ Conectado ao evento "${result.event_name}"`));
   console.log(
-    kleur.dim(
-      'Pressione Ctrl+C para encerrar. Mantenha este terminal aberto durante o evento.',
-    ),
+    kleur.dim('Pressione Ctrl+C para encerrar. Mantenha este terminal aberto durante o evento.'),
   );
 
   const heartbeatTimer = setInterval(() => {

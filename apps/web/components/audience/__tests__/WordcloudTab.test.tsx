@@ -20,13 +20,7 @@ beforeEach(() => {
 
 describe('WordcloudTab', () => {
   it('renders the toggle with initial off state', () => {
-    render(
-      <WordcloudTab
-        eventId="evt-1"
-        initialActive={false}
-        initialConfig={baseConfig}
-      />,
-    );
+    render(<WordcloudTab eventId="evt-1" initialActive={false} initialConfig={baseConfig} />);
     const toggle = screen.getByRole('switch');
     expect(toggle).toHaveAttribute('aria-checked', 'false');
   });
@@ -34,38 +28,20 @@ describe('WordcloudTab', () => {
   it('calls setWordcloudActive when toggled on', async () => {
     const spy = vi.spyOn(actions, 'setWordcloudActive').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(
-      <WordcloudTab
-        eventId="evt-1"
-        initialActive={false}
-        initialConfig={baseConfig}
-      />,
-    );
+    render(<WordcloudTab eventId="evt-1" initialActive={false} initialConfig={baseConfig} />);
     await user.click(screen.getByRole('switch'));
     await waitFor(() => expect(spy).toHaveBeenCalledWith('evt-1', true));
   });
 
   it('shows the active banner when active=true', () => {
-    render(
-      <WordcloudTab
-        eventId="evt-1"
-        initialActive={true}
-        initialConfig={baseConfig}
-      />,
-    );
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
     expect(screen.getByText(/nuvem ativa/i)).toBeInTheDocument();
   });
 
   it('saves config edits via debounced autosave', async () => {
     const spy = vi.spyOn(actions, 'updateWordcloudConfig').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(
-      <WordcloudTab
-        eventId="evt-1"
-        initialActive={true}
-        initialConfig={baseConfig}
-      />,
-    );
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
 
     const questionInput = screen.getByLabelText(/pergunta/i);
     await user.clear(questionInput);
@@ -79,32 +55,26 @@ describe('WordcloudTab', () => {
   });
 
   it('calls resetWordcloud after confirm', async () => {
-    vi.stubGlobal('confirm', vi.fn(() => true));
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true),
+    );
     const spy = vi.spyOn(actions, 'resetWordcloud').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(
-      <WordcloudTab
-        eventId="evt-1"
-        initialActive={true}
-        initialConfig={baseConfig}
-      />,
-    );
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
     await user.click(screen.getByRole('button', { name: /limpar nuvem/i }));
     await waitFor(() => expect(spy).toHaveBeenCalledWith('evt-1'));
     vi.unstubAllGlobals();
   });
 
   it('does NOT reset when confirm is cancelled', async () => {
-    vi.stubGlobal('confirm', vi.fn(() => false));
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => false),
+    );
     const spy = vi.spyOn(actions, 'resetWordcloud').mockResolvedValue({ ok: true });
     const user = userEvent.setup();
-    render(
-      <WordcloudTab
-        eventId="evt-1"
-        initialActive={true}
-        initialConfig={baseConfig}
-      />,
-    );
+    render(<WordcloudTab eventId="evt-1" initialActive={true} initialConfig={baseConfig} />);
     await user.click(screen.getByRole('button', { name: /limpar nuvem/i }));
     expect(spy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();

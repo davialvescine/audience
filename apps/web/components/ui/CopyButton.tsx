@@ -27,13 +27,31 @@ export function CopyButton({ value, label, className = '' }: Props) {
       className={`inline-flex items-center justify-center h-8 w-8 rounded-md border border-ink/15 bg-paper hover:bg-ink/5 transition shrink-0 ${className}`}
     >
       {copied ? (
-        <svg className="h-4 w-4 text-success" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+        <svg
+          className="h-4 w-4 text-success"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       ) : (
-        <svg className="h-4 w-4 text-ink/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+        <svg
+          className="h-4 w-4 text-ink/60"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
           <rect x="9" y="9" width="11" height="11" rx="2" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+          />
         </svg>
       )}
     </button>

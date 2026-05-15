@@ -7,9 +7,7 @@ import { buildH2RPayload } from '@/lib/h2r/buildPayload';
 import { requireUser } from '@/lib/auth/requireUser';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
-type Result =
-  | { ok: true; status: 'sent' | 'queued' }
-  | { ok: false; error: string };
+type Result = { ok: true; status: 'sent' | 'queued' } | { ok: false; error: string };
 
 const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
@@ -322,10 +320,7 @@ export async function flushApprovedForEvent(eventId: string): Promise<{
   return { ok: true, sent, queued, failed, total_remaining: Math.max(0, remaining) };
 }
 
-export async function updateDispatchInterval(
-  eventId: string,
-  seconds: number,
-): Promise<Result> {
+export async function updateDispatchInterval(eventId: string, seconds: number): Promise<Result> {
   await requireUser();
   const clamped = Math.max(1, Math.min(60, Math.round(seconds)));
   const supabase = await getSupabaseServerClient();

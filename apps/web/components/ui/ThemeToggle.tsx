@@ -9,7 +9,14 @@ const options: Array<{ value: ThemeMode; label: string; icon: ReactNode }> = [
     value: 'light',
     label: 'Claro',
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
         <circle cx="12" cy="12" r="4" />
         <path
           strokeLinecap="round"
@@ -22,7 +29,14 @@ const options: Array<{ value: ThemeMode; label: string; icon: ReactNode }> = [
     value: 'system',
     label: 'Sistema',
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
         <rect x="2" y="4" width="20" height="14" rx="2" />
         <path strokeLinecap="round" d="M8 22h8M12 18v4" />
       </svg>
@@ -32,7 +46,14 @@ const options: Array<{ value: ThemeMode; label: string; icon: ReactNode }> = [
     value: 'dark',
     label: 'Escuro',
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

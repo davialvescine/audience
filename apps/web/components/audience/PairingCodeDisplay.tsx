@@ -42,7 +42,11 @@ export function PairingCodeDisplay({ eventId, alreadyPaired, lastHeartbeat }: Pr
         </div>
       ) : null}
 
-      {error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-3 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
 
       <Button
         className="mt-4"

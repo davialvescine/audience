@@ -78,9 +78,24 @@ describe('useWordCounts', () => {
       useWordCounts('evt-1', { channel: ch, initialEntries: [] }),
     );
     act(() => {
-      ch.emit({ eventType: 'INSERT', new: { word: 'banana', event_id: 'evt-1' }, old: {}, table: 'wordcloud_words' });
-      ch.emit({ eventType: 'INSERT', new: { word: 'abacaxi', event_id: 'evt-1' }, old: {}, table: 'wordcloud_words' });
-      ch.emit({ eventType: 'INSERT', new: { word: 'caju', event_id: 'evt-1' }, old: {}, table: 'wordcloud_words' });
+      ch.emit({
+        eventType: 'INSERT',
+        new: { word: 'banana', event_id: 'evt-1' },
+        old: {},
+        table: 'wordcloud_words',
+      });
+      ch.emit({
+        eventType: 'INSERT',
+        new: { word: 'abacaxi', event_id: 'evt-1' },
+        old: {},
+        table: 'wordcloud_words',
+      });
+      ch.emit({
+        eventType: 'INSERT',
+        new: { word: 'caju', event_id: 'evt-1' },
+        old: {},
+        table: 'wordcloud_words',
+      });
     });
     act(() => {
       vi.advanceTimersByTime(2000);
@@ -98,8 +113,18 @@ describe('useWordCounts', () => {
       useWordCounts('evt-1', { channel: ch, initialEntries: [] }),
     );
     act(() => {
-      ch.emit({ eventType: 'INSERT', new: { word: 'fora', event_id: 'evt-OTHER' }, old: {}, table: 'wordcloud_words' });
-      ch.emit({ eventType: 'INSERT', new: { word: 'dentro', event_id: 'evt-1' }, old: {}, table: 'wordcloud_words' });
+      ch.emit({
+        eventType: 'INSERT',
+        new: { word: 'fora', event_id: 'evt-OTHER' },
+        old: {},
+        table: 'wordcloud_words',
+      });
+      ch.emit({
+        eventType: 'INSERT',
+        new: { word: 'dentro', event_id: 'evt-1' },
+        old: {},
+        table: 'wordcloud_words',
+      });
       vi.advanceTimersByTime(2000);
     });
     expect(result.current.entries).toEqual([{ text: 'dentro', count: 1 }]);
@@ -115,7 +140,12 @@ describe('useWordCounts', () => {
     const before = renders;
     act(() => {
       for (let i = 0; i < 10; i += 1) {
-        ch.emit({ eventType: 'INSERT', new: { word: `w${i}`, event_id: 'evt-1' }, old: {}, table: 'wordcloud_words' });
+        ch.emit({
+          eventType: 'INSERT',
+          new: { word: `w${i}`, event_id: 'evt-1' },
+          old: {},
+          table: 'wordcloud_words',
+        });
       }
     });
     // No timer advance -> no new render expected.

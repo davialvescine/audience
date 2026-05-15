@@ -53,7 +53,8 @@ export function HomeHero() {
             transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
             className="text-4xl md:text-7xl font-display font-bold leading-[1.02] tracking-tight"
           >
-            Comentários da audiência<br />
+            Comentários da audiência
+            <br />
             <span className="text-accent/95">direto no telão.</span>
           </motion.h1>
           <motion.p
@@ -62,8 +63,8 @@ export function HomeHero() {
             transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
             className="mt-6 text-lg md:text-xl opacity-85 max-w-2xl leading-relaxed"
           >
-            Conecte sua transmissão ao vivo com sua audiência. Eles enviam mensagens pelo
-            celular, você modera com um clique e o comentário aparece no telão em segundos.
+            Conecte sua transmissão ao vivo com sua audiência. Eles enviam mensagens pelo celular,
+            você modera com um clique e o comentário aparece no telão em segundos.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 12 }}

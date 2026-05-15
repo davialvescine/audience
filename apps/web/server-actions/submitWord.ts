@@ -14,10 +14,7 @@ type ErrorCode =
   | 'too_long'
   | 'unknown';
 
-type Result =
-  | { ok: true }
-  | { ok: true; skipped: true }
-  | { ok: false; error: ErrorCode };
+type Result = { ok: true } | { ok: true; skipped: true } | { ok: false; error: ErrorCode };
 
 export async function submitWord(slug: string, formData: FormData): Promise<Result> {
   const raw = formData.get('word');

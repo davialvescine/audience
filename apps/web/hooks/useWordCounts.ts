@@ -34,13 +34,10 @@ export type UseWordCountsResult = {
 function buildEntries(counts: Map<string, number>): WordEntry[] {
   return Array.from(counts.entries())
     .map(([text, count]) => ({ text, count }))
-    .sort((a, b) => (b.count - a.count) || a.text.localeCompare(b.text));
+    .sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 }
 
-export function useWordCounts(
-  eventId: string,
-  opts: UseWordCountsOptions,
-): UseWordCountsResult {
+export function useWordCounts(eventId: string, opts: UseWordCountsOptions): UseWordCountsResult {
   const throttleMs = opts.throttleMs ?? 2000;
 
   // Map<word, count> in a ref so realtime callbacks mutate without re-rendering.

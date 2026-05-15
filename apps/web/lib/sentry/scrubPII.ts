@@ -5,7 +5,14 @@
 const REDACTED = '[redacted]';
 
 // Keys whose VALUES contain PII regardless of nesting depth.
-const REDACTED_KEYS = new Set(['email', 'username', 'name', 'comment', 'commentText', 'displayName']);
+const REDACTED_KEYS = new Set([
+  'email',
+  'username',
+  'name',
+  'comment',
+  'commentText',
+  'displayName',
+]);
 
 type AnyRecord = Record<string, unknown>;
 
