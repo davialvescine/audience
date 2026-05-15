@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
 
 import { WordCloudWord } from '@/components/telao/WordCloudWord';
@@ -157,12 +158,41 @@ export function WordCloudDisplay({
     }
   })();
 
+  const showQr = config.showQr === true && !!joinUrl && showBackground;
+
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ ...bgStyle, color: textColor }}>
+      {/* QR code lateral pra participante entrar — estilo Mentimeter */}
+      {showQr && joinUrl ? (
+        <div
+          className="absolute right-12 top-1/2 -translate-y-1/2 z-20 rounded-xl p-6 flex flex-col items-center gap-4"
+          style={{
+            background: lightBg ? 'rgba(10,24,52,0.05)' : 'rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div className="bg-paper p-3 rounded-lg">
+            <QRCodeSVG value={joinUrl} size={180} level="M" />
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-mono font-semibold" style={{ color: textColor }}>
+              {joinLabel}
+            </p>
+            <p className="text-sm mt-1" style={{ color: subtleColor }}>
+              Escaneie pra participar
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {/* Pergunta colada no topo, sem barra */}
       <header
         className="relative z-10 px-20 flex items-start justify-center"
-        style={{ height: HEADER_H, paddingTop: 56 }}
+        style={{
+          height: HEADER_H,
+          paddingTop: 56,
+          paddingRight: showQr ? 320 : undefined,
+        }}
       >
         <h1
           className="font-display font-bold tracking-tight text-center break-words"
@@ -181,8 +211,15 @@ export function WordCloudDisplay({
         </h1>
       </header>
 
-      {/* Nuvem ocupa tudo abaixo da pergunta */}
-      <div className="absolute left-0 right-0" style={{ top: HEADER_H, height: CLOUD_H }}>
+      {/* Nuvem ocupa tudo abaixo da pergunta — encolhe da direita se QR estiver visível */}
+      <div
+        className="absolute left-0"
+        style={{
+          top: HEADER_H,
+          height: CLOUD_H,
+          right: showQr ? 340 : 0,
+        }}
+      >
         <AnimatePresence>
           {laid.map((w) => (
             <WordCloudWord

@@ -125,6 +125,19 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange }: Props) {
         </p>
       </Section>
 
+      <Section title="No telão">
+        <Check
+          label="QR code visível enquanto apresenta"
+          checked={config.showQr === true}
+          onChange={(v) => setConfig((c) => ({ ...c, showQr: v }))}
+        />
+        <Check
+          label="Contador de palavras enviadas"
+          checked={config.showTotal}
+          onChange={(v) => setConfig((c) => ({ ...c, showTotal: v }))}
+        />
+      </Section>
+
       <Section title="Filtros">
         <Check
           label="Filtrar palavras comuns"
@@ -135,11 +148,6 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange }: Props) {
           label="Bloquear palavrões"
           checked={config.filterProfanity}
           onChange={(v) => setConfig((c) => ({ ...c, filterProfanity: v }))}
-        />
-        <Check
-          label="Mostrar contador no telão"
-          checked={config.showTotal}
-          onChange={(v) => setConfig((c) => ({ ...c, showTotal: v }))}
         />
       </Section>
     </div>

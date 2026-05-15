@@ -288,7 +288,11 @@ export function SlidesTab({
         {/* Canvas central — slide grande sozinho */}
         <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink/[0.03]">
           {selected ? (
-            <SlideCanvas slide={selected} liveConfig={liveConfig ?? undefined} />
+            <SlideCanvas
+              slide={selected}
+              liveConfig={liveConfig ?? undefined}
+              joinUrl={slidesUrl}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-ink/50">
               <p>Crie um slide pra começar.</p>

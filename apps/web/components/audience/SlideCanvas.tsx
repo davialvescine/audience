@@ -10,17 +10,22 @@ import type { WordEntry } from '@/lib/wordcloud/types';
 type Props = {
   slide: Slide;
   liveConfig?: WordcloudConfig | undefined;
+  /** URL pra audiência — passa pro WordCloudDisplay quando QR está habilitado. */
+  joinUrl?: string | undefined;
 };
 
+// Sample inspirational pt-BR — exibido no preview enquanto a audiência
+// ainda não enviou nada. Tamanhos variados pra mostrar o efeito da nuvem.
 const SAMPLE_ENTRIES: WordEntry[] = [
-  { text: 'amor', count: 8 },
-  { text: 'paz', count: 6 },
-  { text: 'esperança', count: 4 },
-  { text: 'alegria', count: 4 },
-  { text: 'fé', count: 3 },
-  { text: 'gratidão', count: 3 },
-  { text: 'união', count: 2 },
-  { text: 'luz', count: 2 },
+  { text: 'criativo', count: 9 },
+  { text: 'líder', count: 7 },
+  { text: 'foco', count: 6 },
+  { text: 'rápido', count: 5 },
+  { text: 'ousado', count: 5 },
+  { text: 'inspiração', count: 4 },
+  { text: 'energia', count: 3 },
+  { text: 'paixão', count: 3 },
+  { text: 'transformação', count: 2 },
 ];
 
 /**
@@ -28,7 +33,7 @@ const SAMPLE_ENTRIES: WordEntry[] = [
  * O celular do participante é mostrado num popover separado se o operador
  * quiser ver.
  */
-export function SlideCanvas({ slide, liveConfig }: Props) {
+export function SlideCanvas({ slide, liveConfig, joinUrl }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
 
@@ -70,6 +75,7 @@ export function SlideCanvas({ slide, liveConfig }: Props) {
               initialEntries={SAMPLE_ENTRIES}
               channel={makeNoopChannel()}
               showBackground
+              joinUrl={joinUrl}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-ink/5">

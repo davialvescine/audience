@@ -22,10 +22,10 @@ type Props = {
 
 // Sample mais leve do que SlideCanvas pra layout rápido em N thumbnails.
 const SAMPLE_ENTRIES: WordEntry[] = [
-  { text: 'amor', count: 5 },
-  { text: 'paz', count: 4 },
-  { text: 'fé', count: 3 },
-  { text: 'alegria', count: 2 },
+  { text: 'criativo', count: 5 },
+  { text: 'líder', count: 4 },
+  { text: 'foco', count: 3 },
+  { text: 'rápido', count: 2 },
 ];
 
 export function SlideThumbnail({

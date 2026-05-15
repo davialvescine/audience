@@ -15,6 +15,8 @@ export type WordcloudConfig = {
   filterProfanity: boolean;
   palette: string[];
   showTotal: boolean;
+  /** Mostra QR code + URL pra audiência entrar no canto direito do telão. */
+  showQr?: boolean | undefined;
   background?: WordcloudBackground | undefined;
 };
 
