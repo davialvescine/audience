@@ -258,13 +258,13 @@ export function SlidesTab({
         </div>
       </div>
 
-      {/* 3 colunas: thumbnails | canvas | props */}
-      <div className="grid grid-cols-[200px_minmax(0,1fr)_360px] gap-3 flex-1 min-h-0">
-        {/* Thumbnails sidebar */}
+      {/* 3 colunas Mentimeter-style: thumbs magras | canvas grande | props */}
+      <div className="grid grid-cols-[120px_minmax(0,1fr)_320px] gap-3 flex-1 min-h-0">
+        {/* Thumbnails sidebar — estreita */}
         <div className="overflow-y-auto space-y-2 bg-ink/[0.02] rounded-lg p-2 border border-ink/10">
           {slides.length === 0 ? (
-            <p className="text-xs text-ink/60 text-center py-6">
-              Clique em <strong>+ Novo slide</strong> pra começar.
+            <p className="text-[10px] text-ink/60 text-center py-6">
+              + Novo slide
             </p>
           ) : (
             slides.map((slide, idx) => (
@@ -285,14 +285,10 @@ export function SlidesTab({
           )}
         </div>
 
-        {/* Canvas central */}
-        <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink/[0.02]">
+        {/* Canvas central — slide grande sozinho */}
+        <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink/[0.03]">
           {selected ? (
-            <SlideCanvas
-              slide={selected}
-              liveConfig={liveConfig ?? undefined}
-              telaoUrl={telaoUrl}
-            />
+            <SlideCanvas slide={selected} liveConfig={liveConfig ?? undefined} />
           ) : (
             <div className="h-full flex items-center justify-center text-ink/50">
               <p>Crie um slide pra começar.</p>
@@ -301,7 +297,7 @@ export function SlidesTab({
         </div>
 
         {/* Props sidebar */}
-        <div className="overflow-y-auto">
+        <div className="overflow-y-auto pr-1">
           {selected && selected.type === 'wordcloud' ? (
             <SlidePropsPanel
               slide={selected}
