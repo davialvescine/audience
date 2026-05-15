@@ -8,6 +8,8 @@ type Props = {
   submissionsOpen: boolean;
   wordcloudActive: boolean;
   wordcloudConfig: WordcloudConfig;
+  activeSlideId: string | null;
+  activeSlideConfig: WordcloudConfig | null;
   forceMode?: 'auto' | 'comments' | 'slides' | undefined;
 };
 
@@ -18,9 +20,12 @@ export function PublicEventShell({
   submissionsOpen,
   wordcloudActive,
   wordcloudConfig,
+  activeSlideId,
+  activeSlideConfig,
   forceMode = 'auto',
 }: Props) {
-  const showingNuvem = forceMode === 'slides' || (forceMode === 'auto' && wordcloudActive);
+  const showingNuvem =
+    forceMode === 'slides' || (forceMode === 'auto' && (activeSlideId != null || wordcloudActive));
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-primary via-primary-deep to-primary text-paper relative overflow-hidden">
       {/* Decorative gradient blobs */}
@@ -54,6 +59,8 @@ export function PublicEventShell({
               submissionsOpen={submissionsOpen}
               initialWordcloudActive={wordcloudActive}
               initialWordcloudConfig={wordcloudConfig}
+              initialActiveSlideId={activeSlideId}
+              initialActiveSlideConfig={activeSlideConfig}
               forceMode={forceMode}
             />
           </div>

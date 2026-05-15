@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { SubmissionForm } from '@/components/audience/SubmissionForm';
 import { WordCloudInput } from '@/components/audience/WordCloudInput';
+import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
 import { usePresenceJoin } from '@/hooks/usePresenceJoin';
 import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
@@ -13,6 +14,8 @@ type Props = {
   eventId: string;
   initialWordcloudActive: boolean;
   initialWordcloudConfig: WordcloudConfig;
+  initialActiveSlideId: string | null;
+  initialActiveSlideConfig: WordcloudConfig | null;
   submissionsOpen: boolean;
   /** 'auto' (default) segue o slide ativo; 'comments' força form de comentário;
    *  'slides' força nuvem (mostra 'aguardando slide' se nenhum ativo). */
@@ -27,6 +30,8 @@ export function AudienceInputSwitcher({
   eventId,
   initialWordcloudActive,
   initialWordcloudConfig,
+  initialActiveSlideId,
+  initialActiveSlideConfig,
   submissionsOpen,
   forceMode = 'auto',
 }: Props) {
@@ -51,11 +56,24 @@ export function AudienceInputSwitcher({
     };
   }, [eventId]);
 
-  const { active, config } = useWordcloudActive(eventId, {
+  // Legacy: lê events.wordcloud_active/_config (eventos antigos sem slides)
+  const { active: legacyActive, config: legacyConfig } = useWordcloudActive(eventId, {
     initialActive: initialWordcloudActive,
     initialConfig: initialWordcloudConfig,
     channel,
   });
+
+  // Novo: lê slide ativo + config dele em tempo real (escuta events.active_slide_id
+  // e slides UPDATE filtrado por event_id).
+  const { activeSlideId, config: slideConfig } = useActiveSlideConfig(eventId, {
+    initialActiveSlideId,
+    initialActiveConfig: initialActiveSlideConfig,
+    channel,
+  });
+
+  // Prioridade: novo (slide ativo) → fallback legacy.
+  const active = activeSlideId != null || legacyActive;
+  const config = (slideConfig ?? legacyConfig) as WordcloudConfig;
 
   // Always join presence (independent of wordcloud_active) so the count is
   // accurate even before the operator enables the nuvem and so this hook

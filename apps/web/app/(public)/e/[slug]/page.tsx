@@ -36,13 +36,26 @@ export default async function PublicEventPage({
 
   const { data: wcRow } = await supabase
     .from('events')
-    .select('wordcloud_active, wordcloud_config')
+    .select('wordcloud_active, wordcloud_config, active_slide_id')
     .eq('slug', slug)
     .maybeSingle();
 
   const wordcloudActive = wcRow?.wordcloud_active ?? false;
   const wordcloudConfig =
     (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
+  const activeSlideId = wcRow?.active_slide_id ?? null;
+
+  let activeSlideConfig: WordcloudConfig | null = null;
+  if (activeSlideId) {
+    const { data: slideRow } = await supabase
+      .from('slides')
+      .select('config, type')
+      .eq('id', activeSlideId)
+      .maybeSingle();
+    if (slideRow && slideRow.type === 'wordcloud') {
+      activeSlideConfig = (slideRow.config as WordcloudConfig | null) ?? null;
+    }
+  }
 
   const theme = await loadTheme(event.theme_id);
   if (!theme) notFound();
@@ -56,6 +69,8 @@ export default async function PublicEventPage({
         submissionsOpen={event.submissions_open}
         wordcloudActive={wordcloudActive}
         wordcloudConfig={wordcloudConfig}
+        activeSlideId={activeSlideId}
+        activeSlideConfig={activeSlideConfig}
         forceMode={forceMode}
       />
     </ThemeProvider>
