@@ -78,7 +78,23 @@ export default async function TelaoPage({
   // Reconstruída a partir do mesmo host do request.
   const joinUrl = `https://audience-opal.vercel.app/e/${slug}`;
 
-  const telao = (
+  // Preview da aba Telão (no admin) = sempre o card de comentário, ignora
+  // slide ativo da nuvem — a configuração visual dessa aba é específica
+  // do card de comentário.
+  const telaoClient = (
+    <TelaoClient
+      slug={slug}
+      eventId={event.event_id}
+      eventName={event.event_name}
+      config={config}
+      intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
+      preview={isPreview}
+    />
+  );
+
+  const telao = isPreview ? (
+    telaoClient
+  ) : (
     <TelaoWordcloudSwitcher
       eventId={event.event_id}
       initialWordcloudActive={wordcloudActive}
@@ -87,14 +103,7 @@ export default async function TelaoPage({
       showBackground={showWordcloudBackground}
       joinUrl={showWordcloudBackground ? joinUrl : undefined}
     >
-      <TelaoClient
-        slug={slug}
-        eventId={event.event_id}
-        eventName={event.event_name}
-        config={config}
-        intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
-        preview={isPreview}
-      />
+      {telaoClient}
     </TelaoWordcloudSwitcher>
   );
 
