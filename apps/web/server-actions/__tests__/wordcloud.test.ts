@@ -14,6 +14,7 @@ vi.mock('next/cache', () => ({
 }));
 
 import { setWordcloudActive, updateWordcloudConfig, resetWordcloud } from '../wordcloud';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 
 describe('setWordcloudActive', () => {
   it('returns ok with the updated row when RPC succeeds', async () => {
@@ -52,17 +53,26 @@ describe('setWordcloudActive', () => {
 
 describe('updateWordcloudConfig', () => {
   it('forwards the config jsonb verbatim', async () => {
-    let captured: { p_event_id?: string; p_config?: unknown } | null = null;
+    type Capture = { p_event_id?: string; p_config?: unknown };
+    let captured: Capture | null = null;
     server.use(
       http.post('*/rest/v1/rpc/update_wordcloud_config', async ({ request }) => {
-        captured = (await request.json()) as typeof captured;
+        captured = (await request.json()) as Capture;
         return HttpResponse.json({ id: 'x' });
       }),
     );
-    const cfg = { question: 'oi?', maxWordsPerSubmission: 1, palette: ['#fff'], filterStopwords: true, filterProfanity: true, showTotal: true };
+    const cfg: WordcloudConfig = {
+      question: 'oi?',
+      maxWordsPerSubmission: 1,
+      palette: ['#fff'],
+      filterStopwords: true,
+      filterProfanity: true,
+      showTotal: true,
+    };
     await updateWordcloudConfig('evt-z', cfg);
-    expect(captured?.p_event_id).toBe('evt-z');
-    expect(captured?.p_config).toEqual(cfg);
+    const c = captured as Capture | null;
+    expect(c?.p_event_id).toBe('evt-z');
+    expect(c?.p_config).toEqual(cfg);
   });
 });
 
