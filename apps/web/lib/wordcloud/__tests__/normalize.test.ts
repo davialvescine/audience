@@ -36,9 +36,8 @@ describe('normalize', () => {
   });
 
   it('handles non-string input gracefully', () => {
-    // @ts-expect-error - intentionally exercising the runtime guard
     expect(normalize(null)).toBe('');
-    // @ts-expect-error - intentionally exercising the runtime guard
     expect(normalize(undefined)).toBe('');
+    expect(normalize(123)).toBe('');
   });
 });
