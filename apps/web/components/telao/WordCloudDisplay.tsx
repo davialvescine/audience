@@ -3,7 +3,9 @@
 import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
+import { OnlineBadge } from '@/components/telao/OnlineBadge';
 import { WordCloudWord } from '@/components/telao/WordCloudWord';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { useWordCounts } from '@/hooks/useWordCounts';
 import { runLayout } from '@/lib/wordcloud/runLayout';
@@ -15,18 +17,30 @@ const HEADER_H = 160;
 const CLOUD_H = STAGE_H - HEADER_H;
 
 type ChannelLike = Parameters<typeof useWordCounts>[1]['channel'];
+type PresenceChannelLike = Parameters<typeof useOnlinePresence>[0]['channel'];
 
 type Props = {
   eventId: string;
   config: WordcloudConfig;
   initialEntries: WordEntry[];
   channel: ChannelLike;
+  /** Optional presence channel. When provided, renders the OnlineBadge. */
+  presenceChannel?: PresenceChannelLike | undefined;
 };
 
-export function WordCloudDisplay({ eventId, config, initialEntries, channel }: Props) {
+export function WordCloudDisplay({
+  eventId,
+  config,
+  initialEntries,
+  channel,
+  presenceChannel,
+}: Props) {
   const { entries, totalSubmissions } = useWordCounts(eventId, {
     channel,
     initialEntries,
+  });
+  const presence = useOnlinePresence({
+    channel: presenceChannel ?? makeNoopPresenceChannel(),
   });
   const [laid, setLaid] = useState<LaidOutWord[]>([]);
 
@@ -57,6 +71,8 @@ export function WordCloudDisplay({ eventId, config, initialEntries, channel }: P
 
   return (
     <div className="absolute inset-0 overflow-hidden text-paper">
+      {presenceChannel ? <OnlineBadge count={presence.count} /> : null}
+
       <header className="relative z-10 px-12 pt-12 text-center">
         <h1
           className="text-5xl md:text-6xl font-display font-bold drop-shadow-lg"
@@ -95,4 +111,25 @@ export function WordCloudDisplay({ eventId, config, initialEntries, channel }: P
       </div>
     </div>
   );
+}
+
+/**
+ * Used when no presence channel is supplied (eg unit tests). The hook expects
+ * a channel-like object, so we hand it a no-op that satisfies the interface
+ * without ever firing presence events.
+ */
+function makeNoopPresenceChannel(): PresenceChannelLike {
+  const self: PresenceChannelLike = {
+    on() {
+      return self;
+    },
+    subscribe() {
+      return self;
+    },
+    unsubscribe() {},
+    presenceState() {
+      return {};
+    },
+  };
+  return self;
 }
