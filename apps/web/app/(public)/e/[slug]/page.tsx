@@ -7,6 +7,7 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { loadTheme } from '@/lib/themes/loadTheme';
 
 type Params = { slug: string };
+type SearchParams = { mode?: string };
 
 const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
   question: 'Em uma palavra, o que você espera deste evento?',
@@ -17,8 +18,17 @@ const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
   showTotal: true,
 };
 
-export default async function PublicEventPage({ params }: { params: Promise<Params> }) {
+export default async function PublicEventPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>;
+  searchParams: Promise<SearchParams>;
+}) {
   const { slug } = await params;
+  const { mode } = await searchParams;
+  const forceMode: 'auto' | 'comments' | 'slides' =
+    mode === 'comments' ? 'comments' : mode === 'slides' ? 'slides' : 'auto';
   const supabase = getSupabaseServiceClient();
   const { data: events } = await supabase.rpc('get_event_by_slug', { p_slug: slug });
   const event = events?.[0];
@@ -46,6 +56,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
         submissionsOpen={event.submissions_open}
         wordcloudActive={wordcloudActive}
         wordcloudConfig={wordcloudConfig}
+        forceMode={forceMode}
       />
     </ThemeProvider>
   );

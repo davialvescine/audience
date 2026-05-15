@@ -156,8 +156,9 @@ export function SlidesTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides, activeId, isTauri, invoke]);
 
-  const [showQr, setShowQr] = useState(false);
-  const audienceShort = publicUrl.replace(/^https?:\/\//, '');
+  const [showQr, setShowQr] = useState<null | 'slides' | 'comments'>(null);
+  const slidesUrl = `${publicUrl}?mode=slides`;
+  const commentsUrl = `${publicUrl}?mode=comments`;
   const telaoFullUrl = `${telaoUrl}?mode=fullscreen`;
 
   const copy = (text: string) => {
@@ -166,44 +167,24 @@ export function SlidesTab({
 
   return (
     <div className="flex flex-col h-[calc(100vh-180px)] gap-3">
-      {/* Quick links: audiência (QR) + telão */}
-      <div className="grid md:grid-cols-2 gap-3">
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setShowQr((v) => !v)}
-            className="shrink-0 h-16 w-16 rounded-md bg-paper border border-ink/10 flex items-center justify-center hover:bg-ink/5"
-            title="Mostrar/esconder QR"
-          >
-            <QRCodeSVG value={publicUrl} size={56} level="M" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-wide font-bold text-primary mb-0.5">
-              Link da audiência
-            </p>
-            <p className="font-mono text-sm text-ink truncate" title={publicUrl}>
-              {audienceShort}
-            </p>
-            <div className="flex gap-2 mt-1">
-              <button
-                type="button"
-                onClick={() => copy(publicUrl)}
-                className="text-xs text-primary hover:underline"
-              >
-                Copiar
-              </button>
-              <a
-                href={publicUrl}
-                target="_blank"
-                rel="noopener"
-                className="text-xs text-primary hover:underline"
-              >
-                Abrir ↗
-              </a>
-            </div>
-          </div>
-        </div>
-
+      {/* Quick links: 3 cards — slides | comentário | telão */}
+      <div className="grid md:grid-cols-3 gap-3">
+        <LinkCard
+          color="primary"
+          label="Audiência · slides (nuvem)"
+          url={slidesUrl}
+          onShowQr={() => setShowQr((v) => (v === 'slides' ? null : 'slides'))}
+          showingQr={showQr === 'slides'}
+          onCopy={() => copy(slidesUrl)}
+        />
+        <LinkCard
+          color="secondary"
+          label="Audiência · comentário"
+          url={commentsUrl}
+          onShowQr={() => setShowQr((v) => (v === 'comments' ? null : 'comments'))}
+          showingQr={showQr === 'comments'}
+          onCopy={() => copy(commentsUrl)}
+        />
         <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 flex items-center gap-3">
           <div className="shrink-0 h-16 w-16 rounded-md bg-paper border border-ink/10 flex items-center justify-center text-2xl">
             🖥
@@ -212,7 +193,7 @@ export function SlidesTab({
             <p className="text-[10px] uppercase tracking-wide font-bold text-accent mb-0.5">
               Telão / Projetor
             </p>
-            <p className="font-mono text-sm text-ink truncate" title={telaoFullUrl}>
+            <p className="font-mono text-xs text-ink truncate" title={telaoFullUrl}>
               {telaoFullUrl.replace(/^https?:\/\//, '')}
             </p>
             <div className="flex gap-2 mt-1">
@@ -237,7 +218,7 @@ export function SlidesTab({
 
       {showQr ? (
         <div className="rounded-lg border border-ink/10 bg-paper p-4 flex items-center justify-center">
-          <QRCodeSVG value={publicUrl} size={240} level="M" />
+          <QRCodeSVG value={showQr === 'slides' ? slidesUrl : commentsUrl} size={240} level="M" />
         </div>
       ) : null}
 
@@ -336,6 +317,61 @@ export function SlidesTab({
               Editor pro tipo <code>{selected.type}</code> ainda não foi feito.
             </p>
           ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinkCard({
+  color,
+  label,
+  url,
+  onShowQr,
+  showingQr,
+  onCopy,
+}: {
+  color: 'primary' | 'secondary';
+  label: string;
+  url: string;
+  onShowQr: () => void;
+  showingQr: boolean;
+  onCopy: () => void;
+}) {
+  const borderClass =
+    color === 'primary' ? 'border-primary/20 bg-primary/5' : 'border-ink/20 bg-ink/5';
+  const labelClass = color === 'primary' ? 'text-primary' : 'text-ink/70';
+  return (
+    <div className={`rounded-lg border ${borderClass} p-3 flex items-center gap-3`}>
+      <button
+        type="button"
+        onClick={onShowQr}
+        className={`shrink-0 h-16 w-16 rounded-md bg-paper border ${
+          showingQr ? 'border-accent' : 'border-ink/10'
+        } flex items-center justify-center hover:bg-ink/5`}
+        title="Mostrar/esconder QR"
+      >
+        <QRCodeSVG value={url} size={56} level="M" />
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className={`text-[10px] uppercase tracking-wide font-bold mb-0.5 ${labelClass}`}>
+          {label}
+        </p>
+        <p className="font-mono text-xs text-ink truncate" title={url}>
+          {url.replace(/^https?:\/\//, '')}
+        </p>
+        <div className="flex gap-2 mt-1">
+          <button type="button" onClick={onCopy} className="text-xs text-primary hover:underline">
+            Copiar
+          </button>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener"
+            className="text-xs text-primary hover:underline"
+          >
+            Abrir ↗
+          </a>
         </div>
       </div>
     </div>

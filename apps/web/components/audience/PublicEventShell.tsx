@@ -8,6 +8,7 @@ type Props = {
   submissionsOpen: boolean;
   wordcloudActive: boolean;
   wordcloudConfig: WordcloudConfig;
+  forceMode?: 'auto' | 'comments' | 'slides' | undefined;
 };
 
 export function PublicEventShell({
@@ -17,7 +18,9 @@ export function PublicEventShell({
   submissionsOpen,
   wordcloudActive,
   wordcloudConfig,
+  forceMode = 'auto',
 }: Props) {
+  const showingNuvem = forceMode === 'slides' || (forceMode === 'auto' && wordcloudActive);
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-primary via-primary-deep to-primary text-paper relative overflow-hidden">
       {/* Decorative gradient blobs */}
@@ -38,7 +41,7 @@ export function PublicEventShell({
           </div>
           <h1 className="text-4xl sm:text-5xl font-display font-bold leading-tight">{eventName}</h1>
           <p className="mt-3 text-base sm:text-lg opacity-80">
-            {wordcloudActive ? 'Sua palavra na nuvem' : 'Mande sua mensagem'}
+            {showingNuvem ? 'Sua palavra na nuvem' : 'Mande sua mensagem'}
           </p>
         </div>
 
@@ -51,13 +54,14 @@ export function PublicEventShell({
               submissionsOpen={submissionsOpen}
               initialWordcloudActive={wordcloudActive}
               initialWordcloudConfig={wordcloudConfig}
+              forceMode={forceMode}
             />
           </div>
         </div>
 
         {/* Footer */}
         <div className="text-center mt-6 text-xs opacity-60">
-          {wordcloudActive
+          {showingNuvem
             ? '✨ Sua palavra entra na nuvem em tempo real'
             : '🔒 Sua mensagem passa por moderação antes de aparecer'}
         </div>
