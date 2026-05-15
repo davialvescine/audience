@@ -397,24 +397,11 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
         />
       </Section>
 
-      <div className="flex flex-col gap-1.5 px-1">
-        {onApplyToAll ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm('Aplicar essas configurações a todos os outros slides?')) {
-                onApplyToAll();
-              }
-            }}
-            className="text-xs text-primary hover:underline text-left"
-          >
-            Aplicar a todos os slides
-          </button>
-        ) : null}
-        <button
-          type="button"
+      <div className="rounded-md border border-ink/10 bg-paper p-3 flex flex-col gap-2">
+        <Button
+          size="sm"
+          variant="ghost"
           onClick={() => {
-            if (!window.confirm('Resetar este slide pro tema padrão (fundo branco)?')) return;
             setConfig((c) => ({
               ...c,
               background: { type: 'color', value: '#FFFFFF' },
@@ -422,10 +409,24 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
               textColorOverride: undefined,
             }));
           }}
-          className="text-xs text-ink/55 hover:text-primary hover:underline text-left"
+          className="justify-start"
         >
-          Resetar pro tema padrão
-        </button>
+          ⚪ Voltar pro tema branco (padrão)
+        </Button>
+        {onApplyToAll ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (window.confirm('Aplicar essas configurações a todos os outros slides?')) {
+                onApplyToAll();
+              }
+            }}
+            className="justify-start"
+          >
+            ↕ Aplicar a todos os slides
+          </Button>
+        ) : null}
       </div>
     </div>
   );

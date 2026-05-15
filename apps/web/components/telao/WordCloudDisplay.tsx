@@ -134,8 +134,10 @@ export function WordCloudDisplay({
     const prevBody = body.getAttribute('style') ?? '';
     Object.entries(style).forEach(([k, v]) => {
       const css = k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
-      html.style.setProperty(css, String(v));
-      body.style.setProperty(css, String(v));
+      // !important pra sobrescrever o `background: transparent !important`
+      // do telao/layout.tsx (necessário pros modos browser_source/H2R).
+      html.style.setProperty(css, String(v), 'important');
+      body.style.setProperty(css, String(v), 'important');
     });
     return () => {
       html.setAttribute('style', prevHtml);
