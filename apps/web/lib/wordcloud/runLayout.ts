@@ -3,23 +3,16 @@ import type { LaidOutWord, LayoutRequest, LayoutResponse } from './types';
 export type WorkerLike = {
   postMessage: (data: LayoutRequest) => void;
   terminate: () => void;
-  addEventListener: (
-    event: 'message',
-    cb: (e: { data: LayoutResponse }) => void,
-  ) => void;
-  removeEventListener: (
-    event: 'message',
-    cb: (e: { data: LayoutResponse }) => void,
-  ) => void;
+  addEventListener: (event: 'message', cb: (e: { data: LayoutResponse }) => void) => void;
+  removeEventListener: (event: 'message', cb: (e: { data: LayoutResponse }) => void) => void;
 };
 
 export type WorkerFactory = () => WorkerLike;
 
 const defaultFactory: WorkerFactory = () =>
-  new Worker(
-    new URL('../../workers/wordcloud.worker.ts', import.meta.url),
-    { type: 'module' },
-  ) as unknown as WorkerLike;
+  new Worker(new URL('../../workers/wordcloud.worker.ts', import.meta.url), {
+    type: 'module',
+  }) as unknown as WorkerLike;
 
 let singleton: WorkerLike | null = null;
 

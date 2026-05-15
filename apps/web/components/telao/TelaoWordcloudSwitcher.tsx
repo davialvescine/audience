@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 import type { WordEntry } from '@/lib/wordcloud/types';
 
 type ChannelLike = NonNullable<Parameters<typeof useWordcloudActive>[1]['channel']>;
+type PresenceChannelLike = Parameters<typeof useOnlinePresence>[0]['channel'];
 
 type Props = {
   eventId: string;
@@ -22,6 +24,9 @@ type Props = {
  * OR a live Realtime update), shows the WordCloudDisplay instead of the
  * normal comments-based TelaoClient. Both live in the same DOM tree so the
  * stage scaler / mode wrappers don't have to change.
+ *
+ * Also creates the audience-presence channel (shared with the /e/<slug>
+ * page) so WordCloudDisplay can render the OnlineBadge with the live count.
  */
 export function TelaoWordcloudSwitcher({
   eventId,
@@ -32,16 +37,26 @@ export function TelaoWordcloudSwitcher({
 }: Props) {
   const [eventsChannel, setEventsChannel] = useState<ChannelLike | undefined>(undefined);
   const [wordsChannel, setWordsChannel] = useState<ChannelLike | undefined>(undefined);
+  const [presenceChannel, setPresenceChannel] = useState<PresenceChannelLike | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
     const ev = rt.channel(`telao:${eventId}:events:${Date.now()}`) as unknown as ChannelLike;
     const wc = rt.channel(`telao:${eventId}:words:${Date.now()}`) as unknown as ChannelLike;
+    // Shared presence channel — audience joins the same name in
+    // AudienceInputSwitcher so this channel sees all the trackers.
+    const pres = rt.channel(`presence:event:${eventId}`, {
+      config: { presence: { key: '' } },
+    }) as unknown as PresenceChannelLike;
     setEventsChannel(ev);
     setWordsChannel(wc);
+    setPresenceChannel(pres);
     return () => {
       ev?.unsubscribe();
       wc?.unsubscribe();
+      pres?.unsubscribe();
     };
   }, [eventId]);
 
@@ -81,7 +96,8 @@ export function TelaoWordcloudSwitcher({
         config={config}
         initialEntries={initialWordcloudEntries}
         channel={wordsChannel}
+        presenceChannel={presenceChannel}
       />
     );
-  }, [active, children, config, eventId, initialWordcloudEntries, wordsChannel]);
+  }, [active, children, config, eventId, initialWordcloudEntries, wordsChannel, presenceChannel]);
 }

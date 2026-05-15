@@ -3,7 +3,23 @@ import { isStopword, STOPWORDS } from '../stopwords-pt-br';
 
 describe('pt-BR stopwords', () => {
   it('flags common articles, prepositions, and conjunctions', () => {
-    for (const w of ['a', 'o', 'de', 'da', 'do', 'que', 'e', 'um', 'uma', 'em', 'para', 'com', 'por', 'na', 'no']) {
+    for (const w of [
+      'a',
+      'o',
+      'de',
+      'da',
+      'do',
+      'que',
+      'e',
+      'um',
+      'uma',
+      'em',
+      'para',
+      'com',
+      'por',
+      'na',
+      'no',
+    ]) {
       expect(isStopword(w), `expected "${w}" to be a stopword`).toBe(true);
     }
   });

@@ -93,15 +93,11 @@ export function SubmissionCard({
           {!isPinned && status === 'approved' ? (
             <span className="text-amber-600 dark:text-amber-400 font-medium">aguardando</span>
           ) : null}
-          {displayCount > 0 ? (
-            <span className="text-ink/45">×{displayCount}</span>
-          ) : null}
+          {displayCount > 0 ? <span className="text-ink/45">×{displayCount}</span> : null}
         </div>
       </div>
       <p className="text-sm text-ink/85 break-words leading-snug">{comment}</p>
-      {errorMessage ? (
-        <p className="mt-1.5 text-[11px] text-danger">⚠ {errorMessage}</p>
-      ) : null}
+      {errorMessage ? <p className="mt-1.5 text-[11px] text-danger">⚠ {errorMessage}</p> : null}
 
       <div className="mt-2.5 flex gap-1.5 flex-wrap">
         {status === 'pending' ? (
@@ -123,7 +119,7 @@ export function SubmissionCard({
           </>
         ) : null}
 
-        {(status === 'approved' || status === 'sent') ? (
+        {status === 'approved' || status === 'sent' ? (
           <>
             <Btn
               kind="secondary"
@@ -160,7 +156,11 @@ export function SubmissionCard({
             <Btn
               kind="secondary"
               disabled={pending || !isPinned}
-              title={isPinned ? 'Solta a fixada (volta a rotação automática)' : 'Disponível só quando fixada'}
+              title={
+                isPinned
+                  ? 'Solta a fixada (volta a rotação automática)'
+                  : 'Disponível só quando fixada'
+              }
               onClick={() =>
                 start(async () => {
                   const r = await removeFromTelao(id);
@@ -193,9 +193,7 @@ export function SubmissionCard({
           </Btn>
         ) : null}
       </div>
-      {feedback ? (
-        <p className="mt-1.5 text-[11px] text-ink/55">{feedback}</p>
-      ) : null}
+      {feedback ? <p className="mt-1.5 text-[11px] text-ink/55">{feedback}</p> : null}
     </div>
   );
 }

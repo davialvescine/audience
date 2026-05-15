@@ -43,7 +43,9 @@ describe('ThemeToggle', () => {
     localStorage.setItem('theme', 'light');
     render(<ThemeToggle />);
     expect(screen.getByRole('radio', { name: 'Claro' }).getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByRole('radio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByRole('radio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe(
+      'false',
+    );
   });
 
   it('clicking dark applies dark class and persists', () => {

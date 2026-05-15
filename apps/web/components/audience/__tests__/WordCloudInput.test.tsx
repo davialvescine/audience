@@ -61,7 +61,10 @@ describe('WordCloudInput', () => {
   });
 
   it('shows translated error for rate_limited', async () => {
-    vi.spyOn(submitWordModule, 'submitWord').mockResolvedValue({ ok: false, error: 'rate_limited' });
+    vi.spyOn(submitWordModule, 'submitWord').mockResolvedValue({
+      ok: false,
+      error: 'rate_limited',
+    });
     const user = userEvent.setup();
     render(<WordCloudInput slug="evt" config={baseConfig} />);
     await user.type(screen.getByLabelText(/sua palavra/i), 'amor');

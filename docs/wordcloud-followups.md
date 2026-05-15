@@ -36,25 +36,17 @@ Após aplicar migrations:
 
 Quando wordcloud_active=true, mostrar no canto do telão um badge tipo "X pessoas online" via Supabase Realtime Presence.
 
-### Esboço de implementação (TDD)
+### Implementação
 
-**Files:**
-- `apps/web/hooks/useOnlinePresence.ts` — recebe `eventId`, retorna `{ count, isConnected }`. No telão monta um canal Realtime de **Presence** (não postgres_changes), faz `track({})` opcional, escuta `sync` e conta as presenças.
-- `apps/web/hooks/usePresenceJoin.ts` — usado pela audiência. Apenas faz `track({ joinedAt: Date.now() })` no mesmo canal pra contar como presente. Untrack no unmount.
-- `apps/web/components/telao/OnlineBadge.tsx` — pill flutuante no canto top-right do stage, fundo translúcido, ícone de pessoa, número grande.
-- Integrar no `WordCloudDisplay` e no `AudienceInputSwitcher`.
+Shipped:
+- `apps/web/hooks/useOnlinePresence.ts` — telão escuta `sync` e retorna `{ count, isConnected }`
+- `apps/web/hooks/usePresenceJoin.ts` — audiência faz `track({ clientId, joinedAt })` com UUID estável em localStorage (`audience.clientId`)
+- `apps/web/components/telao/OnlineBadge.tsx` — pill top-right com animação de pulso quando o count muda
+- Wire em `TelaoWordcloudSwitcher` e `AudienceInputSwitcher` no canal compartilhado `presence:event:<eventId>`
 
-**Testes:**
-- Property: `count >= 0` sempre.
-- Unit: hook conta presenças quando `sync` dispara com N entradas.
-- E2E (junto com wordcloud-flow): abre 3 contexts de audiência, telão mostra "3 online", fecha 1, mostra "2 online".
+Cobertura adicionada: 20 testes (5 fake-channel + 5 useOnlinePresence + 6 usePresenceJoin + 5 OnlineBadge - 1 já contado). Total geral pulou pra 193 testes.
 
-**Tradeoffs:**
-- Supabase Presence é "lossy" — pode atrasar uns segundos. Aceitável pra essa UX.
-- Cada conexão conta — se um celular abre 2 abas, conta 2. Resolver com client_id estável (UUID em localStorage) se virar problema.
-- O canal de Presence pode ser compartilhado com o `events` (mesma `channel(...)`)? Provavelmente sim — economiza WS connection. Verificar com Supabase docs.
-
-**Esforço estimado:** 1 task de hook + 1 task de componente + 1 task de wire = ~2h com TDD estrito.
+E2E ainda **não** cobre presença — adicionar ao `wordcloud-flow.spec.ts` quando habilitar os specs (item #2 acima).
 
 ## 4. Limpeza pós-deploy
 

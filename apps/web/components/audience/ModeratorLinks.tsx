@@ -61,14 +61,16 @@ export function ModeratorLinks({ eventId, baseUrl, existing }: Props) {
   };
 
   const activeTokens = existing.filter((t) => !t.revoked_at && new Date(t.expires_at) > new Date());
-  const inactiveTokens = existing.filter((t) => t.revoked_at || new Date(t.expires_at) <= new Date());
+  const inactiveTokens = existing.filter(
+    (t) => t.revoked_at || new Date(t.expires_at) <= new Date(),
+  );
 
   return (
     <Card>
       <h3 className="font-display text-lg mb-1">Link de moderador (sem login)</h3>
       <p className="text-sm text-ink/60 mb-4">
-        Gera um link tokenizado que voluntários podem abrir no celular pra moderar comentários
-        deste evento — sem precisar de cadastro.
+        Gera um link tokenizado que voluntários podem abrir no celular pra moderar comentários deste
+        evento — sem precisar de cadastro.
       </p>
 
       <div className="grid sm:grid-cols-3 gap-3 mb-3">
@@ -108,7 +110,9 @@ export function ModeratorLinks({ eventId, baseUrl, existing }: Props) {
         <div className="mt-4 p-3 rounded-md bg-success/10 border border-success/30">
           <p className="text-xs text-success font-medium mb-1">✓ Link gerado</p>
           <div className="flex gap-2 items-center">
-            <code className="flex-1 text-xs bg-paper p-2 rounded break-all">{justGenerated.url}</code>
+            <code className="flex-1 text-xs bg-paper p-2 rounded break-all">
+              {justGenerated.url}
+            </code>
             <Button size="sm" onClick={() => copyToClipboard(justGenerated.url)}>
               Copiar
             </Button>
@@ -129,7 +133,9 @@ export function ModeratorLinks({ eventId, baseUrl, existing }: Props) {
                   <p className="text-ink truncate">{t.display_name || '(sem nome)'}</p>
                   <p className="text-xs text-ink/55" suppressHydrationWarning>
                     Expira {new Date(t.expires_at).toLocaleString('pt-BR')}
-                    {t.last_used_at ? ` · Usado ${new Date(t.last_used_at).toLocaleString('pt-BR')}` : ' · Nunca usado'}
+                    {t.last_used_at
+                      ? ` · Usado ${new Date(t.last_used_at).toLocaleString('pt-BR')}`
+                      : ' · Nunca usado'}
                   </p>
                 </div>
                 <button
@@ -161,7 +167,9 @@ export function ModeratorLinks({ eventId, baseUrl, existing }: Props) {
             {inactiveTokens.map((t) => (
               <li key={t.id} className="py-2" suppressHydrationWarning>
                 {t.display_name || '(sem nome)'} —{' '}
-                {t.revoked_at ? `revogado ${new Date(t.revoked_at).toLocaleString('pt-BR')}` : `expirado ${new Date(t.expires_at).toLocaleString('pt-BR')}`}
+                {t.revoked_at
+                  ? `revogado ${new Date(t.revoked_at).toLocaleString('pt-BR')}`
+                  : `expirado ${new Date(t.expires_at).toLocaleString('pt-BR')}`}
               </li>
             ))}
           </ul>

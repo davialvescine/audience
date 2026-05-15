@@ -26,7 +26,13 @@ type Props = {
   isOwner: boolean;
 };
 
-export function EventMembers({ eventId, currentUserId, initialMembers, platformUsers, isOwner }: Props) {
+export function EventMembers({
+  eventId,
+  currentUserId,
+  initialMembers,
+  platformUsers,
+  isOwner,
+}: Props) {
   const [members, setMembers] = useState(initialMembers);
   const [email, setEmail] = useState('');
   const memberIds = new Set(members.map((m) => m.user_id));
@@ -80,7 +86,8 @@ export function EventMembers({ eventId, currentUserId, initialMembers, platformU
     <Card>
       <h3 className="font-display text-lg mb-1">Gestores do evento</h3>
       <p className="text-sm text-ink/60 mb-4">
-        Pessoas com acesso completo a este evento (moderar, configurar telão, ver compartilhamento). Pra dar acesso só de moderação sem login, usa o link de moderador abaixo.
+        Pessoas com acesso completo a este evento (moderar, configurar telão, ver compartilhamento).
+        Pra dar acesso só de moderação sem login, usa o link de moderador abaixo.
         {isOwner ? '' : ' Só o dono pode adicionar/remover.'}
       </p>
 
@@ -139,7 +146,11 @@ export function EventMembers({ eventId, currentUserId, initialMembers, platformU
             </Button>
           </div>
           <p className="text-xs text-ink/50 mt-2">
-            Não vê a pessoa na lista? Convide ela primeiro em <a href="/admin/users" className="text-primary hover:underline">/admin/users</a>.
+            Não vê a pessoa na lista? Convide ela primeiro em{' '}
+            <a href="/admin/users" className="text-primary hover:underline">
+              /admin/users
+            </a>
+            .
           </p>
         </>
       ) : null}

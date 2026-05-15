@@ -15,9 +15,7 @@ export function EventSettings({ eventId, initialName }: Props) {
   const [name, setName] = useState(initialName);
   const [pending, start] = useTransition();
   const [status, setStatus] = useState<
-    | { kind: 'idle' }
-    | { kind: 'saved' }
-    | { kind: 'error'; message: string }
+    { kind: 'idle' } | { kind: 'saved' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
 
   const dirty = name.trim() !== initialName.trim();
@@ -51,11 +49,7 @@ export function EventSettings({ eventId, initialName }: Props) {
             className="flex-1 h-10 px-3 rounded-md border border-ink/15 bg-transparent text-ink focus:border-primary focus:outline-none"
             placeholder="Nome do evento"
           />
-          <Button
-            onClick={submit}
-            loading={pending}
-            disabled={!dirty || tooShort || pending}
-          >
+          <Button onClick={submit} loading={pending} disabled={!dirty || tooShort || pending}>
             Salvar
           </Button>
         </div>

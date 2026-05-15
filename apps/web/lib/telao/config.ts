@@ -9,7 +9,14 @@ export type TelaoPosition =
   | 'bottom-center'
   | 'bottom-right';
 
-export type TelaoAnimation = 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'fade' | 'scale' | 'bounce';
+export type TelaoAnimation =
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'fade'
+  | 'scale'
+  | 'bounce';
 
 export type TelaoShadow = 'none' | 'subtle' | 'medium' | 'dramatic';
 
@@ -109,31 +116,60 @@ export function positionStyles(position: TelaoPosition): React.CSSProperties {
 
 export function shadowStyle(shadow: TelaoShadow): string {
   switch (shadow) {
-    case 'none': return 'none';
-    case 'subtle': return '0 4px 12px -2px rgba(0,0,0,0.18), 0 2px 4px -1px rgba(0,0,0,0.10)';
-    case 'medium': return '0 18px 38px -8px rgba(0,0,0,0.32), 0 8px 14px -6px rgba(0,0,0,0.18)';
-    case 'dramatic': return '0 30px 60px -12px rgba(0,0,0,0.55), 0 18px 30px -10px rgba(0,0,0,0.30)';
+    case 'none':
+      return 'none';
+    case 'subtle':
+      return '0 4px 12px -2px rgba(0,0,0,0.18), 0 2px 4px -1px rgba(0,0,0,0.10)';
+    case 'medium':
+      return '0 18px 38px -8px rgba(0,0,0,0.32), 0 8px 14px -6px rgba(0,0,0,0.18)';
+    case 'dramatic':
+      return '0 30px 60px -12px rgba(0,0,0,0.55), 0 18px 30px -10px rgba(0,0,0,0.30)';
   }
 }
 
 export function animationVariants(animation: TelaoAnimation) {
   switch (animation) {
     case 'slide-up':
-      return { initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 20 } };
+      return {
+        initial: { opacity: 0, y: 40 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 20 },
+      };
     case 'slide-down':
-      return { initial: { opacity: 0, y: -40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 } };
+      return {
+        initial: { opacity: 0, y: -40 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -20 },
+      };
     case 'slide-left':
-      return { initial: { opacity: 0, x: 60 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 30 } };
+      return {
+        initial: { opacity: 0, x: 60 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: 30 },
+      };
     case 'slide-right':
-      return { initial: { opacity: 0, x: -60 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -30 } };
+      return {
+        initial: { opacity: 0, x: -60 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: -30 },
+      };
     case 'fade':
       return { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
     case 'scale':
-      return { initial: { opacity: 0, scale: 0.85 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.95 } };
+      return {
+        initial: { opacity: 0, scale: 0.85 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.95 },
+      };
     case 'bounce':
       return {
         initial: { opacity: 0, y: 40, scale: 0.9 },
-        animate: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 260, damping: 18 } },
+        animate: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { type: 'spring' as const, stiffness: 260, damping: 18 },
+        },
         exit: { opacity: 0, y: 20, scale: 0.95 },
       };
   }

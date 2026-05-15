@@ -21,8 +21,8 @@ export function DispatchIntervalForm({ eventId, current }: Props) {
       <div>
         <p className="text-sm font-medium text-ink">Intervalo entre disparos</p>
         <p className="text-xs text-ink/60 mt-1">
-          Quanto tempo o sistema espera entre enviar uma mensagem e a próxima quando há fila.
-          Útil pra dar tempo da audiência ler cada mensagem no telão.
+          Quanto tempo o sistema espera entre enviar uma mensagem e a próxima quando há fila. Útil
+          pra dar tempo da audiência ler cada mensagem no telão.
         </p>
       </div>
 

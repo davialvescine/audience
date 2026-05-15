@@ -5,9 +5,7 @@ import { revalidatePath } from 'next/cache';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
-type Result =
-  | { ok: true }
-  | { ok: false; error: 'forbidden' | 'event_not_found' | 'unknown' };
+type Result = { ok: true } | { ok: false; error: 'forbidden' | 'event_not_found' | 'unknown' };
 
 function mapError(message: string | undefined): Result {
   const msg = message ?? '';

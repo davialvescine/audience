@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { SubmissionForm } from '@/components/audience/SubmissionForm';
 import { WordCloudInput } from '@/components/audience/WordCloudInput';
+import { usePresenceJoin } from '@/hooks/usePresenceJoin';
 import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 
@@ -16,6 +17,7 @@ type Props = {
 };
 
 type ChannelLike = Parameters<typeof useWordcloudActive>[1]['channel'];
+type PresenceChannelLike = Parameters<typeof usePresenceJoin>[0]['channel'];
 
 export function AudienceInputSwitcher({
   slug,
@@ -25,14 +27,23 @@ export function AudienceInputSwitcher({
   submissionsOpen,
 }: Props) {
   const [channel, setChannel] = useState<ChannelLike | undefined>(undefined);
+  const [presenceChannel, setPresenceChannel] = useState<PresenceChannelLike | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
-    const ch = rt
-      .channel(`event:${eventId}:wc:${Date.now()}`) as unknown as ChannelLike;
+    const ch = rt.channel(`event:${eventId}:wc:${Date.now()}`) as unknown as ChannelLike;
+    // Shared presence channel — must match the name used by
+    // TelaoWordcloudSwitcher so the telão sees this client's track().
+    const pres = rt.channel(`presence:event:${eventId}`, {
+      config: { presence: { key: '' } },
+    }) as unknown as PresenceChannelLike;
     setChannel(ch);
+    setPresenceChannel(pres);
     return () => {
       ch?.unsubscribe();
+      pres?.unsubscribe();
     };
   }, [eventId]);
 
@@ -40,6 +51,20 @@ export function AudienceInputSwitcher({
     initialActive: initialWordcloudActive,
     initialConfig: initialWordcloudConfig,
     channel,
+  });
+
+  // Always join presence (independent of wordcloud_active) so the count is
+  // accurate even before the operator enables the nuvem and so this hook
+  // keeps working with future slide types.
+  usePresenceJoin({
+    channel:
+      presenceChannel ??
+      ({
+        subscribe: () => ({}) as unknown,
+        unsubscribe: () => {},
+        track: () => Promise.resolve('ok' as const),
+        untrack: () => Promise.resolve('ok' as const),
+      } as unknown as PresenceChannelLike),
   });
 
   const view = useMemo(() => {

@@ -48,10 +48,7 @@ export async function setTelaoConfigOverride(
     next[mode] = config;
   }
 
-  const { error } = await supabase
-    .from('events')
-    .update({ telao_configs: next })
-    .eq('id', eventId);
+  const { error } = await supabase.from('events').update({ telao_configs: next }).eq('id', eventId);
   if (error) return { ok: false, error: 'Falha ao salvar override.' };
 
   revalidatePath(`/admin/events/${current.slug}`);

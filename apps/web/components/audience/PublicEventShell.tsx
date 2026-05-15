@@ -36,9 +36,7 @@ export function PublicEventShell({
           <div className="inline-block px-3 py-1 rounded-full bg-paper/10 backdrop-blur text-xs font-medium uppercase tracking-wider mb-4">
             Ao vivo no telão
           </div>
-          <h1 className="text-4xl sm:text-5xl font-display font-bold leading-tight">
-            {eventName}
-          </h1>
+          <h1 className="text-4xl sm:text-5xl font-display font-bold leading-tight">{eventName}</h1>
           <p className="mt-3 text-base sm:text-lg opacity-80">
             {wordcloudActive ? 'Sua palavra na nuvem' : 'Mande sua mensagem'}
           </p>

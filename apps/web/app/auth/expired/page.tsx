@@ -8,8 +8,8 @@ export default function AuthExpiredPage() {
       <Card className="w-full max-w-sm text-center">
         <h1 className="text-2xl font-display mb-2">Link expirou</h1>
         <p className="text-sm text-ink/70 mb-6">
-          Esse link de email não é mais válido. Pode ter expirado, sido usado, ou ser de
-          uma versão anterior do sistema.
+          Esse link de email não é mais válido. Pode ter expirado, sido usado, ou ser de uma versão
+          anterior do sistema.
         </p>
         <Link
           href={{ pathname: '/admin', query: { mode: 'forgot' } }}

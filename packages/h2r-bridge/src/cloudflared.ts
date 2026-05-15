@@ -15,7 +15,8 @@ const BRIDGE_DIR = join(homedir(), '.ucob-h2r-bridge');
 function binaryName(): string {
   const p = platform();
   const a = arch();
-  if (p === 'darwin') return a === 'arm64' ? 'cloudflared-darwin-arm64' : 'cloudflared-darwin-amd64';
+  if (p === 'darwin')
+    return a === 'arm64' ? 'cloudflared-darwin-arm64' : 'cloudflared-darwin-amd64';
   if (p === 'linux') return a === 'arm64' ? 'cloudflared-linux-arm64' : 'cloudflared-linux-amd64';
   if (p === 'win32') return 'cloudflared-windows-amd64.exe';
   throw new Error(`platform_unsupported: ${p}/${a}`);

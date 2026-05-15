@@ -26,18 +26,17 @@ export async function addEventMember(eventId: string, email: string): Promise<Re
   });
   if (error) {
     if (error.message.includes('user_not_found')) {
-      return { ok: false, error: 'Esse email não tem cadastro. Convide ele primeiro em /admin/users.' };
+      return {
+        ok: false,
+        error: 'Esse email não tem cadastro. Convide ele primeiro em /admin/users.',
+      };
     }
     if (error.message.includes('forbidden')) {
       return { ok: false, error: 'Só o dono do evento pode adicionar membros.' };
     }
     return { ok: false, error: 'Falha ao adicionar.' };
   }
-  const { data: ev } = await supabase
-    .from('events')
-    .select('slug')
-    .eq('id', eventId)
-    .single();
+  const { data: ev } = await supabase.from('events').select('slug').eq('id', eventId).single();
   if (ev) revalidatePath(`/admin/events/${ev.slug}`);
   return { ok: true };
 }
@@ -55,11 +54,7 @@ export async function removeEventMember(eventId: string, userId: string): Promis
     }
     return { ok: false, error: 'Falha ao remover.' };
   }
-  const { data: ev } = await supabase
-    .from('events')
-    .select('slug')
-    .eq('id', eventId)
-    .single();
+  const { data: ev } = await supabase.from('events').select('slug').eq('id', eventId).single();
   if (ev) revalidatePath(`/admin/events/${ev.slug}`);
   return { ok: true };
 }

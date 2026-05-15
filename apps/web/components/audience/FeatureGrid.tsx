@@ -61,7 +61,13 @@ export function FeatureGrid() {
           className="bg-surface rounded-xl p-7 border border-ink/10 dark:border-ink/15"
         >
           <div className={`h-11 w-11 rounded-lg flex items-center justify-center mb-5 ${f.iconBg}`}>
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               {f.icon}
             </svg>
           </div>

@@ -63,9 +63,7 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
       // Optimistic local update — polling will reconcile in <3s
       setItems((prev) =>
         prev.map((it) =>
-          it.id === id
-            ? { ...it, status: action === 'approve' ? 'approved' : 'rejected' }
-            : it,
+          it.id === id ? { ...it, status: action === 'approve' ? 'approved' : 'rejected' } : it,
         ),
       );
     });
@@ -112,9 +110,7 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
 
       <main className="max-w-2xl mx-auto px-4 py-4 space-y-3">
         {error ? (
-          <div className="p-3 rounded-md bg-danger/10 text-danger text-sm">
-            {error}
-          </div>
+          <div className="p-3 rounded-md bg-danger/10 text-danger text-sm">{error}</div>
         ) : null}
         {visible.length === 0 ? (
           <div className="text-center py-12 text-ink/55">

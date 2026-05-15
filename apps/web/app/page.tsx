@@ -30,8 +30,7 @@ export default function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 text-ink opacity-[0.04]"
           style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+            backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
             backgroundSize: '32px 32px',
           }}
         />
@@ -55,7 +54,9 @@ export default function HomePage() {
           <div className="font-display text-base text-primary font-bold">Audience</div>
           <div className="text-center md:text-right">
             <p className="font-medium text-ink/80">União Centro-Oeste Brasileira</p>
-            <p className="text-xs mt-0.5">© {new Date().getFullYear()} · Todos os direitos reservados</p>
+            <p className="text-xs mt-0.5">
+              © {new Date().getFullYear()} · Todos os direitos reservados
+            </p>
           </div>
         </div>
       </footer>

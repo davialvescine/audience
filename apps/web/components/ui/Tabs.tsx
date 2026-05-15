@@ -21,9 +21,7 @@ export function Tabs({ tabs, defaultTabId }: Props) {
               aria-selected={isActive}
               onClick={() => setActive(t.id)}
               className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition relative ${
-                isActive
-                  ? 'text-primary'
-                  : 'text-ink/60 hover:text-ink'
+                isActive ? 'text-primary' : 'text-ink/60 hover:text-ink'
               }`}
             >
               {t.label}

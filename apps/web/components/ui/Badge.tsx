@@ -12,10 +12,22 @@ const map: Record<SubmissionStatus, { label: string; cls: string }> = {
 export function Badge({ status }: { status: SubmissionStatus }) {
   const { label, cls } = map[status];
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-sm text-xs font-medium ${cls}`}>{label}</span>
+    <span className={`inline-block px-2 py-0.5 rounded-sm text-xs font-medium ${cls}`}>
+      {label}
+    </span>
   );
 }
 
-export function CustomBadge({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <span className={`inline-block px-2 py-0.5 rounded-sm text-xs font-medium ${className}`}>{children}</span>;
+export function CustomBadge({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-sm text-xs font-medium ${className}`}>
+      {children}
+    </span>
+  );
 }

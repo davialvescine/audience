@@ -23,9 +23,12 @@ export async function POST(req: Request) {
 
   if (error) {
     const msg = error.message;
-    if (msg.includes('code_not_found')) return Response.json({ error: 'code_not_found' }, { status: 404 });
-    if (msg.includes('code_consumed')) return Response.json({ error: 'code_consumed' }, { status: 410 });
-    if (msg.includes('code_expired')) return Response.json({ error: 'code_expired' }, { status: 410 });
+    if (msg.includes('code_not_found'))
+      return Response.json({ error: 'code_not_found' }, { status: 404 });
+    if (msg.includes('code_consumed'))
+      return Response.json({ error: 'code_consumed' }, { status: 410 });
+    if (msg.includes('code_expired'))
+      return Response.json({ error: 'code_expired' }, { status: 410 });
     return Response.json({ error: 'redeem_failed' }, { status: 500 });
   }
 

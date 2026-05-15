@@ -103,7 +103,12 @@ describe('useWordcloudActive', () => {
     ch.on('postgres_changes', { table: 'events' }, () => {
       called = true;
     });
-    ch.emit({ eventType: 'UPDATE', new: { id: 'evt-1', wordcloud_active: true, wordcloud_config: baseConfig }, old: {}, table: 'events' });
+    ch.emit({
+      eventType: 'UPDATE',
+      new: { id: 'evt-1', wordcloud_active: true, wordcloud_config: baseConfig },
+      old: {},
+      table: 'events',
+    });
     expect(called).toBe(true);
   });
 });

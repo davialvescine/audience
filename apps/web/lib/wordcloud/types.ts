@@ -23,6 +23,4 @@ export type LayoutRequest = {
   paletteSize: number;
 };
 
-export type LayoutResponse =
-  | { ok: true; words: LaidOutWord[] }
-  | { ok: false; error: string };
+export type LayoutResponse = { ok: true; words: LaidOutWord[] } | { ok: false; error: string };

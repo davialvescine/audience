@@ -9,9 +9,7 @@ const makeItem = (id: string, status: 'pending' | 'sent' | 'approved' | 'rejecte
 
 describe('detectNewPending', () => {
   it('returns 0 when no items are pending', () => {
-    expect(
-      detectNewPending([], [makeItem('1', 'sent'), makeItem('2', 'rejected')]),
-    ).toBe(0);
+    expect(detectNewPending([], [makeItem('1', 'sent'), makeItem('2', 'rejected')])).toBe(0);
   });
 
   it('returns count of pending ids that are new since prevSeen', () => {
@@ -21,9 +19,9 @@ describe('detectNewPending', () => {
   });
 
   it('returns 0 when all pending ids were already seen', () => {
-    expect(
-      detectNewPending(['x', 'y'], [makeItem('x', 'pending'), makeItem('y', 'pending')]),
-    ).toBe(0);
+    expect(detectNewPending(['x', 'y'], [makeItem('x', 'pending'), makeItem('y', 'pending')])).toBe(
+      0,
+    );
   });
 
   it('does not count pending items whose id was seen but status changed back', () => {

@@ -40,11 +40,7 @@ export default async function AdminEventsPage() {
               e.h2r_last_heartbeat &&
               Date.now() - new Date(e.h2r_last_heartbeat).getTime() < 90_000;
             return (
-              <Link
-                key={e.id}
-                href={`/admin/events/${e.slug}`}
-                className="block group"
-              >
+              <Link key={e.id} href={`/admin/events/${e.slug}`} className="block group">
                 <Card className="h-full transition hover:shadow-md hover:border-accent/50 dark:hover:border-accent/40">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <h2 className="font-display text-xl text-ink group-hover:text-primary transition">
@@ -65,9 +61,7 @@ export default async function AdminEventsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="font-mono text-xs text-ink/70 mb-2">
-                    /e/{e.slug}
-                  </p>
+                  <p className="font-mono text-xs text-ink/70 mb-2">/e/{e.slug}</p>
                   <p className="text-xs text-ink/50">
                     {e.submissions_open ? 'Aberto pra submissões' : 'Submissões pausadas'}
                   </p>

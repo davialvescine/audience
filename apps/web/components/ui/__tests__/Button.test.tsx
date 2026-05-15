@@ -26,7 +26,11 @@ describe('Button', () => {
   it('shows loading state and is non-interactive', async () => {
     const onClick = vi.fn();
     const user = userEvent.setup();
-    render(<Button loading onClick={onClick}>x</Button>);
+    render(
+      <Button loading onClick={onClick}>
+        x
+      </Button>,
+    );
     await user.click(screen.getByRole('button'));
     expect(onClick).not.toHaveBeenCalled();
   });

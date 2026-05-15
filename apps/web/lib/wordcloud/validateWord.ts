@@ -12,10 +12,7 @@ export type ValidateResult =
   | { ok: true; word: string }
   | { ok: false; reason: 'empty' | 'too_long' | 'stopword' | 'profanity' };
 
-export function validateWord(
-  input: unknown,
-  opts: ValidateOptions = {},
-): ValidateResult {
+export function validateWord(input: unknown, opts: ValidateOptions = {}): ValidateResult {
   const filterStopwords = opts.filterStopwords ?? true;
   const filterProfanity = opts.filterProfanity ?? true;
   const maxLength = opts.maxLength ?? 30;

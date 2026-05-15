@@ -4,15 +4,11 @@ import { normalize } from '../normalize';
 
 describe('normalize properties', () => {
   it('is idempotent (normalize ∘ normalize = normalize)', () => {
-    fc.assert(
-      fc.property(fc.string(), (s) => normalize(normalize(s)) === normalize(s)),
-    );
+    fc.assert(fc.property(fc.string(), (s) => normalize(normalize(s)) === normalize(s)));
   });
 
   it('never grows the input length', () => {
-    fc.assert(
-      fc.property(fc.string(), (s) => normalize(s).length <= s.length),
-    );
+    fc.assert(fc.property(fc.string(), (s) => normalize(s).length <= s.length));
   });
 
   it('output has no leading or trailing ASCII whitespace', () => {
@@ -25,14 +21,10 @@ describe('normalize properties', () => {
   });
 
   it('output is its own lowercase', () => {
-    fc.assert(
-      fc.property(fc.string(), (s) => normalize(s) === normalize(s).toLowerCase()),
-    );
+    fc.assert(fc.property(fc.string(), (s) => normalize(s) === normalize(s).toLowerCase()));
   });
 
   it('output contains no consecutive whitespace runs', () => {
-    fc.assert(
-      fc.property(fc.string(), (s) => !/ {2,}/.test(normalize(s))),
-    );
+    fc.assert(fc.property(fc.string(), (s) => !/ {2,}/.test(normalize(s))));
   });
 });

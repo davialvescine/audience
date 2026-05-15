@@ -13,6 +13,7 @@
     "test": "pnpm -r test",
     "format": "prettier --write \"**/*.{ts,tsx,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json}\"",
+    "ci:local": "pnpm format:check && pnpm typecheck && pnpm --filter @audience/web test && pnpm --filter @audience/web build",
     "db:types": "supabase gen types typescript --linked > packages/shared-types/src/database.ts"
   },
   "devDependencies": {

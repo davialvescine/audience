@@ -64,7 +64,9 @@ export async function generateModeratorToken(input: {
   return { ok: true, data: { token: data.token, expiresAt: data.expires_at } };
 }
 
-export async function revokeModeratorToken(tokenId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function revokeModeratorToken(
+  tokenId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   await requireUser();
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase

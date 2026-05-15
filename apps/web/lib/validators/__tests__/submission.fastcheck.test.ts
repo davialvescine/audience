@@ -4,15 +4,11 @@ import { sanitizeText } from '../submission';
 
 describe('sanitizeText properties', () => {
   it('is idempotent', () => {
-    fc.assert(
-      fc.property(fc.string(), (s) => sanitizeText(sanitizeText(s)) === sanitizeText(s)),
-    );
+    fc.assert(fc.property(fc.string(), (s) => sanitizeText(sanitizeText(s)) === sanitizeText(s)));
   });
 
   it('never grows the input length', () => {
-    fc.assert(
-      fc.property(fc.string(), (s) => sanitizeText(s).length <= s.length),
-    );
+    fc.assert(fc.property(fc.string(), (s) => sanitizeText(s).length <= s.length));
   });
 
   it('output has no leading or trailing whitespace', () => {

@@ -19,11 +19,7 @@ const ALLOWED_NEXT: ReadonlySet<Route> = new Set([
  * router.refresh() — at which point getUser() succeeds and we redirect to the
  * appropriate flow.
  */
-export default async function AuthCallbackPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function AuthCallbackPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const supabase = await getSupabaseServerClient();
   const {
