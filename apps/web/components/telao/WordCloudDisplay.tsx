@@ -19,8 +19,8 @@ export function backgroundStyle(
   if (bg.type === 'gradient')
     return { background: `linear-gradient(135deg, ${bg.from}, ${bg.to})` };
   if (bg.type === 'image') {
-    const opacity = bg.opacity ?? 1;
-    const blur = bg.blurPx ?? 0;
+    // Background-only style — sem filter/opacity, que são aplicados na
+    // camada separada `<BackgroundLayer>` pra não afetar o texto.
     const fit = bg.fit ?? 'cover';
     return {
       backgroundImage: `url(${JSON.stringify(bg.url)})`,
@@ -28,8 +28,6 @@ export function backgroundStyle(
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
       backgroundColor: '#0A2540',
-      filter: blur > 0 ? `blur(${blur}px)` : undefined,
-      opacity,
     };
   }
   return undefined;
@@ -152,6 +150,10 @@ export function WordCloudDisplay({
   const subtleColor = lightBg ? 'rgba(10,24,52,0.6)' : 'rgba(255,255,255,0.7)';
   const responsesMode = config.showResponsesMode ?? 'instant';
   const hideResponses = responsesMode === 'private';
+  // Blur/opacity da imagem ficam isolados numa camada de fundo, não afetam texto.
+  const imageBg = config.background?.type === 'image' ? config.background : null;
+  const imageBlur = imageBg?.blurPx ?? 0;
+  const imageOpacity = imageBg?.opacity ?? 1;
 
   const joinLabel = (() => {
     if (!joinUrl) return null;
@@ -166,7 +168,22 @@ export function WordCloudDisplay({
   const showQr = config.showQr === true && !!joinUrl && showBackground;
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ ...bgStyle, color: textColor }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ color: textColor }}>
+      {/* Camada de fundo isolada — blur/opacity ficam aqui, não afetam o
+          texto da pergunta nem as palavras da nuvem. */}
+      {bgStyle ? (
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            ...bgStyle,
+            filter: imageBlur > 0 ? `blur(${imageBlur}px)` : undefined,
+            opacity: imageOpacity,
+            // Pequena ampliação pra que o blur não revele bordas brancas.
+            transform: imageBlur > 0 ? 'scale(1.05)' : undefined,
+          }}
+        />
+      ) : null}
       {/* QR code lateral pra participante entrar — estilo Mentimeter */}
       {showQr && joinUrl ? (
         <div
