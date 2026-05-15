@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 type ChannelLike = {
   on: (
@@ -79,6 +80,50 @@ export function useActiveSlideConfig(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, opts.channel]);
+
+  // Polling fallback — refetch active slide + config every 3s. Caso o
+  // Realtime falhe (firewall, CSP, transport, etc.), o celular ainda
+  // pega as mudanças do operador em ~3s.
+  useEffect(() => {
+    let cancelled = false;
+    const sb = getSupabaseBrowserClient();
+    const poll = async () => {
+      const { data: ev } = await sb
+        .from('events')
+        .select('active_slide_id')
+        .eq('id', eventId)
+        .maybeSingle();
+      if (cancelled) return;
+      const newActiveId = (ev as { active_slide_id?: string | null } | null)?.active_slide_id ?? null;
+      if (newActiveId !== activeSlideIdRef.current) {
+        setActiveSlideId(newActiveId);
+        activeSlideIdRef.current = newActiveId;
+      }
+      if (newActiveId) {
+        const { data: slideRow } = await sb
+          .from('slides')
+          .select('config')
+          .eq('id', newActiveId)
+          .maybeSingle();
+        if (cancelled) return;
+        const cfg = (slideRow as { config?: WordcloudConfig } | null)?.config;
+        if (cfg) {
+          // Só atualiza se realmente mudou (evita re-render desnecessário)
+          setConfig((prev) =>
+            JSON.stringify(prev) === JSON.stringify(cfg) ? prev : cfg,
+          );
+        }
+      } else {
+        setConfig(null);
+      }
+    };
+    void poll();
+    const id = setInterval(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [eventId]);
 
   return { activeSlideId, config };
 }
