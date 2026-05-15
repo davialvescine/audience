@@ -11,12 +11,14 @@ import { ModeratorLinks } from '@/components/audience/ModeratorLinks';
 import { QueueControls } from '@/components/audience/QueueControls';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
 import { ShareCard } from '@/components/audience/ShareCard';
+import { SlidesTab } from '@/components/audience/SlidesTab';
 import { TelaoTab } from '@/components/audience/TelaoTab';
 import { WordcloudTab } from '@/components/audience/WordcloudTab';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { requireUser } from '@/lib/auth/requireUser';
+import type { Slide } from '@/lib/slides/types';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
 
@@ -54,12 +56,17 @@ export default async function EventModerationPage({
 
   const { data: wcRow } = await supabase
     .from('events')
-    .select('wordcloud_active, wordcloud_config')
+    .select('wordcloud_active, wordcloud_config, active_slide_id')
     .eq('id', event.id)
     .maybeSingle();
   const wordcloudActive = wcRow?.wordcloud_active ?? false;
   const wordcloudConfig =
     (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
+  const activeSlideId = wcRow?.active_slide_id ?? null;
+
+  const { data: slidesRaw } = await supabase.rpc('list_slides', { p_event_id: event.id });
+  const slides = (slidesRaw ?? []) as Slide[];
+
   const isOwner = event.owner_id === user.id;
 
   const { data: members } = await supabase.rpc('list_event_members', {
@@ -137,8 +144,22 @@ export default async function EventModerationPage({
       ),
     },
     {
+      id: 'slides',
+      label: activeSlideId ? 'Slides ●' : 'Slides',
+      content: (
+        <SlidesTab
+          eventId={event.id}
+          slug={event.slug}
+          publicUrl={publicUrl}
+          telaoUrl={`${proto}://${host}/telao/${event.slug}`}
+          initialSlides={slides}
+          initialActiveSlideId={activeSlideId}
+        />
+      ),
+    },
+    {
       id: 'wordcloud',
-      label: wordcloudActive ? 'Nuvem ●' : 'Nuvem',
+      label: wordcloudActive ? 'Nuvem (legado) ●' : 'Nuvem (legado)',
       content: (
         <WordcloudTab
           eventId={event.id}
