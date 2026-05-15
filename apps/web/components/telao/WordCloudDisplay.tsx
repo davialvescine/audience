@@ -34,7 +34,6 @@ export function backgroundStyle(
   return undefined;
 }
 
-/** Relative luminance of a hex color (#rrggbb). */
 function luminance(hex: string): number {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return 0;
@@ -45,22 +44,17 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** Returns true when text should be dark (because the background is light). */
 export function isBackgroundLight(bg: WordcloudBackground | undefined): boolean {
   if (!bg || bg.type === 'none') return false;
   if (bg.type === 'color') return luminance(bg.value) > 0.6;
-  if (bg.type === 'gradient') {
-    return luminance(bg.from) > 0.6 && luminance(bg.to) > 0.6;
-  }
-  // image: assume escuro por segurança (texto branco com sombra)
+  if (bg.type === 'gradient') return luminance(bg.from) > 0.6 && luminance(bg.to) > 0.6;
   return false;
 }
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
-const TOP_BAR_H = 80;
-const HEADER_H = 200;
-const CLOUD_H = STAGE_H - TOP_BAR_H - HEADER_H;
+const HEADER_H = 220;
+const CLOUD_H = STAGE_H - HEADER_H;
 
 type ChannelLike = Parameters<typeof useWordCounts>[1]['channel'];
 type PresenceChannelLike = Parameters<typeof useOnlinePresence>[0]['channel'];
@@ -70,14 +64,8 @@ type Props = {
   config: WordcloudConfig;
   initialEntries: WordEntry[];
   channel: ChannelLike;
-  /** Optional presence channel. When provided, shows the online viewer count. */
   presenceChannel?: PresenceChannelLike | undefined;
-  /**
-   * When true, apply the configured background. When false (Browser Source
-   * / OBS overlay), keep transparent.
-   */
   showBackground?: boolean | undefined;
-  /** Public URL pra audiência entrar, mostrado no topo do telão tela cheia. */
   joinUrl?: string | undefined;
 };
 
@@ -127,10 +115,7 @@ export function WordCloudDisplay({
   const lightBg = showBackground && isBackgroundLight(config.background);
   const textColor = lightBg ? '#0A1834' : '#FFFFFF';
   const subtleColor = lightBg ? 'rgba(10,24,52,0.6)' : 'rgba(255,255,255,0.7)';
-  const topBarBg = lightBg ? 'rgba(10,24,52,0.04)' : 'rgba(255,255,255,0.08)';
-  const topBarBorder = lightBg ? 'rgba(10,24,52,0.08)' : 'rgba(255,255,255,0.12)';
 
-  // Cleanup: remove o hostname do joinUrl pra ficar tipo "audience-opal.vercel.app/e/<slug>".
   const joinLabel = (() => {
     if (!joinUrl) return null;
     try {
@@ -143,59 +128,16 @@ export function WordCloudDisplay({
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ ...bgStyle, color: textColor }}>
-      {/* Top bar: link pra entrar (esquerda) + total/online (direita) */}
-      {showBackground && (joinLabel || presenceChannel) ? (
-        <div
-          className="absolute left-0 right-0 top-0 flex items-center justify-between px-10"
-          style={{
-            height: TOP_BAR_H,
-            background: topBarBg,
-            borderBottom: `1px solid ${topBarBorder}`,
-          }}
-        >
-          {joinLabel ? (
-            <div className="flex items-center gap-3 text-2xl">
-              <span style={{ color: subtleColor }}>Pra participar, acesse:</span>
-              <span className="font-mono font-semibold">{joinLabel}</span>
-            </div>
-          ) : (
-            <span />
-          )}
-          {presenceChannel && presence.count > 0 ? (
-            <div className="flex items-center gap-2 text-xl">
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <span className="font-bold tabular-nums">{presence.count}</span>
-              <span style={{ color: subtleColor }}>
-                {presence.count === 1 ? 'pessoa online' : 'pessoas online'}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* Pergunta */}
+      {/* Pergunta colada no topo, sem barra */}
       <header
-        className="relative z-10 px-12 text-center"
-        style={{ paddingTop: showBackground ? TOP_BAR_H + 40 : 48, height: HEADER_H + 40 }}
+        className="relative z-10 px-16 text-center flex items-start justify-center"
+        style={{ height: HEADER_H, paddingTop: 56 }}
       >
         <h1
           className="font-display font-bold tracking-tight"
           style={{
             fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: 88,
+            fontSize: 96,
             lineHeight: 1.05,
             color: textColor,
             textShadow: lightBg ? 'none' : '0 2px 12px rgba(0,0,0,0.35)',
@@ -203,18 +145,10 @@ export function WordCloudDisplay({
         >
           {config.question}
         </h1>
-        {config.showTotal && entries.length > 0 ? (
-          <p className="mt-4 text-2xl" style={{ color: subtleColor }}>
-            {totalSubmissions} palavras enviadas
-          </p>
-        ) : null}
       </header>
 
-      {/* Nuvem */}
-      <div
-        className="absolute left-0 right-0"
-        style={{ top: TOP_BAR_H + HEADER_H, height: CLOUD_H }}
-      >
+      {/* Nuvem ocupa tudo abaixo da pergunta */}
+      <div className="absolute left-0 right-0" style={{ top: HEADER_H, height: CLOUD_H }}>
         <AnimatePresence>
           {laid.map((w) => (
             <WordCloudWord
@@ -232,10 +166,57 @@ export function WordCloudDisplay({
             className="absolute inset-0 flex items-center justify-center text-3xl text-center px-12"
             style={{ color: subtleColor }}
           >
-            Aguardando palavras... Envie pelo celular ↓
+            Aguardando palavras...
           </div>
         ) : null}
       </div>
+
+      {/* Footer flutuante discreto */}
+      {showBackground && joinLabel ? (
+        <div
+          className="absolute bottom-6 left-8 right-8 flex items-end justify-between text-lg pointer-events-none"
+          style={{ color: subtleColor }}
+        >
+          <span>
+            Acesse:{' '}
+            <span className="font-mono font-semibold" style={{ color: textColor }}>
+              {joinLabel}
+            </span>
+          </span>
+          <div className="flex items-center gap-4">
+            {config.showTotal && totalSubmissions > 0 ? (
+              <span>
+                <span className="font-bold tabular-nums" style={{ color: textColor }}>
+                  {totalSubmissions}
+                </span>{' '}
+                palavras
+              </span>
+            ) : null}
+            {presenceChannel && presence.count > 0 ? (
+              <span className="flex items-center gap-2">
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+                <span className="font-bold tabular-nums" style={{ color: textColor }}>
+                  {presence.count}
+                </span>{' '}
+                online
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
