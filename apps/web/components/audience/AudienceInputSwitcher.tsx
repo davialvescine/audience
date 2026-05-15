@@ -35,23 +35,27 @@ export function AudienceInputSwitcher({
   submissionsOpen,
   forceMode = 'auto',
 }: Props) {
-  const [channel, setChannel] = useState<ChannelLike | undefined>(undefined);
+  const [legacyChannel, setLegacyChannel] = useState<ChannelLike | undefined>(undefined);
+  const [slidesChannel, setSlidesChannel] = useState<ChannelLike | undefined>(undefined);
   const [presenceChannel, setPresenceChannel] = useState<PresenceChannelLike | undefined>(
     undefined,
   );
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
-    const ch = rt.channel(`event:${eventId}:wc:${Date.now()}`) as unknown as ChannelLike;
-    // Shared presence channel — must match the name used by
-    // TelaoWordcloudSwitcher so the telão sees this client's track().
+    // 1 canal Realtime POR hook — Supabase não deixa adicionar .on() depois
+    // do primeiro subscribe(). Hooks separados precisam de canais separados.
+    const legacy = rt.channel(`event:${eventId}:legacy:${Date.now()}`) as unknown as ChannelLike;
+    const slides = rt.channel(`event:${eventId}:slides:${Date.now()}`) as unknown as ChannelLike;
     const pres = rt.channel(`presence:event:${eventId}`, {
       config: { presence: { key: '' } },
     }) as unknown as PresenceChannelLike;
-    setChannel(ch);
+    setLegacyChannel(legacy);
+    setSlidesChannel(slides);
     setPresenceChannel(pres);
     return () => {
-      ch?.unsubscribe();
+      legacy?.unsubscribe();
+      slides?.unsubscribe();
       pres?.unsubscribe();
     };
   }, [eventId]);
@@ -60,7 +64,7 @@ export function AudienceInputSwitcher({
   const { active: legacyActive, config: legacyConfig } = useWordcloudActive(eventId, {
     initialActive: initialWordcloudActive,
     initialConfig: initialWordcloudConfig,
-    channel,
+    channel: legacyChannel,
   });
 
   // Novo: lê slide ativo + config dele em tempo real (escuta events.active_slide_id
@@ -68,7 +72,7 @@ export function AudienceInputSwitcher({
   const { activeSlideId, config: slideConfig } = useActiveSlideConfig(eventId, {
     initialActiveSlideId,
     initialActiveConfig: initialActiveSlideConfig,
-    channel,
+    channel: slidesChannel,
   });
 
   // Prioridade: novo (slide ativo) → fallback legacy.
