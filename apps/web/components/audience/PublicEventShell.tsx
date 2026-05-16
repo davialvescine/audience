@@ -46,7 +46,10 @@ export function PublicEventShell({
         aria-hidden="true"
       />
 
-      <div className="relative max-w-md mx-auto px-5 pt-12 pb-8 min-h-[100svh] flex flex-col">
+      <div
+        className="relative max-w-md mx-auto px-5 pt-12 min-h-[100svh] flex flex-col"
+        style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+      >
         {/* Hero */}
         <div className="text-center mb-8">
           <div className="inline-block px-3 py-1 rounded-full bg-paper/10 backdrop-blur text-xs font-medium uppercase tracking-wider mb-4">

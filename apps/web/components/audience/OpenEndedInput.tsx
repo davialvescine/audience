@@ -177,8 +177,10 @@ export function OpenEndedInput({
             onChange={(e) => setText(e.target.value.slice(0, maxLength))}
             placeholder="Compartilhe sua resposta…"
             rows={3}
-            className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+            // text-base (16px) impede iOS Safari de zoomar ao focar.
+            className="w-full rounded-lg border border-ink/15 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-accent resize-none"
             disabled={pending}
+            autoFocus
           />
           <div className="flex items-center justify-between text-xs text-ink/55">
             <span>
@@ -197,7 +199,8 @@ export function OpenEndedInput({
               onChange={(e) => setAuthorName(e.target.value)}
               placeholder="Seu nome (opcional)"
               maxLength={60}
-              className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              autoComplete="name"
+              className="w-full h-11 rounded-lg border border-ink/15 px-3 text-base focus:outline-none focus:ring-2 focus:ring-accent"
               disabled={pending}
             />
           ) : null}
@@ -219,26 +222,29 @@ export function OpenEndedInput({
           <p className="text-xs uppercase tracking-wider text-ink/55 font-semibold mb-2">
             Respostas {allowVoting ? '— curta as melhores' : 'recebidas'}
           </p>
-          <ul className="space-y-2 max-h-80 overflow-y-auto pr-1">
+          {/* Sem max-h aqui — deixar a página rolar naturalmente no mobile.
+              Lista bounded vira scroll-dentro-de-scroll, péssimo no touch. */}
+          <ul className="space-y-2">
             {responses.map((r) => (
               <li
                 key={r.id}
-                className="rounded-lg bg-ink/[0.04] px-3 py-2 text-sm flex items-start gap-2"
+                className="rounded-lg bg-ink/[0.04] px-3 py-2.5 flex items-start gap-2"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-ink/85 break-words">{r.text}</p>
+                  <p className="text-[15px] text-ink/85 break-words leading-snug">{r.text}</p>
                   {r.authorName ? (
-                    <p className="text-xs text-ink/45 mt-0.5">— {r.authorName}</p>
+                    <p className="text-xs text-ink/45 mt-1">— {r.authorName}</p>
                   ) : null}
                 </div>
                 {allowVoting ? (
                   <button
                     type="button"
                     onClick={() => handleVote(r.id)}
-                    className={`shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition ${
+                    // h-9 min-w-[44px] = tap target ≥44px (iOS HIG).
+                    className={`shrink-0 h-9 min-w-[44px] inline-flex items-center justify-center gap-1 px-2 rounded-md text-sm font-semibold transition ${
                       myVotes[r.id]
                         ? 'bg-danger/10 text-danger'
-                        : 'text-ink/55 hover:bg-ink/[0.08]'
+                        : 'text-ink/55 hover:bg-ink/[0.08] active:bg-ink/[0.12]'
                     }`}
                     aria-label="Curtir resposta"
                   >
