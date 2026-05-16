@@ -1,14 +1,48 @@
 import type { Database } from '@audience/shared-types';
 
-import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { WordcloudBackground, WordcloudConfig } from '@/hooks/useWordcloudActive';
 
 export type SlideType = Database['public']['Enums']['slide_type'];
 
-/** Discriminated union de configs por tipo de slide. V1 só implementa wordcloud. */
+export type OpenEndedConfig = {
+  question: string;
+  maxLength: number; // default 150
+  numberOfResponses: 'unlimited' | 1 | 2 | 3 | 4 | 5; // default 'unlimited'
+  autoScroll?: boolean; // default true
+  allowVoting?: boolean; // default false
+  askForName?: boolean; // default false
+  showSampleResponses?: boolean; // admin-only preview toggle
+  // Mesmo bloco visual/UX que wordcloud reusa.
+  showResponsesMode?: 'instant' | 'on_click' | 'private';
+  showQr?: boolean;
+  qrFullscreen?: boolean;
+  joinInfoType?: 'qr' | 'url' | 'code' | 'qr_and_url';
+  background?: WordcloudBackground;
+  textColorOverride?: string;
+  contentImageUrl?: string;
+  showTotal?: boolean;
+};
+
+export const DEFAULT_OPEN_ENDED_CONFIG: OpenEndedConfig = {
+  question: 'Compartilhe sua resposta',
+  maxLength: 150,
+  numberOfResponses: 'unlimited',
+  autoScroll: true,
+  allowVoting: false,
+  askForName: false,
+  showSampleResponses: true,
+  showResponsesMode: 'instant',
+  showQr: true,
+  qrFullscreen: false,
+  joinInfoType: 'qr_and_url',
+  showTotal: true,
+};
+
+/** Discriminated union de configs por tipo de slide. */
 export type SlideConfigByType = {
   wordcloud: WordcloudConfig;
   poll: { question: string; options: string[]; allowMultiple: boolean };
-  open_ended: { question: string; maxLength: number };
+  open_ended: OpenEndedConfig;
   rating: { question: string; scaleMin: number; scaleMax: number };
   qa: { question: string };
 };

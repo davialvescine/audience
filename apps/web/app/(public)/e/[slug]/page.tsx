@@ -2,7 +2,9 @@ import { notFound } from 'next/navigation';
 
 import { PublicEventShell } from '@/components/audience/PublicEventShell';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
+import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import { DEFAULT_OPEN_ENDED_CONFIG, type OpenEndedConfig } from '@/lib/slides/types';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { loadTheme } from '@/lib/themes/loadTheme';
 
@@ -46,14 +48,39 @@ export default async function PublicEventPage({
   const activeSlideId = wcRow?.active_slide_id ?? null;
 
   let activeSlideConfig: WordcloudConfig | null = null;
+  let activeSlideType: 'wordcloud' | 'open_ended' | null = null;
+  let openEndedConfig: OpenEndedConfig | null = null;
+  let openEndedInitialResponses: OpenEndedResponse[] = [];
   if (activeSlideId) {
     const { data: slideRow } = await supabase
       .from('slides')
       .select('config, type')
       .eq('id', activeSlideId)
       .maybeSingle();
-    if (slideRow && slideRow.type === 'wordcloud') {
+    if (slideRow?.type === 'wordcloud') {
       activeSlideConfig = (slideRow.config as WordcloudConfig | null) ?? null;
+      activeSlideType = 'wordcloud';
+    } else if (slideRow?.type === 'open_ended') {
+      openEndedConfig = {
+        ...DEFAULT_OPEN_ENDED_CONFIG,
+        ...((slideRow.config as Partial<OpenEndedConfig>) ?? {}),
+      };
+      activeSlideType = 'open_ended';
+      type RpcRow = { id: string; text: string; author_name: string | null; vote_count: number; created_at: string };
+      const { data: rows } = (await (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: RpcRow[] | null; error: { message: string } | null }>)('get_open_ended_state', {
+        p_slug: slug,
+        p_slide_id: activeSlideId,
+      })) as { data: RpcRow[] | null };
+      openEndedInitialResponses = (rows ?? []).map((r) => ({
+        id: r.id,
+        text: r.text,
+        authorName: r.author_name,
+        voteCount: Number(r.vote_count),
+        createdAt: r.created_at,
+      }));
     }
   }
 
@@ -70,7 +97,10 @@ export default async function PublicEventPage({
         wordcloudActive={wordcloudActive}
         wordcloudConfig={wordcloudConfig}
         activeSlideId={activeSlideId}
+        activeSlideType={activeSlideType}
         activeSlideConfig={activeSlideConfig}
+        openEndedConfig={openEndedConfig}
+        openEndedInitialResponses={openEndedInitialResponses}
         forceMode={forceMode}
       />
     </ThemeProvider>

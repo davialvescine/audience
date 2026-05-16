@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { OpenEndedInput } from '@/components/audience/OpenEndedInput';
 import { SubmissionForm } from '@/components/audience/SubmissionForm';
 import { WordCloudInput } from '@/components/audience/WordCloudInput';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
+import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import { usePresenceJoin } from '@/hooks/usePresenceJoin';
 import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { OpenEndedConfig } from '@/lib/slides/types';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 
 type Props = {
@@ -15,7 +18,10 @@ type Props = {
   initialWordcloudActive: boolean;
   initialWordcloudConfig: WordcloudConfig;
   initialActiveSlideId: string | null;
+  initialActiveSlideType: 'wordcloud' | 'open_ended' | null;
   initialActiveSlideConfig: WordcloudConfig | null;
+  initialOpenEndedConfig: OpenEndedConfig | null;
+  initialOpenEndedResponses: OpenEndedResponse[];
   submissionsOpen: boolean;
   /** 'auto' (default) segue o slide ativo; 'comments' força form de comentário;
    *  'slides' força nuvem (mostra 'aguardando slide' se nenhum ativo). */
@@ -31,7 +37,10 @@ export function AudienceInputSwitcher({
   initialWordcloudActive,
   initialWordcloudConfig,
   initialActiveSlideId,
+  initialActiveSlideType,
   initialActiveSlideConfig,
+  initialOpenEndedConfig,
+  initialOpenEndedResponses,
   submissionsOpen,
   forceMode = 'auto',
 }: Props) {
@@ -93,6 +102,24 @@ export function AudienceInputSwitcher({
       } as unknown as PresenceChannelLike),
   });
 
+  // Branch: se o slide ativo no SSR é open_ended, renderiza OpenEndedInput.
+  // Não tem Realtime de tipo (caso operador troque o TIPO do slide ativo,
+  // a audiência só atualiza no próximo refresh — caso raro).
+  const renderActiveSlide = () => {
+    if (initialActiveSlideType === 'open_ended' && initialOpenEndedConfig && initialActiveSlideId) {
+      return (
+        <OpenEndedInput
+          slug={slug}
+          eventId={eventId}
+          slideId={initialActiveSlideId}
+          config={initialOpenEndedConfig}
+          initialResponses={initialOpenEndedResponses}
+        />
+      );
+    }
+    return <WordCloudInput slug={slug} config={config} />;
+  };
+
   const view = useMemo(() => {
     if (forceMode === 'comments') {
       if (!submissionsOpen) {
@@ -114,10 +141,10 @@ export function AudienceInputSwitcher({
           </div>
         );
       }
-      return <WordCloudInput slug={slug} config={config} />;
+      return renderActiveSlide();
     }
     // auto
-    if (active) return <WordCloudInput slug={slug} config={config} />;
+    if (active) return renderActiveSlide();
     if (!submissionsOpen) {
       return (
         <div className="text-center py-8">
@@ -127,7 +154,18 @@ export function AudienceInputSwitcher({
       );
     }
     return <SubmissionForm slug={slug} />;
-  }, [active, slug, config, submissionsOpen, forceMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    active,
+    slug,
+    config,
+    submissionsOpen,
+    forceMode,
+    initialActiveSlideType,
+    initialOpenEndedConfig,
+    initialOpenEndedResponses,
+    initialActiveSlideId,
+  ]);
 
   return view;
 }

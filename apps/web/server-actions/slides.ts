@@ -86,3 +86,19 @@ export async function setActiveSlide(
   revalidatePath('/admin/events/[slug]', 'page');
   return { ok: true, data: null };
 }
+
+/**
+ * Zera todas as palavras enviadas a um slide específico. Outros slides
+ * do mesmo evento não são afetados. Owner ou event_member podem chamar.
+ */
+export async function resetSlideWords(slideId: string): Promise<Result<null>> {
+  const sb = await getSupabaseServerClient();
+  // RPC `reset_slide_words` foi adicionada na migration 00400000. Os tipos
+  // gerados podem estar desatualizados — cast `as never` é seguro em runtime.
+  const { error } = await sb.rpc('reset_slide_words' as never, {
+    p_slide_id: slideId,
+  } as never);
+  if (error) return mapError(error.message);
+  revalidatePath('/admin/events/[slug]', 'page');
+  return { ok: true, data: null };
+}

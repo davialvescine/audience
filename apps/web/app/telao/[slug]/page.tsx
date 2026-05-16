@@ -3,10 +3,14 @@ import { notFound } from 'next/navigation';
 import { FullscreenAuto } from '@/components/telao/FullscreenAuto';
 import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
+import { TelaoOpenEndedSwitcher } from '@/components/telao/TelaoOpenEndedSwitcher';
 import { TelaoStage } from '@/components/telao/TelaoStage';
 import { TelaoWordcloudSwitcher } from '@/components/telao/TelaoWordcloudSwitcher';
+import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import { DEFAULT_OPEN_ENDED_CONFIG, type OpenEndedConfig } from '@/lib/slides/types';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import type { WordEntry } from '@/lib/wordcloud/types';
 
@@ -49,6 +53,31 @@ export default async function TelaoPage({
   const isPreview = preview === '1';
   const isPip = mode === 'chrome_pip';
 
+  // Checa se o usuário logado é owner ou event_member — só ele vê a
+  // OperatorToolbar (toggles de QR / ocultar respostas / fullscreen).
+  // Anônimos que abrem o link do telão veem o slide sem controles.
+  const ssr = await getSupabaseServerClient();
+  const { data: { user } } = await ssr.auth.getUser();
+  let isOperator = false;
+  if (user) {
+    const { data: ownerRow } = await supabase
+      .from('events')
+      .select('owner_id')
+      .eq('id', event.event_id)
+      .maybeSingle();
+    if (ownerRow?.owner_id === user.id) {
+      isOperator = true;
+    } else {
+      const { data: member } = await supabase
+        .from('event_members')
+        .select('user_id')
+        .eq('event_id', event.event_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      isOperator = !!member;
+    }
+  }
+
   // Pega o intervalo do evento pra passar pro client (sequencial usa).
   const { data: ev } = await supabase
     .from('events')
@@ -58,16 +87,65 @@ export default async function TelaoPage({
 
   const { data: wcRow } = await supabase
     .from('events')
-    .select('wordcloud_active, wordcloud_config')
+    .select('wordcloud_active, wordcloud_config, active_slide_id')
     .eq('id', event.event_id)
     .maybeSingle();
   const wordcloudActive = wcRow?.wordcloud_active ?? false;
   const wordcloudConfig =
     (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
+  const activeSlideId = (wcRow?.active_slide_id as string | null) ?? null;
+
+  // Fetch active slide config (sistema novo multi-slide). Tem precedência
+  // sobre wordcloud_config legacy quando existe e é do tipo wordcloud.
+  let activeSlideConfig: WordcloudConfig | null = null;
+  let activeSlideType: 'wordcloud' | 'open_ended' | null = null;
+  let activeOpenEndedConfig: OpenEndedConfig | null = null;
+  if (activeSlideId) {
+    const { data: slideRow } = await supabase
+      .from('slides')
+      .select('type, config')
+      .eq('id', activeSlideId)
+      .maybeSingle();
+    if (slideRow?.type === 'wordcloud') {
+      activeSlideConfig = (slideRow.config as WordcloudConfig) ?? null;
+      activeSlideType = 'wordcloud';
+    } else if (slideRow?.type === 'open_ended') {
+      activeOpenEndedConfig = { ...DEFAULT_OPEN_ENDED_CONFIG, ...((slideRow.config as Partial<OpenEndedConfig>) ?? {}) };
+      activeSlideType = 'open_ended';
+    }
+  }
+
+  // Para open_ended, busca respostas iniciais do slide ativo.
+  let initialOpenEndedResponses: OpenEndedResponse[] = [];
+  if (activeSlideType === 'open_ended' && activeSlideId) {
+    type RpcRow = { id: string; text: string; author_name: string | null; vote_count: number; created_at: string };
+    const { data: rows } = (await (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: RpcRow[] | null; error: { message: string } | null }>)('get_open_ended_state', {
+      p_slug: slug,
+      p_slide_id: activeSlideId,
+    })) as { data: RpcRow[] | null };
+    initialOpenEndedResponses = (rows ?? []).map((r) => ({
+      id: r.id,
+      text: r.text,
+      authorName: r.author_name,
+      voteCount: Number(r.vote_count),
+      createdAt: r.created_at,
+    }));
+  }
+
+  // Telão fica em modo nuvem quando: legacy `wordcloud_active=true` OU tem
+  // slide ativo do tipo wordcloud (sistema novo).
+  const cloudMode = wordcloudActive || activeSlideConfig !== null;
 
   let initialEntries: WordEntry[] = [];
-  if (wordcloudActive) {
-    const { data: wcState } = await supabase.rpc('get_wordcloud_state', { p_slug: slug });
+  if (cloudMode) {
+    // Filtra pelo slide ativo — cada slide tem suas próprias palavras.
+    // Sem slide ativo (legacy), omite p_slide_id pra retornar agregado.
+    const rpcArgs: { p_slug: string; p_slide_id?: string } = { p_slug: slug };
+    if (activeSlideId) rpcArgs.p_slide_id = activeSlideId;
+    const { data: wcState } = await supabase.rpc('get_wordcloud_state', rpcArgs);
     initialEntries = (wcState ?? []).map((r) => ({ text: r.word, count: Number(r.count) }));
   }
 
@@ -92,20 +170,38 @@ export default async function TelaoPage({
     />
   );
 
-  const telao = isPreview ? (
-    telaoClient
-  ) : (
-    <TelaoWordcloudSwitcher
-      eventId={event.event_id}
-      initialWordcloudActive={wordcloudActive}
-      initialWordcloudConfig={wordcloudConfig}
-      initialWordcloudEntries={initialEntries}
-      showBackground={showWordcloudBackground}
-      joinUrl={showWordcloudBackground ? joinUrl : undefined}
-    >
-      {telaoClient}
-    </TelaoWordcloudSwitcher>
-  );
+  let telao: React.ReactNode;
+  if (isPreview) {
+    telao = telaoClient;
+  } else if (activeSlideType === 'open_ended' && activeOpenEndedConfig && activeSlideId) {
+    telao = (
+      <TelaoOpenEndedSwitcher
+        eventId={event.event_id}
+        slideId={activeSlideId}
+        initialConfig={activeOpenEndedConfig}
+        initialResponses={initialOpenEndedResponses}
+        showBackground={showWordcloudBackground}
+        joinUrl={showWordcloudBackground ? joinUrl : undefined}
+        isOperator={isOperator}
+      />
+    );
+  } else {
+    telao = (
+      <TelaoWordcloudSwitcher
+        eventId={event.event_id}
+        eventSlug={slug}
+        initialWordcloudActive={cloudMode}
+        initialWordcloudConfig={activeSlideConfig ?? wordcloudConfig}
+        initialActiveSlideId={activeSlideId}
+        initialWordcloudEntries={initialEntries}
+        showBackground={showWordcloudBackground}
+        joinUrl={showWordcloudBackground ? joinUrl : undefined}
+        isOperator={isOperator}
+      >
+        {telaoClient}
+      </TelaoWordcloudSwitcher>
+    );
+  }
 
   // Only wrap with PipLauncher when:
   // - mode=chrome_pip explicitly requested (URL came from "Janela Flutuante" in admin), OR

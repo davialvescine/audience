@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import type { WordcloudBackground, WordcloudConfig } from '@/hooks/useWordcloudActive';
 import type { Slide } from '@/lib/slides/types';
+import { resetSlideWords } from '@/server-actions/slides';
 import { uploadEventAsset } from '@/server-actions/uploadEventAsset';
 
 type Props = {
@@ -69,11 +70,15 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNext = useRef(true);
 
+  // Ressincroniza local state quando slide muda E quando slide.config muda
+  // via realtime (ex: toggle de QR/ocultar no telão chega via channel).
+  // Sem ressincronizar, autosave continuaria salvando a config velha,
+  // sobrescrevendo mudanças do operador.
   useEffect(() => {
     setConfig(slide.config as WordcloudConfig);
     skipNext.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slide.id]);
+  }, [slide.id, JSON.stringify(slide.config)]);
 
   useEffect(() => {
     if (skipNext.current) {
@@ -86,13 +91,43 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [config, onChange, onLiveChange]);
+    // Dep só de `config` — onChange/onLiveChange devem ser estáveis (useCallback
+    // no SlidesTab). Se entrassem nas deps, cada re-render do parent re-dispara
+    // autosave e cria loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config]);
 
   const setBg = (bg: WordcloudBackground) => setConfig((c) => ({ ...c, background: bg }));
   const bg = (config.background ?? { type: 'none' }) as WordcloudBackground;
+  const [tab, setTab] = useState<'conteudo' | 'design' | 'avancado'>('conteudo');
 
   return (
-    <div className="space-y-3 pb-4">
+    <div className="flex flex-col gap-3 pb-4">
+      {/* Tabs */}
+      <div className="flex items-center gap-1 rounded-full bg-ink/[0.05] p-1 sticky top-0 z-10">
+        {(
+          [
+            { id: 'conteudo' as const, label: 'Conteúdo' },
+            { id: 'design' as const, label: 'Design' },
+            { id: 'avancado' as const, label: 'Avançado' },
+          ]
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`flex-1 h-8 rounded-full text-xs font-semibold transition ${
+              tab === t.id
+                ? 'bg-paper text-ink shadow-sm'
+                : 'text-ink/55 hover:text-ink/80'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-3" hidden={tab !== 'conteudo'}>
       <Section title="Tipo da pergunta">
         <div className="relative">
           <select
@@ -142,7 +177,7 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
         </div>
       </Section>
 
-      <Section title="Mostrar respostas">
+      <Section title="Mostrar respostas" live>
         <Radio
           name="showResponses"
           value="instant"
@@ -166,7 +201,9 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
           label="Privadas (só eu vejo)"
         />
       </Section>
+      </div>
 
+      <div className="space-y-3" hidden={tab !== 'design'}>
       <Section title="Design">
         <p className="text-[11px] uppercase font-bold text-ink/55 mb-1">Plano de fundo</p>
         <div className="grid grid-cols-3 gap-1.5">
@@ -339,14 +376,19 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
           />
         ) : null}
       </Section>
+      </div>
 
-      <Section title="Instruções de entrada">
+      <div className="space-y-3" hidden={tab !== 'avancado'}>
+      <Section title="QR code do telão" live>
         <Check
           label="QR code visível enquanto apresenta"
-          checked={config.showQr === true}
+          checked={config.showQr !== false}
           onChange={(v) => setConfig((c) => ({ ...c, showQr: v }))}
         />
-        <div className="flex items-center justify-between gap-3 mt-2">
+        <p className="text-xs text-ink/55 mt-1">
+          Card lateral com QR + URL. <LiveBadge /> Afeta o telão na hora.
+        </p>
+        <div className="flex items-center justify-between gap-3 mt-3">
           <span className="text-sm text-ink">Mostrar como</span>
           <select
             value={config.joinInfoType ?? 'qr_and_url'}
@@ -366,10 +408,10 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
         </div>
       </Section>
 
-      <Section title="No telão">
+      <Section title="No telão" live>
         <Check
           label="Contador de palavras enviadas"
-          checked={config.showTotal}
+          checked={config.showTotal !== false}
           onChange={(v) => setConfig((c) => ({ ...c, showTotal: v }))}
         />
       </Section>
@@ -377,12 +419,12 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
       <Section title="Filtros">
         <Check
           label="Filtrar palavras comuns"
-          checked={config.filterStopwords}
+          checked={config.filterStopwords !== false}
           onChange={(v) => setConfig((c) => ({ ...c, filterStopwords: v }))}
         />
         <Check
           label="Bloquear palavrões"
-          checked={config.filterProfanity}
+          checked={config.filterProfanity !== false}
           onChange={(v) => setConfig((c) => ({ ...c, filterProfanity: v }))}
         />
       </Section>
@@ -427,15 +469,57 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
             ↕ Aplicar a todos os slides
           </Button>
         ) : null}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            if (
+              window.confirm(
+                'Zerar todas as palavras enviadas a este slide? Não afeta outros slides.',
+              )
+            ) {
+              void resetSlideWords(slide.id);
+            }
+          }}
+          className="justify-start text-danger"
+        >
+          🔄 Resetar resultados deste slide
+        </Button>
+      </div>
       </div>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function LiveBadge() {
   return (
-    <div className="rounded-md border border-ink/10 bg-paper p-3">
-      <h4 className="text-xs uppercase tracking-wide font-bold text-ink/60 mb-2">{title}</h4>
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider align-middle ml-1">
+      <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+      Ao vivo
+    </span>
+  );
+}
+
+function Section({
+  title,
+  children,
+  live,
+}: {
+  title: string;
+  children: React.ReactNode;
+  live?: boolean;
+}) {
+  return (
+    <div className="rounded-xl bg-paper p-3 shadow-sm">
+      <h4 className="text-xs uppercase tracking-wide font-bold text-ink/60 mb-2 flex items-center gap-1.5">
+        {title}
+        {live ? (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-[9px] font-bold uppercase tracking-wider normal-case">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            <span className="uppercase tracking-wider">Ao vivo</span>
+          </span>
+        ) : null}
+      </h4>
       <div className="space-y-2">{children}</div>
     </div>
   );

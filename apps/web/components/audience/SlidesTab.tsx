@@ -1,18 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
-import { QRCodeSVG } from 'qrcode.react';
-
+import { OpenEndedPropsPanel } from '@/components/audience/OpenEndedPropsPanel';
 import { SlideCanvas } from '@/components/audience/SlideCanvas';
 import { SlidePropsPanel } from '@/components/audience/SlidePropsPanel';
 import { SlideThumbnail } from '@/components/audience/SlideThumbnail';
+import { SlideTypePicker } from '@/components/audience/SlideTypePicker';
 import { Button } from '@/components/ui/Button';
 import { useSlides } from '@/hooks/useSlides';
 import { useTauri } from '@/hooks/useTauri';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
-import type { Slide } from '@/lib/slides/types';
+import { DEFAULT_OPEN_ENDED_CONFIG, type Slide, type SlideType } from '@/lib/slides/types';
 import {
   createSlide,
   deleteSlide,
@@ -26,8 +26,10 @@ const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
   maxWordsPerSubmission: 1,
   filterStopwords: true,
   filterProfanity: true,
-  palette: ['#E63946', '#1D3557', '#2A9D8F', '#E76F51', '#6A4C93', '#0077B6', '#06A77D', '#D62828'],
+  // Paleta pastel estilo Mentimeter — cores suaves, alto contraste com fundo branco.
+  palette: ['#7B89F4', '#F08CA0', '#A8D5BA', '#FFD580', '#C8B6FF', '#FFA8C5', '#9AD9DB', '#FFB7A5'],
   showTotal: true,
+  showQr: true,
   background: { type: 'color', value: '#FFFFFF' },
 };
 
@@ -56,6 +58,7 @@ export function SlidesTab({
     initialActiveSlideId ?? initialSlides[0]?.id ?? null,
   );
   const [creating, startCreate] = useTransition();
+  const [pickerOpen, setPickerOpen] = useState(false);
   // Live overlay do config sendo editado — reflete keystrokes no canvas
   // imediatamente, sem esperar autosave + realtime.
   const [liveConfig, setLiveConfig] = useState<WordcloudConfig | null>(null);
@@ -76,9 +79,13 @@ export function SlidesTab({
     [slides, selectedId],
   );
 
-  const onCreate = () => {
+  const onCreate = (type: SlideType) => {
     startCreate(async () => {
-      const r = await createSlide(eventId, 'wordcloud', { ...DEFAULT_WORDCLOUD_CONFIG });
+      const config =
+        type === 'open_ended'
+          ? { ...DEFAULT_OPEN_ENDED_CONFIG }
+          : { ...DEFAULT_WORDCLOUD_CONFIG };
+      const r = await createSlide(eventId, type, config);
       if (r.ok) setSelectedId(r.data.id);
     });
   };
@@ -97,14 +104,22 @@ export function SlidesTab({
     await setActiveSlide(eventId, slideId);
   };
 
-  const onConfigChange = async (slideId: string, config: WordcloudConfig) => {
+  // useCallback estabiliza a identidade — sem isso, cada re-render do
+  // SlidesTab cria uma função nova, o useEffect do SlidePropsPanel detecta
+  // como "mudança" e re-dispara autosave salvando config velha, sobrescrevendo
+  // toggles do operador (ex: showQr clicado no telão sumia).
+  const onConfigChange = useCallback(async (slideId: string, config: WordcloudConfig) => {
     await updateSlide(slideId, config as unknown as Record<string, unknown>);
-  };
+  }, []);
+  const onLiveChangeStable = useCallback((cfg: WordcloudConfig) => setLiveConfig(cfg), []);
 
-  // Reset liveConfig quando troca de slide selecionado.
+  // Reset liveConfig quando troca de slide selecionado OU quando o slide
+  // que estamos editando ganha update via realtime (ex: toggle do telão).
+  // Sem isso, liveConfig fica grudada na versão velha e ofusca o estado
+  // novo do DB no canvas.
   useEffect(() => {
     setLiveConfig(null);
-  }, [selectedId]);
+  }, [selectedId, JSON.stringify(selected?.config)]);
 
   // Auto-cria 1 slide exemplo quando o evento não tem nenhum, pra usuário
   // já cair direto no editor sem precisar clicar '+ Novo slide'.
@@ -176,89 +191,63 @@ export function SlidesTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides, activeId, isTauri, invoke]);
 
-  const [showQr, setShowQr] = useState<null | 'slides' | 'comments'>(null);
   const slidesUrl = `${publicUrl}?mode=slides`;
-  const commentsUrl = `${publicUrl}?mode=comments`;
   const telaoFullUrl = `${telaoUrl}?mode=fullscreen`;
 
-  const copy = (text: string) => {
-    void navigator.clipboard.writeText(text);
-  };
+  // Save indicator state — flipa pra 'saving' quando dispara updateSlide,
+  // volta pra 'saved' quando termina. Mostra pílula no header.
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const lastSavedAtRef = useRef<number>(0);
+  const onConfigChangeWithStatus = useCallback(
+    async (slideId: string, cfg: WordcloudConfig) => {
+      setSaveState('saving');
+      await updateSlide(slideId, cfg as unknown as Record<string, unknown>);
+      lastSavedAtRef.current = Date.now();
+      setSaveState('saved');
+    },
+    [],
+  );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] gap-3">
-      {/* Quick links: 3 cards bem distintos visualmente */}
-      <div className="grid md:grid-cols-3 gap-3">
-        <LinkCard
-          variant="slides"
-          icon="☁"
-          label="Audiência · slides (nuvem)"
-          url={slidesUrl}
-          onShowQr={() => setShowQr((v) => (v === 'slides' ? null : 'slides'))}
-          showingQr={showQr === 'slides'}
-          onCopy={() => copy(slidesUrl)}
-        />
-        <LinkCard
-          variant="comments"
-          icon="💬"
-          label="Audiência · comentário"
-          url={commentsUrl}
-          onShowQr={() => setShowQr((v) => (v === 'comments' ? null : 'comments'))}
-          showingQr={showQr === 'comments'}
-          onCopy={() => copy(commentsUrl)}
-        />
-        <LinkCard
-          variant="telao"
-          icon="🖥"
-          label="Telão / Projetor (tela cheia)"
-          url={telaoFullUrl}
-          onShowQr={null}
-          showingQr={false}
-          onCopy={() => copy(telaoFullUrl)}
-          customAction={{ label: 'Abrir tela cheia ↗', onClick: openTelao }}
-        />
-      </div>
-
-      {showQr ? (
-        <div className="rounded-lg border border-ink/10 bg-paper p-4 flex items-center justify-center">
-          <QRCodeSVG value={showQr === 'slides' ? slidesUrl : commentsUrl} size={240} level="M" />
-        </div>
-      ) : null}
-
-      {/* Top bar Mentimeter-style */}
-      <div className="flex items-center justify-between gap-3 bg-paper rounded-lg border border-ink/10 px-3 py-2">
+    <div className="flex flex-col h-[calc(100vh-180px)] gap-4">
+      {/* Top bar — limpa e moderna. Tudo de share migrou pra aba Compartilhar. */}
+      <div className="flex items-center justify-between gap-4 px-1">
         <div className="flex items-center gap-3">
-          <Button onClick={onCreate} loading={creating} variant="accent" size="sm">
+          <Button onClick={() => setPickerOpen(true)} loading={creating} variant="accent" size="sm">
             + Novo slide
           </Button>
-          <span className="text-sm text-ink/60">
-            {slides.length} {slides.length === 1 ? 'slide' : 'slides'} ·{' '}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-ink/55 tabular-nums">
+              {slides.length} {slides.length === 1 ? 'slide' : 'slides'}
+            </span>
             {activeId ? (
-              <span className="text-success font-medium">● Slide ao vivo</span>
-            ) : (
-              <span className="text-ink/40">Nenhum ativo</span>
-            )}
-          </span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 text-success text-xs font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                AO VIVO
+              </span>
+            ) : null}
+            <SaveIndicator state={saveState} />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {slides.length > 1 ? (
-            <div className="flex items-center gap-1 mr-2">
+            <div className="flex items-center gap-1 mr-2 rounded-full bg-ink/[0.04] px-1.5 py-1">
               <button
                 type="button"
                 onClick={() => void goPrevSlide()}
-                className="h-8 w-8 rounded border border-ink/20 hover:bg-ink/5"
+                className="h-8 w-8 rounded-full hover:bg-ink/[0.06] text-ink/70 transition"
                 title="Slide anterior (←)"
                 aria-label="Slide anterior"
               >
                 ←
               </button>
-              <span className="text-xs text-ink/55 px-1 tabular-nums">
-                {activeId ? slides.findIndex((s) => s.id === activeId) + 1 : '-'} / {slides.length}
+              <span className="text-xs text-ink/60 px-2 tabular-nums font-medium">
+                {activeId ? slides.findIndex((s) => s.id === activeId) + 1 : '–'} / {slides.length}
               </span>
               <button
                 type="button"
                 onClick={() => void goNextSlide()}
-                className="h-8 w-8 rounded border border-ink/20 hover:bg-ink/5"
+                className="h-8 w-8 rounded-full hover:bg-ink/[0.06] text-ink/70 transition"
                 title="Próximo slide (→ ou espaço)"
                 aria-label="Próximo slide"
               >
@@ -266,13 +255,17 @@ export function SlidesTab({
               </button>
             </div>
           ) : null}
-          <span className="text-xs text-ink/50 mr-3 hidden lg:inline">
-            ← → navega · F tela cheia
+          <span className="text-xs text-ink/45 mr-2 hidden xl:inline">
+            <kbd className="px-1.5 py-0.5 rounded bg-ink/[0.06] font-mono text-[10px]">←</kbd>
+            <kbd className="ml-1 px-1.5 py-0.5 rounded bg-ink/[0.06] font-mono text-[10px]">→</kbd>
+            <span className="ml-2">navega</span>
+            <kbd className="ml-3 px-1.5 py-0.5 rounded bg-ink/[0.06] font-mono text-[10px]">F</kbd>
+            <span className="ml-1">tela cheia</span>
           </span>
           <button
             type="button"
             onClick={openTelao}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-ink/20 text-sm font-medium text-ink hover:bg-ink/5"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-sm font-medium text-ink hover:bg-ink/[0.06] transition"
           >
             Preview ↗
           </button>
@@ -284,20 +277,21 @@ export function SlidesTab({
               }
               openTelao();
             }}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-paper text-sm font-bold hover:bg-primary-deep"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-full bg-primary text-paper text-sm font-bold hover:bg-primary-deep shadow-sm transition"
           >
-            ▶ Iniciar apresentação
+            <span>▶</span>
+            <span>Iniciar apresentação</span>
           </button>
         </div>
       </div>
 
-      {/* 3 colunas Mentimeter-style: thumbs magras | canvas grande | props */}
-      <div className="grid grid-cols-[120px_minmax(0,1fr)_320px] gap-3 flex-1 min-h-0">
-        {/* Thumbnails sidebar — estreita */}
-        <div className="overflow-y-auto space-y-2 bg-ink/[0.02] rounded-lg p-2 border border-ink/10">
+      {/* 3 colunas: thumbs maiores · canvas grande · props com tabs */}
+      <div className="grid grid-cols-[150px_minmax(0,1fr)_340px] gap-4 flex-1 min-h-0">
+        {/* Thumbnails sidebar */}
+        <div className="overflow-y-auto space-y-2 bg-ink/[0.03] rounded-xl p-2.5">
           {slides.length === 0 ? (
-            <p className="text-[10px] text-ink/60 text-center py-6">
-              + Novo slide
+            <p className="text-[11px] text-ink/55 text-center py-6">
+              Crie seu primeiro slide
             </p>
           ) : (
             slides.map((slide, idx) => (
@@ -318,28 +312,38 @@ export function SlidesTab({
           )}
         </div>
 
-        {/* Canvas central — slide grande sozinho */}
-        <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink/[0.03]">
+        {/* Canvas central — ring verde quando slide selecionado é o ativo */}
+        <div
+          className={`overflow-hidden rounded-xl bg-ink/[0.03] transition-shadow ${
+            selected && activeId === selected.id
+              ? 'ring-2 ring-success/50 shadow-[0_0_0_8px_rgba(34,197,94,0.06)]'
+              : 'shadow-sm'
+          }`}
+        >
           {selected ? (
             <SlideCanvas
               slide={selected}
               liveConfig={liveConfig ?? undefined}
               joinUrl={slidesUrl}
+              onConfigChange={(cfg) => {
+                setLiveConfig(cfg);
+                void onConfigChangeWithStatus(selected.id, cfg);
+              }}
             />
           ) : (
-            <div className="h-full flex items-center justify-center text-ink/50">
+            <div className="h-full flex items-center justify-center text-ink/45">
               <p>Crie um slide pra começar.</p>
             </div>
           )}
         </div>
 
-        {/* Props sidebar */}
+        {/* Props sidebar com tabs */}
         <div className="overflow-y-auto pr-1">
           {selected && selected.type === 'wordcloud' ? (
             <SlidePropsPanel
               slide={selected}
-              onChange={(cfg) => onConfigChange(selected.id, cfg)}
-              onLiveChange={(cfg) => setLiveConfig(cfg)}
+              onChange={(cfg) => onConfigChangeWithStatus(selected.id, cfg)}
+              onLiveChange={onLiveChangeStable}
               onApplyToAll={
                 slides.length > 1
                   ? () => {
@@ -353,6 +357,15 @@ export function SlidesTab({
                   : undefined
               }
             />
+          ) : selected && selected.type === 'open_ended' ? (
+            <OpenEndedPropsPanel
+              slide={selected as Slide<'open_ended'>}
+              onChange={(cfg) => {
+                setLiveConfig(cfg as unknown as WordcloudConfig);
+                void updateSlide(selected.id, cfg as unknown as Record<string, unknown>);
+              }}
+              onLiveChange={(cfg) => setLiveConfig(cfg as unknown as WordcloudConfig)}
+            />
           ) : selected ? (
             <p className="text-sm text-ink/60 p-4">
               Editor pro tipo <code>{selected.type}</code> ainda não foi feito.
@@ -360,102 +373,33 @@ export function SlidesTab({
           ) : null}
         </div>
       </div>
+
+      <SlideTypePicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={(type) => onCreate(type)}
+      />
     </div>
   );
 }
 
-const LINK_VARIANTS = {
-  slides: {
-    container: 'border-[#4ECDC4]/40 bg-[#4ECDC4]/10',
-    label: 'text-[#0a8077]',
-    badge: 'bg-[#4ECDC4]/20 text-[#0a8077]',
-  },
-  comments: {
-    container: 'border-[#F5C518]/40 bg-[#F5C518]/10',
-    label: 'text-[#8b6a00]',
-    badge: 'bg-[#F5C518]/20 text-[#8b6a00]',
-  },
-  telao: {
-    container: 'border-[#6A4C93]/40 bg-[#6A4C93]/10',
-    label: 'text-[#4a346b]',
-    badge: 'bg-[#6A4C93]/20 text-[#4a346b]',
-  },
-} as const;
-
-function LinkCard({
-  variant,
-  icon,
-  label,
-  url,
-  onShowQr,
-  showingQr,
-  onCopy,
-  customAction,
-}: {
-  variant: keyof typeof LINK_VARIANTS;
-  icon: string;
-  label: string;
-  url: string;
-  onShowQr: (() => void) | null;
-  showingQr: boolean;
-  onCopy: () => void;
-  customAction?: { label: string; onClick: () => void };
-}) {
-  const v = LINK_VARIANTS[variant];
+function SaveIndicator({ state }: { state: 'idle' | 'saving' | 'saved' }) {
+  if (state === 'idle') return null;
+  if (state === 'saving') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-ink/55">
+        <span className="h-3 w-3 rounded-full border-2 border-ink/30 border-t-ink/70 animate-spin" />
+        Salvando…
+      </span>
+    );
+  }
   return (
-    <div className={`rounded-lg border ${v.container} p-3 flex items-center gap-3`}>
-      {onShowQr ? (
-        <button
-          type="button"
-          onClick={onShowQr}
-          className={`shrink-0 h-16 w-16 rounded-md bg-paper border ${
-            showingQr ? 'border-accent' : 'border-ink/10'
-          } flex items-center justify-center hover:bg-ink/5 relative`}
-          title="Mostrar/esconder QR"
-        >
-          <QRCodeSVG value={url} size={56} level="M" />
-          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-paper text-xs flex items-center justify-center border border-ink/15">
-            {icon}
-          </span>
-        </button>
-      ) : (
-        <div
-          className={`shrink-0 h-16 w-16 rounded-md ${v.badge} flex items-center justify-center text-3xl`}
-        >
-          {icon}
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className={`text-[10px] uppercase tracking-wide font-bold mb-0.5 ${v.label}`}>
-          {label}
-        </p>
-        <p className="font-mono text-xs text-ink truncate" title={url}>
-          {url.replace(/^https?:\/\//, '')}
-        </p>
-        <div className="flex gap-2 mt-1">
-          <button type="button" onClick={onCopy} className="text-xs text-primary hover:underline">
-            Copiar
-          </button>
-          {customAction ? (
-            <button
-              type="button"
-              onClick={customAction.onClick}
-              className="text-xs text-primary hover:underline"
-            >
-              {customAction.label}
-            </button>
-          ) : (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener"
-              className="text-xs text-primary hover:underline"
-            >
-              Abrir ↗
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
+    <span className="inline-flex items-center gap-1 text-xs text-ink/50">
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      Salvo
+    </span>
   );
 }
+

@@ -546,7 +546,7 @@ export type Database = {
         }[]
       }
       get_wordcloud_state: {
-        Args: { p_slug: string }
+        Args: { p_slide_id?: string; p_slug: string }
         Returns: {
           count: number
           word: string
@@ -623,6 +623,7 @@ export type Database = {
         Args: { p_event_id: string; p_slide_ids: string[] }
         Returns: undefined
       }
+      reset_slide_words: { Args: { p_slide_id: string }; Returns: undefined }
       reset_submission_for_retry: {
         Args: { p_submission_id: string }
         Returns: undefined

@@ -1,5 +1,7 @@
 import { AudienceInputSwitcher } from './AudienceInputSwitcher';
+import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { OpenEndedConfig } from '@/lib/slides/types';
 
 type Props = {
   eventName: string;
@@ -9,7 +11,10 @@ type Props = {
   wordcloudActive: boolean;
   wordcloudConfig: WordcloudConfig;
   activeSlideId: string | null;
+  activeSlideType: 'wordcloud' | 'open_ended' | null;
   activeSlideConfig: WordcloudConfig | null;
+  openEndedConfig: OpenEndedConfig | null;
+  openEndedInitialResponses: OpenEndedResponse[];
   forceMode?: 'auto' | 'comments' | 'slides' | undefined;
 };
 
@@ -21,7 +26,10 @@ export function PublicEventShell({
   wordcloudActive,
   wordcloudConfig,
   activeSlideId,
+  activeSlideType,
   activeSlideConfig,
+  openEndedConfig,
+  openEndedInitialResponses,
   forceMode = 'auto',
 }: Props) {
   const showingNuvem =
@@ -60,7 +68,10 @@ export function PublicEventShell({
               initialWordcloudActive={wordcloudActive}
               initialWordcloudConfig={wordcloudConfig}
               initialActiveSlideId={activeSlideId}
+              initialActiveSlideType={activeSlideType}
               initialActiveSlideConfig={activeSlideConfig}
+              initialOpenEndedConfig={openEndedConfig}
+              initialOpenEndedResponses={openEndedInitialResponses}
               forceMode={forceMode}
             />
           </div>

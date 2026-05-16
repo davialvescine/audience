@@ -32,6 +32,14 @@ export type WordcloudConfig = {
   joinInfoType?: 'qr' | 'url' | 'code' | 'qr_and_url' | undefined;
   /** Notas privadas do apresentador — só visível no admin. */
   speakerNotes?: string | undefined;
+  /** Quando true (default), mostra nuvem de exemplo no telão enquanto a
+   *  audiência ainda não enviou palavras. Útil pra demonstrar o que vai
+   *  acontecer. Operador pode esconder via toolbar pra ficar limpo. */
+  showSampleWords?: boolean | undefined;
+  /** Quando true, sobrepõe um QR code GIGANTE centralizado no telão pra
+   *  audiência escanear de longe. Esconde o resto do slide. Operador
+   *  liga via toolbar antes do evento, depois desliga pra começar. */
+  qrFullscreen?: boolean | undefined;
 };
 
 type ChannelLike = {
