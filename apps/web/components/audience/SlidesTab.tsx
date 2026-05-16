@@ -209,15 +209,15 @@ export function SlidesTab({
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] gap-4">
-      {/* Top bar — limpa e moderna. Tudo de share migrou pra aba Compartilhar. */}
-      <div className="flex items-center justify-between gap-4 px-1">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col lg:h-[calc(100vh-180px)] gap-4">
+      {/* Top bar — wrap em mobile, layout horizontal em desktop. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 lg:gap-4 px-1">
+        <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
           <Button onClick={() => setPickerOpen(true)} loading={creating} variant="accent" size="sm">
             + Novo slide
           </Button>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-ink/55 tabular-nums">
+            <span className="text-ink/55 tabular-nums hidden sm:inline">
               {slides.length} {slides.length === 1 ? 'slide' : 'slides'}
             </span>
             {activeId ? (
@@ -229,9 +229,9 @@ export function SlidesTab({
             <SaveIndicator state={saveState} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {slides.length > 1 ? (
-            <div className="flex items-center gap-1 mr-2 rounded-full bg-ink/[0.04] px-1.5 py-1">
+            <div className="flex items-center gap-1 rounded-full bg-ink/[0.04] px-1.5 py-1">
               <button
                 type="button"
                 onClick={() => void goPrevSlide()}
@@ -265,7 +265,7 @@ export function SlidesTab({
           <button
             type="button"
             onClick={openTelao}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-sm font-medium text-ink hover:bg-ink/[0.06] transition"
+            className="hidden sm:inline-flex items-center gap-2 h-9 px-4 rounded-full text-sm font-medium text-ink hover:bg-ink/[0.06] transition"
           >
             Preview ↗
           </button>
@@ -277,44 +277,49 @@ export function SlidesTab({
               }
               openTelao();
             }}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-full bg-primary text-paper text-sm font-bold hover:bg-primary-deep shadow-sm transition"
+            className="inline-flex items-center gap-2 h-9 px-3 lg:px-4 rounded-full bg-primary text-paper text-sm font-bold hover:bg-primary-deep shadow-sm transition"
           >
             <span>▶</span>
-            <span>Iniciar apresentação</span>
+            <span className="hidden sm:inline">Iniciar apresentação</span>
+            <span className="sm:hidden">Iniciar</span>
           </button>
         </div>
       </div>
 
-      {/* 3 colunas: thumbs maiores · canvas grande · props com tabs */}
-      <div className="grid grid-cols-[150px_minmax(0,1fr)_340px] gap-4 flex-1 min-h-0">
-        {/* Thumbnails sidebar */}
-        <div className="overflow-y-auto space-y-2 bg-ink/[0.03] rounded-xl p-2.5">
+      {/* Mobile: stack vertical. Desktop (lg+): 3 colunas (thumbs · canvas · props). */}
+      <div className="flex flex-col lg:grid lg:grid-cols-[150px_minmax(0,1fr)_340px] gap-4 flex-1 lg:min-h-0">
+        {/* Thumbnails — strip horizontal no mobile, sidebar vertical em desktop. */}
+        <div className="lg:overflow-y-auto bg-ink/[0.03] rounded-xl p-2.5">
           {slides.length === 0 ? (
             <p className="text-[11px] text-ink/55 text-center py-6">
               Crie seu primeiro slide
             </p>
           ) : (
-            slides.map((slide, idx) => (
-              <SlideThumbnail
-                key={slide.id}
-                slide={slide}
-                index={idx}
-                total={slides.length}
-                isSelected={selected?.id === slide.id}
-                isActive={activeId === slide.id}
-                onSelect={() => setSelectedId(slide.id)}
-                onActivate={() => onActivate(slide.id)}
-                onDeactivate={() => onActivate(null)}
-                onDelete={() => onDelete(slide.id)}
-                onMove={(dir) => onMove(slide.id, dir)}
-              />
-            ))
+            <div className="flex lg:block gap-2 lg:gap-0 lg:space-y-2 overflow-x-auto lg:overflow-x-visible -mx-0.5 px-0.5 lg:mx-0 lg:px-0">
+              {slides.map((slide, idx) => (
+                <div key={slide.id} className="w-32 shrink-0 lg:w-auto">
+                  <SlideThumbnail
+                    slide={slide}
+                    index={idx}
+                    total={slides.length}
+                    isSelected={selected?.id === slide.id}
+                    isActive={activeId === slide.id}
+                    onSelect={() => setSelectedId(slide.id)}
+                    onActivate={() => onActivate(slide.id)}
+                    onDeactivate={() => onActivate(null)}
+                    onDelete={() => onDelete(slide.id)}
+                    onMove={(dir) => onMove(slide.id, dir)}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Canvas central — ring verde quando slide selecionado é o ativo */}
+        {/* Canvas central — ring verde quando slide selecionado é o ativo.
+            Mobile: aspect-video fixo. Desktop: ocupa altura disponível. */}
         <div
-          className={`overflow-hidden rounded-xl bg-ink/[0.03] transition-shadow ${
+          className={`overflow-hidden rounded-xl bg-ink/[0.03] aspect-video lg:aspect-auto transition-shadow ${
             selected && activeId === selected.id
               ? 'ring-2 ring-success/50 shadow-[0_0_0_8px_rgba(34,197,94,0.06)]'
               : 'shadow-sm'
@@ -337,8 +342,8 @@ export function SlidesTab({
           )}
         </div>
 
-        {/* Props sidebar com tabs */}
-        <div className="overflow-y-auto pr-1">
+        {/* Props sidebar — full width no mobile, sidebar em desktop. */}
+        <div className="lg:overflow-y-auto lg:pr-1 bg-paper rounded-xl border border-ink/10 lg:bg-transparent lg:rounded-none lg:border-0">
           {selected && selected.type === 'wordcloud' ? (
             <SlidePropsPanel
               slide={selected}
