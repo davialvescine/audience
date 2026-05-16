@@ -110,7 +110,9 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
           telão tem, pra moderador comandar daqui. + botão de Exemplo que
           é admin-only (não afeta o telão real). */}
       {slide.type === 'wordcloud' && onConfigChange ? (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-ink text-paper px-2 py-2 z-20 shadow-lg">
+        // No mobile a toolbar pode ficar maior que o canvas. max-w-[calc(100%-32px)]
+        // + overflow-x-auto deixa rolar horizontal sem invadir as bordas.
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-[calc(100%-16px)] overflow-x-auto flex items-center gap-1 rounded-full bg-ink text-paper px-2 py-2 z-20 shadow-lg [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <CanvasBtn
             active={!responsesPrivate}
             onClick={() =>
@@ -242,12 +244,13 @@ function CanvasBtn({
       title={label}
       aria-label={label}
       aria-pressed={active}
-      className={`relative inline-flex items-center gap-2 rounded-full px-3 h-9 text-sm font-medium transition ${
+      className={`relative inline-flex items-center gap-2 rounded-full px-2.5 sm:px-3 h-9 text-sm font-medium transition shrink-0 ${
         active ? 'bg-paper text-ink' : 'text-paper/85 hover:bg-paper/10'
       }`}
     >
       {children}
-      <span>{label}</span>
+      {/* Label escondido em telas muito pequenas pra a toolbar caber. */}
+      <span className="hidden sm:inline whitespace-nowrap">{label}</span>
       {live ? (
         <span
           className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-success animate-pulse ring-2 ring-ink"

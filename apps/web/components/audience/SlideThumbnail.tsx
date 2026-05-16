@@ -1,6 +1,39 @@
 'use client';
 
-import type { Slide } from '@/lib/slides/types';
+import { useEffect, useRef, useState } from 'react';
+
+import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
+import { WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { OpenEndedConfig, Slide } from '@/lib/slides/types';
+import type { WordEntry } from '@/lib/wordcloud/types';
+
+const SAMPLE_WORDS: WordEntry[] = [
+  { text: 'criativo', count: 5 },
+  { text: 'líder', count: 4 },
+  { text: 'foco', count: 3 },
+  { text: 'rápido', count: 2 },
+];
+
+const SAMPLE_RESPONSES = [
+  { id: 's1', text: 'Adoro a energia!', authorName: null, voteCount: 0, createdAt: '' },
+  { id: 's2', text: 'Muito inspirador.', authorName: null, voteCount: 0, createdAt: '' },
+];
+
+type ChannelLike = Parameters<typeof WordCloudDisplay>[0]['channel'];
+
+function makeNoop(): ChannelLike {
+  const self: ChannelLike = {
+    on() {
+      return self;
+    },
+    subscribe() {
+      return self;
+    },
+    unsubscribe() {},
+  };
+  return self;
+}
 
 type Props = {
   slide: Slide;
@@ -37,15 +70,15 @@ export function SlideThumbnail({
         <button
           type="button"
           onClick={onSelect}
-          className={`block w-full aspect-video rounded-lg overflow-hidden relative transition ${
+          className={`block w-full aspect-video rounded-none overflow-hidden relative transition ${
             isSelected
               ? 'ring-2 ring-accent shadow-md'
               : 'ring-1 ring-ink/10 hover:ring-ink/25 shadow-sm'
           }`}
         >
-          {/* Card estilo Mentimeter — dark navy com ícone + título truncado.
-              Não rendeira a nuvem real (caro e pouco informativo nesse tamanho). */}
-          <SlideMentiCard slide={slide} />
+          {/* Preview real do slide — scale do 1920×1080 pra caber no card.
+              Mostra a pergunta + visual exatos do que vai no telão. */}
+          <ScaledSlidePreview slide={slide} />
           {/* Play overlay — hover em slides NÃO ativos. Clique = ativa. */}
           {!isActive ? (
             <span
@@ -128,47 +161,60 @@ export function SlideThumbnail({
   );
 }
 
-function SlideMentiCard({ slide }: { slide: Slide }) {
-  const cfg = slide.config as { question?: string } | undefined;
-  const question = cfg?.question?.trim() || 'Sem pergunta';
+function ScaledSlidePreview({ slide }: { slide: Slide }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.1);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const sx = el.clientWidth / 1920;
+      const sy = el.clientHeight / 1080;
+      setScale(Math.max(0.01, Math.min(sx, sy)));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    <div
-      className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3"
-      style={{ background: '#1A1F2E' }}
-    >
-      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-white">
-        {iconFor(slide.type)}
-      </span>
-      <p
-        className="text-[10px] font-medium text-white/85 text-center leading-tight line-clamp-2"
-        style={{ fontFamily: 'var(--font-wordcloud), Inter, system-ui, sans-serif' }}
+    <div ref={ref} className="absolute inset-0 overflow-hidden bg-ink/5">
+      <div
+        style={{
+          width: 1920,
+          height: 1080,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
       >
-        {question}
-      </p>
+        {slide.type === 'wordcloud' ? (
+          <WordCloudDisplay
+            eventId={slide.event_id}
+            config={slide.config as WordcloudConfig}
+            initialEntries={SAMPLE_WORDS}
+            channel={makeNoop()}
+            showBackground
+          />
+        ) : slide.type === 'open_ended' ? (
+          <OpenEndedDisplay
+            eventId={slide.event_id}
+            slideId={slide.id}
+            config={slide.config as OpenEndedConfig}
+            initialResponses={SAMPLE_RESPONSES}
+            channel={makeNoop()}
+            showBackground
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-3xl text-ink/40">
+            {slide.type}
+          </div>
+        )}
+      </div>
     </div>
-  );
-}
-
-function iconFor(type: string): React.ReactNode {
-  if (type === 'wordcloud') {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-        <path d="M12 2c1.1 0 2 .9 2 2 2.2 0 4 1.8 4 4 1.7 0 3 1.3 3 3s-1.3 3-3 3h-1l1 4-4-3H8a4 4 0 01-4-4c-1.1 0-2-.9-2-2s.9-2 2-2a4 4 0 014-4c0-1.1.9-2 2-2z" />
-      </svg>
-    );
-  }
-  if (type === 'open_ended') {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-        <path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 9h18" />
-    </svg>
   );
 }
