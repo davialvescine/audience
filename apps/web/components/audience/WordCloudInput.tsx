@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -25,10 +25,22 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function WordCloudInput({ slug, config }: Props) {
+  const maxWords = config.maxWordsPerSubmission ?? 1;
   const [pending, start] = useTransition();
   const [outcome, setOutcome] = useState<Outcome>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [word, setWord] = useState('');
+  const [words, setWords] = useState<string[]>(() => Array(maxWords).fill(''));
+
+  // Sincroniza tamanho do array com maxWords quando operador muda 1↔2↔3
+  // em tempo real. Preserva o que o user já digitou nos índices comuns.
+  useEffect(() => {
+    setWords((prev) => {
+      if (prev.length === maxWords) return prev;
+      const next = Array(maxWords).fill('');
+      for (let i = 0; i < Math.min(prev.length, maxWords); i += 1) next[i] = prev[i] ?? '';
+      return next;
+    });
+  }, [maxWords]);
 
   if (outcome === 'success') {
     return (
@@ -83,7 +95,7 @@ export function WordCloudInput({ slug, config }: Props) {
           variant="ghost"
           onClick={() => {
             setOutcome('idle');
-            setWord('');
+            setWords(Array(maxWords).fill(''));
             setErrorMsg(null);
           }}
         >
@@ -93,37 +105,62 @@ export function WordCloudInput({ slug, config }: Props) {
     );
   }
 
+  const hasAtLeastOne = words.some((w) => w.trim().length > 0);
+
+  const handleSubmit = () => {
+    const filled = words.map((w) => w.trim()).filter((w) => w.length > 0);
+    if (filled.length === 0) return;
+    setErrorMsg(null);
+    start(async () => {
+      // Envia cada palavra separadamente — o backend agrega contagem por palavra.
+      let lastError: string | null = null;
+      for (const word of filled) {
+        const fd = new FormData();
+        fd.set('word', word);
+        const result = await submitWord(slug, fd);
+        if (!result.ok) {
+          lastError = ERROR_MESSAGES[result.error] ?? ERROR_MESSAGES.unknown!;
+          break;
+        }
+      }
+      if (lastError) {
+        setOutcome('error');
+        setErrorMsg(lastError);
+        return;
+      }
+      setOutcome('success');
+      setWords(Array(maxWords).fill(''));
+    });
+  };
+
   return (
     <form
-      action={(formData: FormData) => {
-        const value = String(formData.get('word') ?? '').trim();
-        if (!value) return;
-        setErrorMsg(null);
-        start(async () => {
-          const result = await submitWord(slug, formData);
-          if (!result.ok) {
-            setOutcome('error');
-            setErrorMsg(ERROR_MESSAGES[result.error] ?? ERROR_MESSAGES.unknown!);
-            return;
-          }
-          setOutcome('success');
-          setWord('');
-        });
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
       }}
       className="space-y-4"
     >
       <p className="text-lg text-ink/80">{config.question}</p>
-      <Input
-        label="Sua palavra"
-        id="word"
-        name="word"
-        required
-        maxLength={30}
-        autoComplete="off"
-        value={word}
-        onChange={(e) => setWord(e.target.value)}
-        placeholder="Digite uma palavra"
-      />
+      {words.map((w, i) => (
+        <Input
+          key={i}
+          label={maxWords === 1 ? 'Sua palavra' : `Palavra ${i + 1}`}
+          id={`word-${i}`}
+          required={i === 0}
+          maxLength={30}
+          autoComplete="off"
+          value={w}
+          onChange={(e) =>
+            setWords((prev) => {
+              const next = [...prev];
+              next[i] = e.target.value;
+              return next;
+            })
+          }
+          placeholder="Digite uma palavra"
+        />
+      ))}
       {errorMsg ? (
         <motion.div
           role="alert"
@@ -139,10 +176,10 @@ export function WordCloudInput({ slug, config }: Props) {
         variant="accent"
         size="lg"
         loading={pending}
-        disabled={pending || !word.trim()}
+        disabled={pending || !hasAtLeastOne}
         className="w-full text-lg h-14"
       >
-        Enviar palavra
+        {maxWords > 1 ? 'Enviar palavras' : 'Enviar palavra'}
       </Button>
     </form>
   );

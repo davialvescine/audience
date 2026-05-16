@@ -35,7 +35,9 @@ export function AdminShell({ children, userEmail }: Props) {
           </div>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
+      <main className="mx-auto w-full px-4 py-6" style={{ maxWidth: 1600 }}>
+        {children}
+      </main>
     </div>
   );
 }

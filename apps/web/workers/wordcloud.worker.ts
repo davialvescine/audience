@@ -42,10 +42,13 @@ self.onmessage = (e: MessageEvent<LayoutRequest>) => {
     cloud<CloudWord>()
       .size([width, height])
       .words(sized)
-      .padding(8)
-      .rotate(() => (Math.random() < 0.25 ? (Math.random() < 0.5 ? -90 : 90) : 0))
-      .font('Inter')
+      .padding(20) // breathing room estilo Mentimeter, sem overlap
+      .rotate(0) // todas horizontais — Mentimeter-style
+      .font('Plus Jakarta Sans, Inter, system-ui, sans-serif')
+      .fontWeight(500)
       .fontSize((d) => d.size ?? 16)
+      .spiral('archimedean')
+      .random(() => 0.5)
       .on('end', (laid) => {
         const words: LaidOutWord[] = laid.map((w, i) => ({
           text: w.text ?? '',

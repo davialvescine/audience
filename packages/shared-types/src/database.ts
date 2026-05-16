@@ -70,6 +70,7 @@ export type Database = {
       }
       events: {
         Row: {
+          active_slide_id: string | null
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
@@ -90,6 +91,7 @@ export type Database = {
           wordcloud_config: Json
         }
         Insert: {
+          active_slide_id?: string | null
           created_at?: string
           dispatch_interval_seconds?: number
           enabled_display_modes?: Database["public"]["Enums"]["telao_display_mode"][]
@@ -110,6 +112,7 @@ export type Database = {
           wordcloud_config?: Json
         }
         Update: {
+          active_slide_id?: string | null
           created_at?: string
           dispatch_interval_seconds?: number
           enabled_display_modes?: Database["public"]["Enums"]["telao_display_mode"][]
@@ -130,6 +133,13 @@ export type Database = {
           wordcloud_config?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "events_active_slide_id_fkey"
+            columns: ["active_slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_pinned_submission_id_fkey"
             columns: ["pinned_submission_id"]
@@ -252,6 +262,44 @@ export type Database = {
           },
         ]
       }
+      slides: {
+        Row: {
+          config: Json
+          created_at: string
+          event_id: string
+          id: string
+          position: number
+          type: Database["public"]["Enums"]["slide_type"]
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          event_id: string
+          id?: string
+          position: number
+          type: Database["public"]["Enums"]["slide_type"]
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          event_id?: string
+          id?: string
+          position?: number
+          type?: Database["public"]["Enums"]["slide_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slides_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           approved_at: string | null
@@ -335,6 +383,7 @@ export type Database = {
           event_id: string
           id: string
           ip_hash: string | null
+          slide_id: string | null
           word: string
         }
         Insert: {
@@ -342,6 +391,7 @@ export type Database = {
           event_id: string
           id?: string
           ip_hash?: string | null
+          slide_id?: string | null
           word: string
         }
         Update: {
@@ -349,6 +399,7 @@ export type Database = {
           event_id?: string
           id?: string
           ip_hash?: string | null
+          slide_id?: string | null
           word?: string
         }
         Relationships: [
@@ -357,6 +408,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wordcloud_words_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
             referencedColumns: ["id"]
           },
         ]
@@ -385,6 +443,29 @@ export type Database = {
           webhook_url: string
         }[]
       }
+      create_slide: {
+        Args: {
+          p_config?: Json
+          p_event_id: string
+          p_type: Database["public"]["Enums"]["slide_type"]
+        }
+        Returns: {
+          config: Json
+          created_at: string
+          event_id: string
+          id: string
+          position: number
+          type: Database["public"]["Enums"]["slide_type"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "slides"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      delete_slide: { Args: { p_slide_id: string }; Returns: undefined }
       diag_rls_state: {
         Args: { p_user: string }
         Returns: {
@@ -393,6 +474,16 @@ export type Database = {
           member_rows: number
           policies_on_events: string
           total_events: number
+        }[]
+      }
+      get_active_slide: {
+        Args: { p_slug: string }
+        Returns: {
+          config: Json
+          event_id: string
+          event_name: string
+          slide_id: string
+          slide_type: Database["public"]["Enums"]["slide_type"]
         }[]
       }
       get_event_by_slug: {
@@ -455,7 +546,7 @@ export type Database = {
         }[]
       }
       get_wordcloud_state: {
-        Args: { p_slug: string }
+        Args: { p_slide_id?: string; p_slug: string }
         Returns: {
           count: number
           word: string
@@ -476,6 +567,24 @@ export type Database = {
           email: string
           user_id: string
         }[]
+      }
+      list_slides: {
+        Args: { p_event_id: string }
+        Returns: {
+          config: Json
+          created_at: string
+          event_id: string
+          id: string
+          position: number
+          type: Database["public"]["Enums"]["slide_type"]
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "slides"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       mark_submission_failed: {
         Args: { p_error: string; p_submission_id: string }
@@ -510,14 +619,50 @@ export type Database = {
         Args: { p_event_id: string; p_user_id: string }
         Returns: undefined
       }
+      reorder_slides: {
+        Args: { p_event_id: string; p_slide_ids: string[] }
+        Returns: undefined
+      }
+      reset_slide_words: { Args: { p_slide_id: string }; Returns: undefined }
       reset_submission_for_retry: {
         Args: { p_submission_id: string }
         Returns: undefined
       }
       reset_wordcloud: { Args: { p_event_id: string }; Returns: undefined }
+      set_active_slide: {
+        Args: { p_event_id: string; p_slide_id: string }
+        Returns: {
+          active_slide_id: string | null
+          created_at: string
+          dispatch_interval_seconds: number
+          enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
+          h2r_last_heartbeat: string | null
+          h2r_paired_at: string | null
+          h2r_source_id: string | null
+          h2r_webhook_url: string | null
+          id: string
+          name: string
+          owner_id: string
+          pinned_submission_id: string | null
+          slug: string
+          submissions_open: boolean
+          telao_config: Json
+          telao_configs: Json
+          theme_id: string
+          wordcloud_active: boolean
+          wordcloud_config: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_wordcloud_active: {
         Args: { p_active: boolean; p_event_id: string }
         Returns: {
+          active_slide_id: string | null
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
@@ -558,9 +703,28 @@ export type Database = {
         Returns: Json
       }
       unpin_submission: { Args: { p_event_id: string }; Returns: undefined }
+      update_slide: {
+        Args: { p_config: Json; p_slide_id: string }
+        Returns: {
+          config: Json
+          created_at: string
+          event_id: string
+          id: string
+          position: number
+          type: Database["public"]["Enums"]["slide_type"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "slides"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_wordcloud_config: {
         Args: { p_config: Json; p_event_id: string }
         Returns: {
+          active_slide_id: string | null
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
@@ -591,6 +755,7 @@ export type Database = {
       whoami_probe: { Args: never; Returns: string }
     }
     Enums: {
+      slide_type: "wordcloud" | "poll" | "open_ended" | "rating" | "qa"
       submission_status: "pending" | "approved" | "rejected" | "sent" | "failed"
       telao_display_mode:
         | "h2r"
@@ -727,6 +892,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      slide_type: ["wordcloud", "poll", "open_ended", "rating", "qa"],
       submission_status: ["pending", "approved", "rejected", "sent", "failed"],
       telao_display_mode: [
         "h2r",
