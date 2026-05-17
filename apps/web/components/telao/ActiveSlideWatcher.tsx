@@ -68,8 +68,26 @@ export function ActiveSlideWatcher({
       },
     ).subscribe();
 
+    // Polling fallback — caso o websocket do Realtime caia (firewall, CSP,
+    // browser_source com restrição de rede), pega mudança de slide ativo
+    // em até 2s. Quase grátis: 1 query SELECT por evento a cada 2s.
+    const poll = async () => {
+      const { data } = await sb
+        .from('events')
+        .select('active_slide_id')
+        .eq('id', eventId)
+        .maybeSingle();
+      const newId =
+        (data as { active_slide_id?: string | null } | null)?.active_slide_id ?? null;
+      if (newId !== lastSeenIdRef.current) {
+        await refreshIfTypeChanged(newId);
+      }
+    };
+    const pollInterval = setInterval(() => void poll(), 2000);
+
     return () => {
       ch.unsubscribe();
+      clearInterval(pollInterval);
     };
   }, [eventId, router]);
 
