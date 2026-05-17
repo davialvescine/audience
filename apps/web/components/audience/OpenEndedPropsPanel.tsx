@@ -2,8 +2,35 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import type { WordcloudBackground } from '@/hooks/useWordcloudActive';
 import type { OpenEndedConfig, Slide } from '@/lib/slides/types';
 import { resetOpenEndedSlide } from '@/server-actions/openEnded';
+
+const BACKGROUND_PRESETS: Array<{ label: string; bg: WordcloudBackground }> = [
+  { label: 'Sem fundo', bg: { type: 'none' } },
+  { label: 'Branco', bg: { type: 'color', value: '#FFFFFF' } },
+  { label: 'Escuro', bg: { type: 'color', value: '#0A2540' } },
+  { label: 'Sunset', bg: { type: 'gradient', from: '#FF6B6B', to: '#FFE66D' } },
+  { label: 'Ocean', bg: { type: 'gradient', from: '#0077B6', to: '#4ECDC4' } },
+  { label: 'Forest', bg: { type: 'gradient', from: '#06A77D', to: '#1D3557' } },
+  { label: 'Purple', bg: { type: 'gradient', from: '#6A4C93', to: '#E63946' } },
+];
+
+function bgPreview(bg: WordcloudBackground | undefined): string {
+  if (!bg || bg.type === 'none') return 'transparent';
+  if (bg.type === 'color') return bg.value;
+  if (bg.type === 'gradient') return `linear-gradient(135deg, ${bg.from}, ${bg.to})`;
+  return 'transparent';
+}
+
+function bgEquals(a: WordcloudBackground | undefined, b: WordcloudBackground): boolean {
+  if (!a) return b.type === 'none';
+  if (a.type !== b.type) return false;
+  if (a.type === 'color' && b.type === 'color') return a.value === b.value;
+  if (a.type === 'gradient' && b.type === 'gradient')
+    return a.from === b.from && a.to === b.to;
+  return a.type === b.type;
+}
 
 type Props = {
   slide: Slide<'open_ended'>;
@@ -70,7 +97,7 @@ export function OpenEndedPropsPanel({ slide, onChange, onLiveChange }: Props) {
                   : (parseInt(e.target.value, 10) as 1 | 2 | 3 | 4 | 5),
               )
             }
-            className="rounded-md border border-ink/15 bg-paper px-2 py-1 text-sm"
+            className="rounded-md border border-ink/15 bg-paper px-2 py-1.5 text-sm h-8 cursor-pointer"
           >
             <option value="unlimited">Ilimitado</option>
             <option value="1">1</option>
@@ -107,6 +134,44 @@ export function OpenEndedPropsPanel({ slide, onChange, onLiveChange }: Props) {
         </Row>
       </Section>
 
+      <Section title="Design">
+        <p className="text-xs text-ink/55 mb-2">Fundo do slide</p>
+        <div className="grid grid-cols-4 gap-2">
+          {BACKGROUND_PRESETS.map((p) => {
+            const isActive = bgEquals(config.background, p.bg);
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => set('background', p.bg)}
+                title={p.label}
+                aria-label={p.label}
+                aria-pressed={isActive}
+                className={`relative aspect-square rounded-md overflow-hidden transition border ${
+                  isActive ? 'border-accent ring-2 ring-accent/40' : 'border-ink/15 hover:border-ink/40'
+                }`}
+                style={{
+                  background: bgPreview(p.bg),
+                  // "Sem fundo" mostra padrão xadrez sutil pra indicar transparência.
+                  backgroundImage:
+                    p.bg.type === 'none'
+                      ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)'
+                      : undefined,
+                  backgroundSize: p.bg.type === 'none' ? '8px 8px' : undefined,
+                  backgroundPosition:
+                    p.bg.type === 'none' ? '0 0, 0 4px, 4px -4px, -4px 0px' : undefined,
+                }}
+              />
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-ink/45 mt-2">
+          {config.background?.type === 'none' || !config.background
+            ? 'Slide transparente — útil pra OBS/streaming.'
+            : BACKGROUND_PRESETS.find((p) => bgEquals(config.background, p.bg))?.label ?? 'Custom'}
+        </p>
+      </Section>
+
       <Section title="No telão">
         <Toggle
           label="Mostrar QR code"
@@ -119,7 +184,7 @@ export function OpenEndedPropsPanel({ slide, onChange, onLiveChange }: Props) {
             onChange={(e) =>
               set('joinInfoType', e.target.value as OpenEndedConfig['joinInfoType'])
             }
-            className="rounded-md border border-ink/15 bg-paper px-2 py-1 text-sm"
+            className="rounded-md border border-ink/15 bg-paper px-2 py-1.5 text-sm h-8 cursor-pointer"
           >
             <option value="qr_and_url">QR + URL + código</option>
             <option value="qr">Só QR</option>
@@ -136,7 +201,7 @@ export function OpenEndedPropsPanel({ slide, onChange, onLiveChange }: Props) {
                 e.target.value as OpenEndedConfig['showResponsesMode'],
               )
             }
-            className="rounded-md border border-ink/15 bg-paper px-2 py-1 text-sm"
+            className="rounded-md border border-ink/15 bg-paper px-2 py-1.5 text-sm h-8 cursor-pointer"
           >
             <option value="instant">Instantâneo</option>
             <option value="on_click">Só quando eu liberar</option>
@@ -152,9 +217,13 @@ export function OpenEndedPropsPanel({ slide, onChange, onLiveChange }: Props) {
             if (!window.confirm('Resetar todas as respostas deste slide?')) return;
             await resetOpenEndedSlide(slide.id);
           }}
-          className="text-xs text-danger hover:underline"
+          className="inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium text-danger bg-danger/10 hover:bg-danger/15 transition"
         >
-          🔄 Resetar respostas
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 4v5h5" />
+          </svg>
+          Resetar respostas
         </button>
       </Section>
     </div>
@@ -191,21 +260,25 @@ function Toggle({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 cursor-pointer">
-      <span className="text-ink/80">{label}</span>
+    <label className="flex items-center justify-between gap-3 cursor-pointer py-0.5">
+      <span className="text-ink/85">{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-5 w-9 rounded-full transition ${
-          checked ? 'bg-accent' : 'bg-ink/15'
+        // Switch maior, knob explícito em branco (não bg-paper) pra contraste
+        // tanto em light quanto em dark mode.
+        className={`relative h-6 w-11 rounded-full transition-colors shrink-0 ${
+          checked ? 'bg-accent' : 'bg-ink/20'
         }`}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-paper shadow transition-transform ${
-            checked ? 'translate-x-4' : 'translate-x-0.5'
+          aria-hidden
+          className={`block h-5 w-5 rounded-full shadow-md transition-transform ${
+            checked ? 'translate-x-[22px]' : 'translate-x-0.5'
           }`}
+          style={{ background: '#FFFFFF', marginTop: 2 }}
         />
       </button>
     </label>
