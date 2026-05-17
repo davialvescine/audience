@@ -90,19 +90,14 @@ export function SlideThumbnail({
               Ao vivo
             </span>
           ) : null}
-          {/* Play overlay — hover em slides NÃO ativos. Clique = ativa. */}
+          {/* Hover hint pra slides NÃO ativos: indica que clique vai ao vivo. */}
           {!isActive ? (
             <span
-              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-ink/35 transition-opacity"
-              role="button"
-              aria-label="Ativar slide no telão"
-              onClick={(e) => {
-                e.stopPropagation();
-                onActivate();
-              }}
+              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-ink/25 transition-opacity pointer-events-none"
+              aria-hidden
             >
-              <span className="h-9 w-9 rounded-full bg-paper text-primary flex items-center justify-center text-base shadow-lg">
-                ▶
+              <span className="text-paper text-[10px] font-bold uppercase tracking-wide bg-primary/80 px-2 py-1 rounded shadow-lg">
+                ▶ Exibir
               </span>
             </span>
           ) : null}

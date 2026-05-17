@@ -332,7 +332,12 @@ export function SlidesTab({
                     total={slides.length}
                     isSelected={selected?.id === slide.id}
                     isActive={activeId === slide.id}
-                    onSelect={() => setSelectedId(slide.id)}
+                    onSelect={() => {
+                      // Clicar no thumb = ativa direto no telão E seleciona pra edição.
+                      // WYSIWYG: o que tá selecionado é o que tá ao vivo.
+                      setSelectedId(slide.id);
+                      void onActivate(slide.id);
+                    }}
                     onActivate={() => onActivate(slide.id)}
                     onDeactivate={() => onActivate(null)}
                     onDelete={() => onDelete(slide.id)}
