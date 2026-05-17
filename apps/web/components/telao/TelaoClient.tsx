@@ -59,6 +59,14 @@ export function TelaoClient({
   // from the admin TelaoTab. For non-preview /telao tabs, refresh after
   // saving config in admin to see changes.
   const [config, setConfig] = useState<TelaoConfig>(initialConfig);
+  // Quando o TelaoClient está embed direto (não em iframe), o prop
+  // initialConfig muda quando o parent atualiza a config do slide. Sincroniza
+  // o state interno pra refletir as mudanças do painel lateral em tempo real.
+  // Em preview iframe (TelaoTab antiga), o initialConfig nunca muda — usa
+  // postMessage. Em ambos os casos esse useEffect é safe (no-op no iframe).
+  useEffect(() => {
+    setConfig(initialConfig);
+  }, [initialConfig]);
   const [visible, setVisible] = useState<Submission[]>([]);
   const [pinned, setPinned] = useState<Submission | null>(null);
   const queueRef = useRef<Submission[]>([]);
