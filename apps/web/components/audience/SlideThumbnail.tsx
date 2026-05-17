@@ -96,26 +96,24 @@ export function SlideThumbnail({
             </span>
           ) : null}
         </button>
-        {/* Linha de meta: AO VIVO (clicável → pausa) + ações em hover */}
-        <div className="mt-1 flex items-center justify-between min-h-[18px]">
-          {isActive ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeactivate();
-              }}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider hover:bg-success/20 transition"
-              title="Clique pra pausar"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              Ao vivo
-            </button>
-          ) : (
-            <span />
-          )}
-          {/* Ações secundárias inline — só aparecem ao hover */}
+        {/* Ações secundárias inline — só aparecem ao hover. O indicador AO VIVO
+            mora no top bar da aba Slides (não precisa duplicar aqui). */}
+        <div className="mt-1 flex items-center justify-end min-h-[18px]">
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {isActive ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeactivate();
+                }}
+                className="h-5 px-1.5 text-[10px] rounded text-ink/55 hover:bg-ink/[0.08] transition"
+                title="Pausar slide"
+                aria-label="Pausar slide"
+              >
+                ⏸
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={(e) => {

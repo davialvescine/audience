@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
+
 export type OpenEndedResponse = {
   id: string;
   text: string;
@@ -58,10 +60,44 @@ export function useOpenEndedResponses(
   >('connecting');
 
   // Re-sincroniza quando slideId muda (operador troca de slide).
+  // Reseta pro initial e refetch via SELECT pra pegar respostas existentes
+  // do novo slide (caso operador volte pra slide com respostas anteriores).
   useEffect(() => {
     setResponses(opts.initialResponses);
+    if (!slideId) return;
+    let cancelled = false;
+    // Cast 'as any' — types do Supabase ainda não conhecem open_ended_responses
+    // (regenerar shared-types depois). Schema da tabela está estável na migration.
+    void (
+      getSupabaseBrowserClient().from('open_ended_responses' as never) as unknown as {
+        select: (cols: string) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => {
+              order: (col: string, opts: { ascending: boolean }) => {
+                limit: (n: number) => Promise<{
+                  data: Array<Record<string, unknown>> | null;
+                }>;
+              };
+            };
+          };
+        };
+      }
+    )
+      .select('id, text, author_name, vote_count, created_at')
+      .eq('event_id', eventId)
+      .eq('slide_id', slideId)
+      .order('created_at', { ascending: false })
+      .limit(200)
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (!data || data.length === 0) return;
+        setResponses(data.map((row) => rowToResponse(row)));
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slideId]);
+  }, [slideId, eventId]);
 
   const slideIdRef = useRef<string | null>(slideId);
   useEffect(() => {

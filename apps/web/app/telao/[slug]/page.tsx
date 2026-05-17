@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 
+import { ActiveSlideWatcher } from '@/components/telao/ActiveSlideWatcher';
 import { FullscreenAuto } from '@/components/telao/FullscreenAuto';
 import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
@@ -210,6 +211,11 @@ export default async function TelaoPage({
   const staged = (
     <>
       <FullscreenAuto />
+      <ActiveSlideWatcher
+        eventId={event.event_id}
+        initialActiveSlideId={activeSlideId}
+        initialActiveType={activeSlideType}
+      />
       <TelaoStage>{telao}</TelaoStage>
     </>
   );
