@@ -39,6 +39,10 @@ type Props = {
   /** Chamado no pointerup do drag em preview mode. Alternativa ao postMessage
    *  pra quando o TelaoClient está no mesmo doc (ex: SlideCanvas). */
   onPositionChange?: ((pos: { posXPct: number; posYPct: number }) => void) | undefined;
+  /** Ref opcional pro elemento que representa o palco 1920x1080 (escalado).
+   *  Quando passado, o drag calcula % relativo a esse elemento (resolve o
+   *  problema de iframe scaled). Sem ele, assume viewport nativo 1920x1080. */
+  stageRef?: React.RefObject<HTMLElement | null> | undefined;
 };
 
 export function TelaoClient({
@@ -51,6 +55,7 @@ export function TelaoClient({
   title,
   showTitle = false,
   onPositionChange,
+  stageRef,
 }: Props) {
   const intervalRef = useRef(intervalSeconds);
   intervalRef.current = intervalSeconds;
@@ -427,13 +432,26 @@ export function TelaoClient({
   } | null>(null);
   const [dragHud, setDragHud] = useState<{ x: number; y: number } | null>(null);
 
+  // Captura dimensões do palco no pointerdown. Em modo telão (fullscreen,
+  // viewport = 1920×1080), usa 1920/1080 direto. Em modo preview embed
+  // (SlideCanvas), palco é escalado — pega a bounding rect do stageRef
+  // pra calcular % corretamente.
+  const stageRectRef = useRef<{ left: number; top: number; width: number; height: number } | null>(
+    null,
+  );
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!preview) return;
     const el = rootRef.current;
     if (!el) return;
+    const stage = stageRef?.current?.getBoundingClientRect();
+    const sRect = stage
+      ? { left: stage.left, top: stage.top, width: stage.width, height: stage.height }
+      : { left: 0, top: 0, width: 1920, height: 1080 };
+    stageRectRef.current = sRect;
     const rect = el.getBoundingClientRect();
-    const baseX = ((rect.left + rect.width / 2) / 1920) * 100;
-    const baseY = ((rect.top + rect.height / 2) / 1080) * 100;
+    const baseX = ((rect.left + rect.width / 2 - sRect.left) / sRect.width) * 100;
+    const baseY = ((rect.top + rect.height / 2 - sRect.top) / sRect.height) * 100;
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -450,8 +468,9 @@ export function TelaoClient({
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
-    const dx = ((e.clientX - d.startX) / 1920) * 100;
-    const dy = ((e.clientY - d.startY) / 1080) * 100;
+    const sRect = stageRectRef.current ?? { width: 1920, height: 1080 };
+    const dx = ((e.clientX - d.startX) / sRect.width) * 100;
+    const dy = ((e.clientY - d.startY) / sRect.height) * 100;
     // Snap em 0/25/50/75/100% quando dentro de 3% — o operador agarra
     // os cantos/centro sem precisar mirar pixel-perfect.
     const nx = snapToGrid(d.baseX + dx, 3);
@@ -559,8 +578,10 @@ export function TelaoClient({
                 marginBottom: '0.25em',
               }}
             >
-              {config.showEventName ? <span style={{ marginRight: 8 }}>{eventName} ·</span> : null}
-              {m.name}
+              {config.showEventName && eventName ? (
+                <span style={{ marginRight: 8 }}>{eventName} ·</span>
+              ) : null}
+              {config.showAvatar !== false ? m.name : null}
               {config.showTimestamp ? (
                 <span style={{ marginLeft: 8, opacity: 0.6 }} suppressHydrationWarning>
                   {new Date(m.created_at).toLocaleTimeString('pt-BR', {

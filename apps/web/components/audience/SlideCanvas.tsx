@@ -42,6 +42,7 @@ const SAMPLE_ENTRIES: WordEntry[] = [
  */
 export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
   const cfg = liveConfig ?? (slide.config as WordcloudConfig);
   // Default = ligado. Operador desliga explicitamente com showQr=false.
@@ -70,6 +71,7 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
   return (
     <div ref={boxRef} className="relative h-full w-full flex items-center justify-center p-6 pb-16">
       <div
+        ref={stageRef}
         className="relative shadow-2xl rounded-xl overflow-hidden"
         style={{ width: 1920 * scale, height: 1080 * scale }}
       >
@@ -103,8 +105,10 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
             />
           ) : slide.type === 'comments' ? (
             <CommentsCanvas
+              key={slide.id}
               slide={slide as Slide<'comments'>}
               liveConfig={liveConfig as unknown as CommentsConfig | undefined}
+              stageRef={stageRef}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-ink/5">
@@ -356,9 +360,11 @@ function makeNoopChannel(): ChannelLike {
 function CommentsCanvas({
   slide,
   liveConfig,
+  stageRef,
 }: {
   slide: Slide<'comments'>;
   liveConfig: CommentsConfig | undefined;
+  stageRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const cfg = liveConfig ?? slide.config;
   const bg = cfg.background ?? { type: 'none' as const };
@@ -373,6 +379,7 @@ function CommentsCanvas({
         preview
         title={cfg.title}
         showTitle={cfg.showTitle === true}
+        stageRef={stageRef}
         onPositionChange={({ posXPct, posYPct }) => {
           void updateSlide(slide.id, { ...cfg, posXPct, posYPct } as unknown as Record<string, unknown>);
         }}
