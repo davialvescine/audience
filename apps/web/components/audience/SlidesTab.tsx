@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
+import { CommentsPropsPanel } from '@/components/audience/CommentsPropsPanel';
 import { OpenEndedPropsPanel } from '@/components/audience/OpenEndedPropsPanel';
 import { SlideCanvas } from '@/components/audience/SlideCanvas';
 import { SlidePropsPanel } from '@/components/audience/SlidePropsPanel';
@@ -12,7 +13,7 @@ import { useSlides } from '@/hooks/useSlides';
 import { useTauri } from '@/hooks/useTauri';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
-import { DEFAULT_OPEN_ENDED_CONFIG, type Slide, type SlideType } from '@/lib/slides/types';
+import { DEFAULT_COMMENTS_CONFIG, DEFAULT_OPEN_ENDED_CONFIG, type Slide, type SlideType } from '@/lib/slides/types';
 import {
   createSlide,
   deleteSlide,
@@ -84,7 +85,9 @@ export function SlidesTab({
       const config =
         type === 'open_ended'
           ? { ...DEFAULT_OPEN_ENDED_CONFIG }
-          : { ...DEFAULT_WORDCLOUD_CONFIG };
+          : type === 'comments'
+            ? { ...DEFAULT_COMMENTS_CONFIG }
+            : { ...DEFAULT_WORDCLOUD_CONFIG };
       const r = await createSlide(eventId, type, config);
       if (r.ok) setSelectedId(r.data.id);
     });
@@ -388,6 +391,16 @@ export function SlidesTab({
                     }
                   : undefined
               }
+            />
+          ) : selected && selected.type === 'comments' ? (
+            <CommentsPropsPanel
+              slide={selected as Slide<'comments'>}
+              slug={slug}
+              onChange={(cfg) => {
+                setLiveConfig(cfg as unknown as WordcloudConfig);
+                void updateSlide(selected.id, cfg as unknown as Record<string, unknown>);
+              }}
+              onLiveChange={(cfg) => setLiveConfig(cfg as unknown as WordcloudConfig)}
             />
           ) : selected ? (
             <p className="text-sm text-ink/60 p-4">

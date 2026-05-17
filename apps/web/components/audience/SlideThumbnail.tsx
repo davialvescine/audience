@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
-import { WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import { backgroundStyle, WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
-import type { OpenEndedConfig, Slide } from '@/lib/slides/types';
+import type { CommentsConfig, OpenEndedConfig, Slide } from '@/lib/slides/types';
+import { customPositionStyles, positionStyles, shadowStyle } from '@/lib/telao/config';
 import type { WordEntry } from '@/lib/wordcloud/types';
 
 const SAMPLE_WORDS: WordEntry[] = [
@@ -207,11 +208,79 @@ function ScaledSlidePreview({ slide }: { slide: Slide }) {
             channel={makeNoop()}
             showBackground
           />
+        ) : slide.type === 'comments' ? (
+          <CommentsThumb config={slide.config as CommentsConfig} />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-3xl text-ink/40">
             {slide.type}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Mini-preview do slide `comments` — card de exemplo posicionado conforme
+ * config.posXPct/posYPct (ou position preset).
+ */
+function CommentsThumb({ config }: { config: CommentsConfig }) {
+  const hasCustomPos =
+    typeof config.posXPct === 'number' && typeof config.posYPct === 'number';
+  const positionStyle = hasCustomPos
+    ? customPositionStyles(config.posXPct as number, config.posYPct as number)
+    : positionStyles(config.position);
+  const wrapBg = backgroundStyle(config.background ?? { type: 'none' });
+  return (
+    <div className="absolute inset-0" style={wrapBg}>
+      {config.showTitle && config.title ? (
+        <h1
+          style={{
+            position: 'fixed',
+            top: '4%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: config.cardText,
+            fontFamily: config.fontFamily,
+            fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
+            fontWeight: 700,
+            textAlign: 'center',
+            margin: 0,
+          }}
+        >
+          {config.title}
+        </h1>
+      ) : null}
+      <div
+        style={{
+          ...positionStyle,
+          width: `${config.widthPct}%`,
+          fontFamily: config.fontFamily,
+        }}
+      >
+        <div
+          style={{
+            background: config.cardBg,
+            color: config.cardText,
+            borderRadius: `${config.borderRadius}px`,
+            boxShadow: shadowStyle(config.shadow),
+            padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
+            fontSize: `${config.fontSizePx}px`,
+            lineHeight: 1.3,
+          }}
+        >
+          <div
+            style={{
+              fontSize: `${Math.round(config.fontSizePx * 0.55)}px`,
+              opacity: 0.75,
+              fontWeight: 600,
+              marginBottom: '0.25em',
+            }}
+          >
+            Convidado
+          </div>
+          <div style={{ fontWeight: 500 }}>Que evento incrível!</div>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
-import { WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import { TelaoClient } from '@/components/telao/TelaoClient';
+import { backgroundStyle, WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import type { CommentsConfig } from '@/lib/slides/types';
+import { updateSlide } from '@/server-actions/slides';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import type { OpenEndedConfig, Slide } from '@/lib/slides/types';
@@ -97,6 +100,11 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
               slide={slide as Slide<'open_ended'>}
               liveConfig={liveConfig as unknown as OpenEndedConfig | undefined}
               joinUrl={joinUrl}
+            />
+          ) : slide.type === 'comments' ? (
+            <CommentsCanvas
+              slide={slide as Slide<'comments'>}
+              liveConfig={liveConfig as unknown as CommentsConfig | undefined}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-ink/5">
@@ -338,4 +346,37 @@ function makeNoopChannel(): ChannelLike {
     unsubscribe() {},
   };
   return self;
+}
+
+/**
+ * Preview do slide `comments` no canvas central do editor.
+ * Renderiza TelaoClient em preview mode (mostra sample comment + permite
+ * drag-to-position). Posição é persistida via autosave do callback.
+ */
+function CommentsCanvas({
+  slide,
+  liveConfig,
+}: {
+  slide: Slide<'comments'>;
+  liveConfig: CommentsConfig | undefined;
+}) {
+  const cfg = liveConfig ?? slide.config;
+  const bg = cfg.background ?? { type: 'none' as const };
+  const wrapBg = backgroundStyle(bg);
+  return (
+    <div className="absolute inset-0" style={wrapBg}>
+      <TelaoClient
+        slug="preview"
+        eventId={slide.event_id}
+        eventName=""
+        config={cfg}
+        preview
+        title={cfg.title}
+        showTitle={cfg.showTitle === true}
+        onPositionChange={({ posXPct, posYPct }) => {
+          void updateSlide(slide.id, { ...cfg, posXPct, posYPct } as unknown as Record<string, unknown>);
+        }}
+      />
+    </div>
+  );
 }

@@ -33,6 +33,12 @@ type Props = {
   config: TelaoConfig;
   intervalSeconds?: number;
   preview?: boolean;
+  /** Título opcional acima do card. Renderizado apenas se showTitle && title. */
+  title?: string | undefined;
+  showTitle?: boolean | undefined;
+  /** Chamado no pointerup do drag em preview mode. Alternativa ao postMessage
+   *  pra quando o TelaoClient está no mesmo doc (ex: SlideCanvas). */
+  onPositionChange?: ((pos: { posXPct: number; posYPct: number }) => void) | undefined;
 };
 
 export function TelaoClient({
@@ -42,6 +48,9 @@ export function TelaoClient({
   config: initialConfig,
   intervalSeconds = 3,
   preview = false,
+  title,
+  showTitle = false,
+  onPositionChange,
 }: Props) {
   const intervalRef = useRef(intervalSeconds);
   intervalRef.current = intervalSeconds;
@@ -462,9 +471,33 @@ export function TelaoClient({
         window.location.origin,
       );
     }
+    onPositionChange?.({ posXPct: d.lastX, posYPct: d.lastY });
   };
 
   return (
+    <>
+      {showTitle && title ? (
+        <h1
+          style={{
+            position: 'fixed',
+            top: '4%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: config.cardText,
+            fontFamily: config.fontFamily,
+            fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
+            fontWeight: 700,
+            textAlign: 'center',
+            margin: 0,
+            padding: 0,
+            zIndex: 5,
+            maxWidth: '90vw',
+            wordBreak: 'break-word',
+          }}
+        >
+          {title}
+        </h1>
+      ) : null}
     <div
       id="telao-root"
       ref={rootRef}
@@ -553,5 +586,6 @@ export function TelaoClient({
         </div>
       ) : null}
     </div>
+    </>
   );
 }

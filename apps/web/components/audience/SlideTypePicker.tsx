@@ -26,6 +26,7 @@ const GROUPS: Group[] = [
     items: [
       { type: 'wordcloud', label: 'Nuvem de palavras', icon: <CloudIcon />, enabled: true },
       { type: 'open_ended', label: 'Aberto', icon: <ChatIcon />, enabled: true },
+      { type: 'comments', label: 'Cards rotativos', icon: <CommentsIcon />, enabled: true },
       { type: 'poll', label: 'Múltipla escolha', icon: <BarsIcon />, enabled: false },
       { type: 'rating', label: 'Escalas', icon: <ScaleIcon />, enabled: false },
       { type: 'qa', label: 'Perguntas e respostas', icon: <QnaIcon />, enabled: false },
@@ -131,6 +132,14 @@ function ChatIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
       <path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z" />
+    </svg>
+  );
+}
+function CommentsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M3 6h13a2 2 0 012 2v6a2 2 0 01-2 2H9l-4 3v-3H3z" />
+      <path d="M8 18h11a2 2 0 002-2v-6" opacity=".5" />
     </svg>
   );
 }
