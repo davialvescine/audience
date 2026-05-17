@@ -228,6 +228,7 @@ export function OpenEndedDisplay({
             textColor={textColor}
             subtleColor={subtleColor}
             allowVoting={config.allowVoting === true}
+            lightBg={lightBg}
           />
         )}
       </div>
@@ -288,12 +289,19 @@ function ResponseGrid({
   textColor,
   subtleColor,
   allowVoting,
+  lightBg,
 }: {
   responses: OpenEndedResponse[];
   textColor: string;
   subtleColor: string;
   allowVoting: boolean;
+  lightBg: boolean;
 }) {
+  // Card bg adapta ao fundo: claro vira card sombreado escuro suave,
+  // escuro vira card translúcido branco. Funciona até com slide
+  // transparente (mode browser_source / sem fundo).
+  const cardBg = lightBg ? 'rgba(10, 24, 52, 0.06)' : 'rgba(255, 255, 255, 0.14)';
+  const cardBorder = lightBg ? 'rgba(10, 24, 52, 0.10)' : 'rgba(255, 255, 255, 0.20)';
   return (
     <div
       className="h-full"
@@ -312,7 +320,7 @@ function ResponseGrid({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 22, stiffness: 220, mass: 0.7 }}
             className="mb-6 break-inside-avoid rounded-2xl p-6 shadow-lg backdrop-blur"
-            style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }}
+            style={{ background: cardBg, borderColor: cardBorder, borderWidth: 1 }}
           >
             <p
               className="leading-snug"

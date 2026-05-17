@@ -370,6 +370,20 @@ export function SlidesTab({
                 void updateSlide(selected.id, cfg as unknown as Record<string, unknown>);
               }}
               onLiveChange={(cfg) => setLiveConfig(cfg as unknown as WordcloudConfig)}
+              onApplyToAll={
+                slides.filter((s) => s.id !== selected.id && s.type === 'open_ended').length > 0
+                  ? () => {
+                      const cfg = liveConfig ?? selected.config;
+                      void Promise.all(
+                        slides
+                          .filter((s) => s.id !== selected.id && s.type === 'open_ended')
+                          .map((s) =>
+                            updateSlide(s.id, cfg as unknown as Record<string, unknown>),
+                          ),
+                      );
+                    }
+                  : undefined
+              }
             />
           ) : selected ? (
             <p className="text-sm text-ink/60 p-4">

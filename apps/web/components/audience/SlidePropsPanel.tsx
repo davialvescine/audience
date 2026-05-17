@@ -39,7 +39,7 @@ const PALETTE_DARK = [
   '#A8E6CF',
 ];
 
-const BACKGROUND_PRESETS: Array<{ label: string; bg: WordcloudBackground; palette: string[] }> = [
+export const BACKGROUND_PRESETS: Array<{ label: string; bg: WordcloudBackground; palette: string[] }> = [
   { label: 'Branco', bg: { type: 'color', value: '#FFFFFF' }, palette: PALETTE_LIGHT },
   { label: 'Escuro', bg: { type: 'color', value: '#0A2540' }, palette: PALETTE_DARK },
   {
@@ -491,7 +491,7 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
   );
 }
 
-function LiveBadge() {
+export function LiveBadge() {
   return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider align-middle ml-1">
       <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
@@ -500,7 +500,7 @@ function LiveBadge() {
   );
 }
 
-function Section({
+export function Section({
   title,
   children,
   live,
@@ -525,7 +525,7 @@ function Section({
   );
 }
 
-function Check({
+export function Check({
   label,
   checked,
   onChange,
@@ -547,7 +547,7 @@ function Check({
   );
 }
 
-function Radio<V extends string>({
+export function Radio<V extends string>({
   name,
   value,
   current,
@@ -583,7 +583,7 @@ function Radio<V extends string>({
   );
 }
 
-function BgImageUploader({
+export function BgImageUploader({
   eventId,
   current,
   onUploaded,
