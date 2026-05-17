@@ -121,7 +121,9 @@ export function TelaoCommentsSwitcher({
           <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
             <QRCodeSVG value={joinUrl} size={520} level="M" />
           </div>
-          <p className="text-3xl font-semibold text-ink">{joinHost}</p>
+          {merged.showJoinUrl !== false ? (
+            <p className="text-3xl font-semibold text-ink">{joinHost}</p>
+          ) : null}
         </div>
       ) : null}
       {showQr && !qrFullscreen && joinUrl ? (
@@ -132,10 +134,12 @@ export function TelaoCommentsSwitcher({
           <div className="bg-white p-3 rounded-lg">
             <QRCodeSVG value={joinUrl} size={220} level="M" />
           </div>
-          <div className="text-center">
-            <p className="text-lg font-semibold">{joinHost}</p>
-            <p className="text-sm opacity-70 mt-1">Aponte sua câmera</p>
-          </div>
+          {merged.showJoinUrl !== false ? (
+            <div className="text-center">
+              <p className="text-lg font-semibold">{joinHost}</p>
+              <p className="text-sm opacity-70 mt-1">Aponte sua câmera</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -388,6 +388,27 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
           </p>
         </Section>
 
+        <Section title="QR code do telão" live>
+          <Check
+            label="Mostrar QR lateral"
+            checked={config.showQr === true}
+            onChange={(v) => setConfig((c) => ({ ...c, showQr: v }))}
+          />
+          <Check
+            label="QR gigante (tela cheia)"
+            checked={config.qrFullscreen === true}
+            onChange={(v) => setConfig((c) => ({ ...c, qrFullscreen: v }))}
+          />
+          <Check
+            label="Mostrar link/URL abaixo do QR"
+            checked={config.showJoinUrl !== false}
+            onChange={(v) => setConfig((c) => ({ ...c, showJoinUrl: v }))}
+          />
+          <p className="text-[11px] text-ink/55 mt-1">
+            QR + URL ficam ocultos automaticamente no modo OBS (transparente).
+          </p>
+        </Section>
+
         <Section title="Compartilhar pro OBS">
           <p className="text-[11px] text-ink/60 leading-relaxed">
             Use esse link como <strong>Browser Source</strong> no OBS / vMix / Streamlabs. O fundo

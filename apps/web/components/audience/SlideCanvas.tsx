@@ -499,7 +499,9 @@ function CommentsCanvas({
           <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
             <QRCodeSVG value={joinUrl} size={520} level="M" />
           </div>
-          <p className="text-3xl font-semibold text-ink">{joinHost}</p>
+          {cfg.showJoinUrl !== false ? (
+            <p className="text-3xl font-semibold text-ink">{joinHost}</p>
+          ) : null}
         </div>
       ) : null}
       {qrOn && !qrFullscreenOn && joinUrl ? (
@@ -510,7 +512,9 @@ function CommentsCanvas({
           <div className="bg-white p-3 rounded-lg">
             <QRCodeSVG value={joinUrl} size={220} level="M" />
           </div>
-          <p className="text-lg font-semibold">{joinHost}</p>
+          {cfg.showJoinUrl !== false ? (
+            <p className="text-lg font-semibold">{joinHost}</p>
+          ) : null}
         </div>
       ) : null}
     </div>
