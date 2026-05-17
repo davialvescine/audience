@@ -207,6 +207,29 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
       <Section title="Design">
         <p className="text-[11px] uppercase font-bold text-ink/55 mb-1">Plano de fundo</p>
         <div className="grid grid-cols-3 gap-1.5">
+          {/* "Sem fundo" — útil pra OBS browser source (telão transparente
+              continua mostrando palavras sobre o vídeo da câmera). */}
+          <button
+            type="button"
+            onClick={() => setConfig((c) => ({ ...c, background: { type: 'none' } }))}
+            className={`h-12 rounded-md border text-[10px] font-medium overflow-hidden relative ${
+              bg.type === 'none' ? 'border-accent ring-1 ring-accent/40' : 'border-ink/15 hover:border-accent'
+            }`}
+            style={{
+              backgroundImage:
+                'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)',
+              backgroundSize: '8px 8px',
+              backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+            }}
+            title="Sem fundo (transparente, ideal pra OBS)"
+          >
+            <span
+              className="absolute bottom-0 left-0 right-0 bg-paper/80 backdrop-blur px-1 text-ink truncate"
+              style={{ lineHeight: '14px' }}
+            >
+              Sem fundo
+            </span>
+          </button>
           {BACKGROUND_PRESETS.map((p) => (
             <button
               key={p.label}
