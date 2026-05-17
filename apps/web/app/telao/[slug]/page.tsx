@@ -203,12 +203,9 @@ export default async function TelaoPage({
     );
   }
 
-  // Only wrap with PipLauncher when:
-  // - mode=chrome_pip explicitly requested (URL came from "Janela Flutuante" in admin), OR
-  // - no mode at all (direct visit) AND not in preview iframe
-  // Browser Source URLs use ?mode=browser_source — no PiP overlay then.
-  // In preview mode the iframe is already sized to 1920x1080, so we skip
-  // TelaoStage (which would double-scale).
+  // Só envelopa com PipLauncher quando explicitamente requested via ?mode=chrome_pip.
+  // Antes envelopava também quando !mode (visita direta), mas isso sobrepunha
+  // o overlay "Janela flutuante" em cima do slide no fluxo normal de slides.
   if (isPreview) return telao;
   const staged = (
     <>
@@ -216,7 +213,7 @@ export default async function TelaoPage({
       <TelaoStage>{telao}</TelaoStage>
     </>
   );
-  if (isPip || !mode) return <PipLauncher>{staged}</PipLauncher>;
+  if (isPip) return <PipLauncher>{staged}</PipLauncher>;
   return staged;
 }
 
