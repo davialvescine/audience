@@ -20,14 +20,19 @@ type ChannelLike = {
   unsubscribe: () => void;
 };
 
+export type ActiveSlideType = 'wordcloud' | 'open_ended' | null;
+
 export type UseActiveSlideOptions = {
   initialActiveSlideId: string | null;
+  initialActiveType?: ActiveSlideType;
   initialActiveConfig: WordcloudConfig | null;
   channel?: ChannelLike | undefined;
 };
 
 /**
- * Audiência: mantém o slide ativo + sua config sincronizados via Realtime.
+ * Audiência: mantém o slide ativo (id + tipo + config) sincronizados via
+ * Realtime. Importante pra trocar entre nuvem/aberto em tempo real sem
+ * precisar refreshar a página.
  *
  * Critical: subscribe roda UMA vez (deps só [channel, eventId]). O callback
  * lê activeSlideId via ref pra evitar closure stale — se trocar `activeSlideId`
@@ -37,9 +42,14 @@ export type UseActiveSlideOptions = {
 export function useActiveSlideConfig(
   eventId: string,
   opts: UseActiveSlideOptions,
-): { activeSlideId: string | null; config: WordcloudConfig | null } {
+): {
+  activeSlideId: string | null;
+  activeType: ActiveSlideType;
+  config: unknown;
+} {
   const [activeSlideId, setActiveSlideId] = useState<string | null>(opts.initialActiveSlideId);
-  const [config, setConfig] = useState<WordcloudConfig | null>(opts.initialActiveConfig);
+  const [activeType, setActiveType] = useState<ActiveSlideType>(opts.initialActiveType ?? null);
+  const [config, setConfig] = useState<unknown>(opts.initialActiveConfig);
   const activeSlideIdRef = useRef<string | null>(opts.initialActiveSlideId);
 
   // Mantém ref em sincronia com state — usado dentro do callback de slides UPDATE
@@ -52,14 +62,35 @@ export function useActiveSlideConfig(
     const ch = opts.channel;
     if (!ch) return;
 
+    const sb = getSupabaseBrowserClient();
     ch.on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
       (payload) => {
         const row = payload.new as { active_slide_id?: string | null };
         if ('active_slide_id' in row) {
-          setActiveSlideId(row.active_slide_id ?? null);
-          activeSlideIdRef.current = row.active_slide_id ?? null;
+          const newId = row.active_slide_id ?? null;
+          setActiveSlideId(newId);
+          activeSlideIdRef.current = newId;
+          // Refetch tipo + config quando o slide ativo muda — operador pode
+          // ter trocado de nuvem pra aberto, audiência precisa adaptar input.
+          if (newId) {
+            void sb
+              .from('slides')
+              .select('type, config')
+              .eq('id', newId)
+              .maybeSingle()
+              .then(({ data }) => {
+                const row2 = data as { type?: string; config?: unknown } | null;
+                if (row2?.type === 'wordcloud' || row2?.type === 'open_ended') {
+                  setActiveType(row2.type);
+                }
+                if (row2?.config) setConfig(row2.config);
+              });
+          } else {
+            setActiveType(null);
+            setConfig(null);
+          }
         }
       },
     )
@@ -67,9 +98,12 @@ export function useActiveSlideConfig(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'slides', filter: `event_id=eq.${eventId}` },
         (payload) => {
-          const row = payload.new as { id?: string; config?: WordcloudConfig };
-          if (row.id && row.id === activeSlideIdRef.current && row.config) {
-            setConfig(row.config);
+          const row = payload.new as { id?: string; type?: string; config?: unknown };
+          if (row.id && row.id === activeSlideIdRef.current) {
+            if (row.type === 'wordcloud' || row.type === 'open_ended') {
+              setActiveType(row.type);
+            }
+            if (row.config) setConfig(row.config);
           }
         },
       )
@@ -102,18 +136,21 @@ export function useActiveSlideConfig(
       if (newActiveId) {
         const { data: slideRow } = await sb
           .from('slides')
-          .select('config')
+          .select('type, config')
           .eq('id', newActiveId)
           .maybeSingle();
         if (cancelled) return;
-        const cfg = (slideRow as { config?: WordcloudConfig } | null)?.config;
-        if (cfg) {
-          // Só atualiza se realmente mudou (evita re-render desnecessário)
-          setConfig((prev) =>
-            JSON.stringify(prev) === JSON.stringify(cfg) ? prev : cfg,
+        const row = slideRow as { type?: string; config?: unknown } | null;
+        if (row?.type === 'wordcloud' || row?.type === 'open_ended') {
+          setActiveType((prev) => (prev === row.type ? prev : row.type as ActiveSlideType));
+        }
+        if (row?.config) {
+          setConfig((prev: unknown) =>
+            JSON.stringify(prev) === JSON.stringify(row.config) ? prev : row.config,
           );
         }
       } else {
+        setActiveType(null);
         setConfig(null);
       }
     };
@@ -125,5 +162,5 @@ export function useActiveSlideConfig(
     };
   }, [eventId]);
 
-  return { activeSlideId, config };
+  return { activeSlideId, activeType, config };
 }

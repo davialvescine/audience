@@ -98,7 +98,12 @@ export function TelaoWordcloudSwitcher({
 
   // Precedência: slide ativo > legacy toggle.
   const active = slide.activeSlideId !== null || legacy.active;
-  const config: WordcloudConfig = slide.config ?? legacy.config;
+  // slide.config agora é `unknown` (pode ser WordcloudConfig OU OpenEndedConfig).
+  // Este switcher só renderiza wordcloud, então fazer cast quando type === 'wordcloud'.
+  const config: WordcloudConfig =
+    slide.activeType === 'wordcloud' && slide.config
+      ? (slide.config as WordcloudConfig)
+      : legacy.config;
 
   // Quando active_slide_id muda (operador clica próximo/anterior), refetch
   // palavras desse slide pelo RPC. Cada slide = sessão isolada.

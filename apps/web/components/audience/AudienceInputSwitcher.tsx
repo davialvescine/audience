@@ -76,17 +76,20 @@ export function AudienceInputSwitcher({
     channel: legacyChannel,
   });
 
-  // Novo: lê slide ativo + config dele em tempo real (escuta events.active_slide_id
-  // e slides UPDATE filtrado por event_id).
-  const { activeSlideId, config: slideConfig } = useActiveSlideConfig(eventId, {
+  // Novo: lê slide ativo + tipo + config dele em tempo real (escuta
+  // events.active_slide_id e slides UPDATE filtrado por event_id).
+  const { activeSlideId, activeType, config: slideConfig } = useActiveSlideConfig(eventId, {
     initialActiveSlideId,
+    initialActiveType: initialActiveSlideType,
     initialActiveConfig: initialActiveSlideConfig,
     channel: slidesChannel,
   });
 
   // Prioridade: novo (slide ativo) → fallback legacy.
   const active = activeSlideId != null || legacyActive;
-  const config = (slideConfig ?? legacyConfig) as WordcloudConfig;
+  const wcConfig = (activeType === 'wordcloud'
+    ? (slideConfig as WordcloudConfig | null)
+    : null) ?? legacyConfig;
 
   // Always join presence (independent of wordcloud_active) so the count is
   // accurate even before the operator enables the nuvem and so this hook
@@ -102,22 +105,27 @@ export function AudienceInputSwitcher({
       } as unknown as PresenceChannelLike),
   });
 
-  // Branch: se o slide ativo no SSR é open_ended, renderiza OpenEndedInput.
-  // Não tem Realtime de tipo (caso operador troque o TIPO do slide ativo,
-  // a audiência só atualiza no próximo refresh — caso raro).
+  // Branch reativo — usa activeType do hook (Realtime), não só SSR.
+  // Quando operador troca slide (nuvem → aberto ou vice-versa), audiência
+  // re-renderiza pro input correto sem precisar refreshar a página.
   const renderActiveSlide = () => {
-    if (initialActiveSlideType === 'open_ended' && initialOpenEndedConfig && initialActiveSlideId) {
+    if (activeType === 'open_ended' && slideConfig && activeSlideId) {
+      // initialOpenEndedResponses só vale pra primeira carga (SSR do mesmo
+      // slide); quando muda de slide via Realtime, começa vazio e o hook
+      // useOpenEndedResponses popula via Realtime/refetch.
+      const responses =
+        activeSlideId === initialActiveSlideId ? initialOpenEndedResponses : [];
       return (
         <OpenEndedInput
           slug={slug}
           eventId={eventId}
-          slideId={initialActiveSlideId}
-          config={initialOpenEndedConfig}
-          initialResponses={initialOpenEndedResponses}
+          slideId={activeSlideId}
+          config={slideConfig as OpenEndedConfig}
+          initialResponses={responses}
         />
       );
     }
-    return <WordCloudInput slug={slug} config={config} />;
+    return <WordCloudInput slug={slug} config={wcConfig} />;
   };
 
   const view = useMemo(() => {
@@ -158,11 +166,12 @@ export function AudienceInputSwitcher({
   }, [
     active,
     slug,
-    config,
+    wcConfig,
+    slideConfig,
+    activeType,
+    activeSlideId,
     submissionsOpen,
     forceMode,
-    initialActiveSlideType,
-    initialOpenEndedConfig,
     initialOpenEndedResponses,
     initialActiveSlideId,
   ]);
