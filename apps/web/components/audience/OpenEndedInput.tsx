@@ -160,23 +160,23 @@ export function OpenEndedInput({
   return (
     <div className="space-y-4">
       <header>
-        <p className="text-xs uppercase tracking-wider text-ink/55 font-semibold">
-          Sua resposta
+        <h2 className="text-xl font-semibold leading-snug">{config.question}</h2>
+        <p className="text-sm text-ink/55 mt-1">
+          Escreva uma resposta, comentário ou mensagem.
         </p>
-        <h2 className="text-xl font-semibold mt-1">{config.question}</h2>
       </header>
 
       {limitReached ? (
         <p className="text-sm text-ink/60 bg-ink/[0.04] rounded-lg px-3 py-2">
-          Você já enviou o máximo de respostas pra essa pergunta. Obrigado!
+          Você já enviou o máximo. Obrigado por participar!
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value.slice(0, maxLength))}
-            placeholder="Compartilhe sua resposta…"
-            rows={3}
+            placeholder="Digite aqui…"
+            rows={4}
             // text-base (16px) impede iOS Safari de zoomar ao focar.
             className="w-full rounded-lg border border-ink/15 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-accent resize-none"
             disabled={pending}
@@ -212,7 +212,7 @@ export function OpenEndedInput({
             disabled={!text.trim() || pending}
             className="w-full"
           >
-            Enviar resposta
+            Enviar
           </Button>
         </form>
       )}
@@ -220,7 +220,7 @@ export function OpenEndedInput({
       {!responsesHidden && responses.length > 0 ? (
         <section className="pt-4 border-t border-ink/10">
           <p className="text-xs uppercase tracking-wider text-ink/55 font-semibold mb-2">
-            Respostas {allowVoting ? '— curta as melhores' : 'recebidas'}
+            {allowVoting ? 'Curta as melhores' : 'Mensagens enviadas'}
           </p>
           {/* Sem max-h aqui — deixar a página rolar naturalmente no mobile.
               Lista bounded vira scroll-dentro-de-scroll, péssimo no touch. */}

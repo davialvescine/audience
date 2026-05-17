@@ -25,7 +25,10 @@ export type OpenEndedConfig = {
 
 export const DEFAULT_OPEN_ENDED_CONFIG: OpenEndedConfig = {
   question: 'Compartilhe sua resposta',
-  maxLength: 150,
+  // 200 chars — cabe uma frase confortável (média 100-150) com folga pra
+  // 2 frases curtas. Slido usa 160, Mentimeter 250; 200 fica no meio
+  // sem incentivar respostas longas demais que viram muros de texto no telão.
+  maxLength: 200,
   numberOfResponses: 'unlimited',
   autoScroll: true,
   allowVoting: false,
