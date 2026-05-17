@@ -32,8 +32,15 @@ export function PublicEventShell({
   openEndedInitialResponses,
   forceMode = 'auto',
 }: Props) {
-  const showingNuvem =
+  const showingSlide =
     forceMode === 'slides' || (forceMode === 'auto' && (activeSlideId != null || wordcloudActive));
+  // Hero text adapta: aberto pede "resposta", nuvem pede "palavra".
+  const heroSubtitle =
+    activeSlideType === 'open_ended'
+      ? 'Sua resposta no telão'
+      : showingSlide
+        ? 'Sua palavra na nuvem'
+        : 'Mande sua mensagem';
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-primary via-primary-deep to-primary text-paper relative overflow-hidden">
       {/* Decorative gradient blobs */}
@@ -56,9 +63,7 @@ export function PublicEventShell({
             Ao vivo no telão
           </div>
           <h1 className="text-4xl sm:text-5xl font-display font-bold leading-tight">{eventName}</h1>
-          <p className="mt-3 text-base sm:text-lg opacity-80">
-            {showingNuvem ? 'Sua palavra na nuvem' : 'Mande sua mensagem'}
-          </p>
+          <p className="mt-3 text-base sm:text-lg opacity-80">{heroSubtitle}</p>
         </div>
 
         {/* Form card */}
@@ -82,9 +87,11 @@ export function PublicEventShell({
 
         {/* Footer */}
         <div className="text-center mt-6 text-xs opacity-60">
-          {showingNuvem
-            ? '✨ Sua palavra entra na nuvem em tempo real'
-            : '🔒 Sua mensagem passa por moderação antes de aparecer'}
+          {activeSlideType === 'open_ended'
+            ? '✨ Sua resposta aparece no telão na hora'
+            : showingSlide
+              ? '✨ Sua palavra entra na nuvem em tempo real'
+              : '🔒 Sua mensagem passa por moderação antes de aparecer'}
         </div>
       </div>
     </div>

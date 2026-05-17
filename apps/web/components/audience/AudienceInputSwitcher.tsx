@@ -78,10 +78,17 @@ export function AudienceInputSwitcher({
 
   // Novo: lê slide ativo + tipo + config dele em tempo real (escuta
   // events.active_slide_id e slides UPDATE filtrado por event_id).
+  // initialActiveConfig precisa refletir o TIPO do SSR — se for open_ended,
+  // passa openEndedConfig; senão wordcloud. Sem isso, audiência abre em
+  // open_ended mas slideConfig=null e cai no fallback do wordcloud.
+  const ssrInitialConfig =
+    initialActiveSlideType === 'open_ended'
+      ? (initialOpenEndedConfig as unknown as WordcloudConfig | null)
+      : initialActiveSlideConfig;
   const { activeSlideId, activeType, config: slideConfig } = useActiveSlideConfig(eventId, {
     initialActiveSlideId,
     initialActiveType: initialActiveSlideType,
-    initialActiveConfig: initialActiveSlideConfig,
+    initialActiveConfig: ssrInitialConfig,
     channel: slidesChannel,
   });
 
