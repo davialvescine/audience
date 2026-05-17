@@ -228,10 +228,24 @@ export function SlidesTab({
               {slides.length} {slides.length === 1 ? 'slide' : 'slides'}
             </span>
             {activeId ? (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 text-success text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-semibold">
                 <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                AO VIVO
+                EXIBINDO SLIDE {slides.findIndex((s) => s.id === activeId) + 1}
               </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-ink/[0.06] text-ink/55 text-xs font-medium">
+                Nenhum slide ao vivo
+              </span>
+            )}
+            {selected && activeId !== selected.id ? (
+              <button
+                type="button"
+                onClick={() => void onActivate(selected.id)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary text-paper text-xs font-bold hover:bg-primary-deep transition shadow-sm"
+                title="Colocar o slide selecionado ao vivo no telão"
+              >
+                ▶ Exibir este
+              </button>
             ) : null}
             <SaveIndicator state={saveState} />
           </div>

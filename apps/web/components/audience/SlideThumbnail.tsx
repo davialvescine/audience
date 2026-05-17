@@ -72,14 +72,24 @@ export function SlideThumbnail({
           type="button"
           onClick={onSelect}
           className={`block w-full aspect-video rounded-none overflow-hidden relative transition ${
-            isSelected
-              ? 'ring-2 ring-accent shadow-md'
-              : 'ring-1 ring-ink/10 hover:ring-ink/25 shadow-sm'
+            isActive
+              ? 'ring-2 ring-success shadow-md shadow-success/20'
+              : isSelected
+                ? 'ring-2 ring-accent shadow-md'
+                : 'ring-1 ring-ink/10 hover:ring-ink/25 shadow-sm'
           }`}
         >
           {/* Preview real do slide — scale do 1920×1080 pra caber no card.
               Mostra a pergunta + visual exatos do que vai no telão. */}
           <ScaledSlidePreview slide={slide} />
+          {/* Badge "AO VIVO" permanente no slide ativo — operador vê de relance
+              qual está sendo exibido sem precisar passar mouse. */}
+          {isActive ? (
+            <span className="absolute top-1 left-1 z-10 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success text-paper text-[9px] font-bold uppercase tracking-wide shadow-sm">
+              <span className="h-1 w-1 rounded-full bg-paper animate-pulse" />
+              Ao vivo
+            </span>
+          ) : null}
           {/* Play overlay — hover em slides NÃO ativos. Clique = ativa. */}
           {!isActive ? (
             <span
