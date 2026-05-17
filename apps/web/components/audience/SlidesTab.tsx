@@ -210,6 +210,10 @@ export function SlidesTab({
 
   return (
     <div className="flex flex-col lg:h-[calc(100vh-180px)] gap-4">
+      {/* Link público — visível direto na aba Slides pra operador copiar
+          sem precisar ir na aba Compartilhar. */}
+      <ShareLinkBar publicUrl={publicUrl} />
+
       {/* Top bar — wrap em mobile, layout horizontal em desktop. */}
       <div className="flex flex-wrap items-center justify-between gap-2 lg:gap-4 px-1">
         <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
@@ -398,6 +402,48 @@ export function SlidesTab({
         onClose={() => setPickerOpen(false)}
         onPick={(type) => onCreate(type)}
       />
+    </div>
+  );
+}
+
+function ShareLinkBar({ publicUrl }: { publicUrl: string }) {
+  const [copied, setCopied] = useState(false);
+  // Versão "limpa" pra mostrar (sem https://).
+  const display = publicUrl.replace(/^https?:\/\//, '');
+  const copy = () => {
+    void navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-accent/8 border border-accent/20 px-3 py-2">
+      <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wider text-accent shrink-0">
+        Pra audiência
+      </span>
+      <code className="flex-1 min-w-0 text-sm text-ink font-mono truncate">{display}</code>
+      <button
+        type="button"
+        onClick={copy}
+        className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-accent text-ink text-xs font-semibold hover:bg-accent/80 transition"
+        title="Copiar link"
+      >
+        {copied ? (
+          <>
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Copiado
+          </>
+        ) : (
+          <>
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            Copiar
+          </>
+        )}
+      </button>
     </div>
   );
 }
