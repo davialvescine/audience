@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import { DispatchIntervalForm } from '@/components/audience/DispatchIntervalForm';
 import { PairingCodeDisplay } from '@/components/audience/PairingCodeDisplay';
+import {
+  ColorInput,
+  PresetGroup,
+  Slider,
+} from '@/components/audience/TelaoConfigControls';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CopyableField } from '@/components/ui/CopyButton';
@@ -57,7 +62,10 @@ const SAMPLE_PRESETS = [
   },
 ] as const;
 const SHADOWS: TelaoShadow[] = ['none', 'subtle', 'medium', 'dramatic'];
-const ALL_MODES: TelaoDisplayMode[] = ['h2r', 'browser_source', 'chrome_pip', 'desktop_app'];
+// H2R Graphics e Chrome PiP removidos da UI a pedido do operador — valores
+// continuam no enum do DB pra não quebrar eventos antigos que tenham eles
+// salvos em enabled_display_modes, mas não aparecem mais no seletor.
+const ALL_MODES: TelaoDisplayMode[] = ['browser_source', 'desktop_app'];
 
 const MODE_SHORT_LABELS: Record<TelaoDisplayMode, string> = {
   h2r: 'H2R',
@@ -336,42 +344,12 @@ export function TelaoTab({
           </div>
         </Card>
 
-        {/* 2. Mode-specific settings + instructions */}
-        {modes.includes('h2r') ? (
-          <Card>
-            <div className="mb-3">
-              <h3 className="font-display text-lg">H2R Graphics</h3>
-              <p className="text-sm text-ink/60">Conexão e disparos pro app H2R.</p>
-            </div>
-            <div className="space-y-6">
-              <PairingCodeDisplay
-                eventId={eventId}
-                alreadyPaired={h2r.alreadyPaired}
-                lastHeartbeat={h2r.lastHeartbeat}
-              />
-              <div className="pt-6 border-t border-ink/10">
-                <DispatchIntervalForm eventId={eventId} current={h2r.dispatchIntervalSeconds} />
-              </div>
-            </div>
-          </Card>
-        ) : null}
+        {/* 2. Mode-specific settings + instructions
+            H2R Graphics e Janela Flutuante Chrome (PiP) removidos da UI a
+            pedido do operador — só Browser Source e Audience Desktop ficam. */}
 
         {modes.includes('browser_source') ? (
           <BrowserSourceCard slug={slug} url={`${publicTelaoUrl}?mode=browser_source`} />
-        ) : null}
-
-        {modes.includes('chrome_pip') ? (
-          <ModeCard
-            title="Janela Flutuante Chrome"
-            url={`${publicTelaoUrl}?mode=chrome_pip`}
-            instructions={[
-              'No computador da apresentação, abra o Google Chrome.',
-              `Acesse: ${publicTelaoUrl}`,
-              'Aparecerá um botão "Abrir como janela flutuante" — clique nele.',
-              'Arraste a janela pro canto da tela onde quer que apareça.',
-              'Inicie sua apresentação normalmente — a janela continua por cima.',
-            ]}
-          />
         ) : null}
 
         {modes.includes('desktop_app') ? (
@@ -880,114 +858,6 @@ function IntervalSlider({ eventId, initial }: { eventId: string; initial: number
   );
 }
 
-function Slider({
-  label,
-  suffix,
-  min,
-  max,
-  value,
-  onChange,
-}: {
-  label: string;
-  suffix: string;
-  min: number;
-  max: number;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div>
-      <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-2">
-        <span>{label}</span>
-        <span className="text-ink font-medium">
-          {value}
-          {suffix}
-        </span>
-      </label>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full"
-      />
-    </div>
-  );
-}
-
-function ColorInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">{label}</p>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 h-10 px-2 rounded-md border border-ink/20 bg-paper text-ink text-xs font-mono"
-          placeholder="rgba(...) ou #..."
-        />
-        <input
-          type="color"
-          value={cssToHex(value)}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-10 w-12 rounded-md border border-ink/20 cursor-pointer"
-        />
-      </div>
-    </div>
-  );
-}
-
-function PresetGroup<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-  iconFor,
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-  iconFor?: (o: T) => string;
-}) {
-  return (
-    <div>
-      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">{label}</p>
-      <div className="flex gap-2 flex-wrap">
-        {options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            onClick={() => onChange(o)}
-            className={`px-3 h-9 rounded-md text-sm border transition inline-flex items-center gap-1.5 ${
-              value === o
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-ink/15 text-ink/60 hover:border-ink/30'
-            }`}
-          >
-            {iconFor && (
-              <span aria-hidden className="text-base leading-none">
-                {iconFor(o)}
-              </span>
-            )}
-            <span>{o}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const ANIMATION_ICON: Record<TelaoAnimation, string> = {
   'slide-up': '↑',
   'slide-down': '↓',
@@ -997,18 +867,6 @@ const ANIMATION_ICON: Record<TelaoAnimation, string> = {
   scale: '⊕',
   bounce: '↕',
 };
-
-// Fallback: extract first hex/rgb from arbitrary css color into a hex picker can show
-function cssToHex(css: string): string {
-  if (css.startsWith('#') && (css.length === 7 || css.length === 4)) return css;
-  const rgbMatch = css.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (rgbMatch) {
-    const [, r, g, b] = rgbMatch;
-    const toHex = (n: string) => Number(n).toString(16).padStart(2, '0');
-    return `#${toHex(r!)}${toHex(g!)}${toHex(b!)}`;
-  }
-  return '#000000';
-}
 
 // ── Helpers (modes) ──────────────────────────────────────────────
 

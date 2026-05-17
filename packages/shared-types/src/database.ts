@@ -230,6 +230,80 @@ export type Database = {
           },
         ]
       }
+      open_ended_responses: {
+        Row: {
+          author_name: string | null
+          created_at: string
+          event_id: string
+          id: string
+          participant_fp: string
+          slide_id: string
+          text: string
+          vote_count: number
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          participant_fp: string
+          slide_id: string
+          text: string
+          vote_count?: number
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          participant_fp?: string
+          slide_id?: string
+          text?: string
+          vote_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_ended_responses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_ended_responses_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      open_ended_votes: {
+        Row: {
+          created_at: string
+          response_id: string
+          voter_fp: string
+        }
+        Insert: {
+          created_at?: string
+          response_id: string
+          voter_fp: string
+        }
+        Update: {
+          created_at?: string
+          response_id?: string
+          voter_fp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_ended_votes_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "open_ended_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pairing_codes: {
         Row: {
           code: string
@@ -497,6 +571,16 @@ export type Database = {
         }[]
       }
       get_moderator_email: { Args: { p_user_id: string }; Returns: string }
+      get_open_ended_state: {
+        Args: { p_slide_id: string; p_slug: string }
+        Returns: {
+          author_name: string
+          created_at: string
+          id: string
+          text: string
+          vote_count: number
+        }[]
+      }
       get_pinned_submission: {
         Args: { p_slug: string }
         Returns: {
@@ -623,6 +707,7 @@ export type Database = {
         Args: { p_event_id: string; p_slide_ids: string[] }
         Returns: undefined
       }
+      reset_open_ended_slide: { Args: { p_slide_id: string }; Returns: Json }
       reset_slide_words: { Args: { p_slide_id: string }; Returns: undefined }
       reset_submission_for_retry: {
         Args: { p_submission_id: string }
@@ -698,8 +783,21 @@ export type Database = {
         }
         Returns: string
       }
+      submit_open_ended: {
+        Args: {
+          p_author_name: string
+          p_fp: string
+          p_slug: string
+          p_text: string
+        }
+        Returns: Json
+      }
       submit_word: {
         Args: { p_ip_hash: string; p_slug: string; p_word: string }
+        Returns: Json
+      }
+      toggle_open_ended_vote: {
+        Args: { p_fp: string; p_response_id: string }
         Returns: Json
       }
       unpin_submission: { Args: { p_event_id: string }; Returns: undefined }
@@ -755,7 +853,13 @@ export type Database = {
       whoami_probe: { Args: never; Returns: string }
     }
     Enums: {
-      slide_type: "wordcloud" | "poll" | "open_ended" | "rating" | "qa"
+      slide_type:
+        | "wordcloud"
+        | "poll"
+        | "open_ended"
+        | "rating"
+        | "qa"
+        | "comments"
       submission_status: "pending" | "approved" | "rejected" | "sent" | "failed"
       telao_display_mode:
         | "h2r"
@@ -892,7 +996,14 @@ export const Constants = {
   },
   public: {
     Enums: {
-      slide_type: ["wordcloud", "poll", "open_ended", "rating", "qa"],
+      slide_type: [
+        "wordcloud",
+        "poll",
+        "open_ended",
+        "rating",
+        "qa",
+        "comments",
+      ],
       submission_status: ["pending", "approved", "rejected", "sent", "failed"],
       telao_display_mode: [
         "h2r",

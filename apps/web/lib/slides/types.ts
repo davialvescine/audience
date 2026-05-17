@@ -1,6 +1,7 @@
 import type { Database } from '@audience/shared-types';
 
 import type { WordcloudBackground, WordcloudConfig } from '@/hooks/useWordcloudActive';
+import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 
 export type SlideType = Database['public']['Enums']['slide_type'];
 
@@ -41,6 +42,29 @@ export const DEFAULT_OPEN_ENDED_CONFIG: OpenEndedConfig = {
   showTotal: true,
 };
 
+/**
+ * Config do slide "Cards rotativos" (`comments`). Reaproveita 100% do TelaoConfig
+ * existente (fonte, cor, posição, animação, duração) + 2 flags próprias:
+ * - showTitle: se mostra um título acima do card (default false)
+ * - title: texto do título quando showTitle=true
+ * - background: fundo do slide (default sem fundo pra OBS funcionar)
+ *
+ * Mesmo slide vira overlay OBS ou fullscreen só mudando toggles no painel —
+ * sem variantes de tipo. background opcional reusa WordcloudBackground.
+ */
+export type CommentsConfig = TelaoConfig & {
+  showTitle?: boolean;
+  title?: string;
+  background?: WordcloudBackground;
+};
+
+export const DEFAULT_COMMENTS_CONFIG: CommentsConfig = {
+  ...DEFAULT_TELAO_CONFIG,
+  maxConcurrent: 1,
+  showTitle: false,
+  title: '',
+};
+
 /** Discriminated union de configs por tipo de slide. */
 export type SlideConfigByType = {
   wordcloud: WordcloudConfig;
@@ -48,6 +72,7 @@ export type SlideConfigByType = {
   open_ended: OpenEndedConfig;
   rating: { question: string; scaleMin: number; scaleMax: number };
   qa: { question: string };
+  comments: CommentsConfig;
 };
 
 export type Slide<T extends SlideType = SlideType> = {
