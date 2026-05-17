@@ -379,6 +379,7 @@ function CommentsCanvas({
         preview
         title={cfg.title}
         showTitle={cfg.showTitle === true}
+        titleColor={cfg.titleColor}
         stageRef={stageRef}
         onPositionChange={({ posXPct, posYPct }) => {
           void updateSlide(slide.id, { ...cfg, posXPct, posYPct } as unknown as Record<string, unknown>);

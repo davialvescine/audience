@@ -55,7 +55,15 @@ export const DEFAULT_OPEN_ENDED_CONFIG: OpenEndedConfig = {
 export type CommentsConfig = TelaoConfig & {
   showTitle?: boolean;
   title?: string;
+  /** Cor do título — separada de cardText pra não somer no fundo transparente. */
+  titleColor?: string;
   background?: WordcloudBackground;
+  /** Mostra overlay de QR + URL no canto pra audiência escanear durante o slide. */
+  showQr?: boolean;
+  /** Quando ligado, QR ocupa a tela toda (chamada à ação grande). */
+  qrFullscreen?: boolean;
+  /** Pausa a rotação automática dos cards no telão (útil pra dar tempo de ler). */
+  paused?: boolean;
 };
 
 export const DEFAULT_COMMENTS_CONFIG: CommentsConfig = {
@@ -63,6 +71,9 @@ export const DEFAULT_COMMENTS_CONFIG: CommentsConfig = {
   maxConcurrent: 1,
   showTitle: false,
   title: '',
+  // Default escuro funciona bem em fundo branco/transparente do OBS.
+  // Operador pode mudar pra contraste com fundo customizado.
+  titleColor: '#0A2540',
 };
 
 /** Discriminated union de configs por tipo de slide. */

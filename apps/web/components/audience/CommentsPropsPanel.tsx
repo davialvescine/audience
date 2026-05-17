@@ -160,7 +160,7 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
             onChange={(v) => setConfig((c) => ({ ...c, showTitle: v }))}
           />
           {config.showTitle ? (
-            <div className="mt-2">
+            <div className="mt-2 space-y-3">
               <Input
                 label=""
                 id={`title-${slide.id}`}
@@ -168,6 +168,11 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
                 onChange={(e) => setConfig((c) => ({ ...c, title: e.target.value }))}
                 maxLength={140}
                 placeholder="Ex: O que você achou do evento?"
+              />
+              <ColorInput
+                label="Cor do título"
+                value={config.titleColor ?? '#0A2540'}
+                onChange={(v) => setConfig((c) => ({ ...c, titleColor: v }))}
               />
             </div>
           ) : null}

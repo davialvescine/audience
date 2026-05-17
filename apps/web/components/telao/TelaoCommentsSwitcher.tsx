@@ -78,6 +78,7 @@ export function TelaoCommentsSwitcher({
         intervalSeconds={intervalSeconds}
         title={merged.title}
         showTitle={merged.showTitle === true}
+        titleColor={merged.titleColor}
       />
     </div>
   );

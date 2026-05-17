@@ -36,6 +36,9 @@ type Props = {
   /** Título opcional acima do card. Renderizado apenas se showTitle && title. */
   title?: string | undefined;
   showTitle?: boolean | undefined;
+  /** Cor do título — separada do cardText pra evitar título branco invisível
+   *  no fundo branco do browser_source. */
+  titleColor?: string | undefined;
   /** Chamado no pointerup do drag em preview mode. Alternativa ao postMessage
    *  pra quando o TelaoClient está no mesmo doc (ex: SlideCanvas). */
   onPositionChange?: ((pos: { posXPct: number; posYPct: number }) => void) | undefined;
@@ -54,6 +57,7 @@ export function TelaoClient({
   preview = false,
   title,
   showTitle = false,
+  titleColor,
   onPositionChange,
   stageRef,
 }: Props) {
@@ -510,7 +514,7 @@ export function TelaoClient({
             top: '4%',
             left: '50%',
             transform: 'translateX(-50%)',
-            color: config.cardText,
+            color: titleColor ?? '#0A2540',
             fontFamily: config.fontFamily,
             fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
             fontWeight: 700,
@@ -518,7 +522,7 @@ export function TelaoClient({
             margin: 0,
             padding: 0,
             zIndex: 5,
-            maxWidth: '90vw',
+            maxWidth: '90%',
             wordBreak: 'break-word',
           }}
         >

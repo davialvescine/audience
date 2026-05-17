@@ -50,12 +50,17 @@ export function ActiveSlideWatcher({
       const { data } = await sb.from('slides').select('type').eq('id', newId).maybeSingle();
       const newType = (data as { type?: string } | null)?.type;
       if (newType !== 'wordcloud' && newType !== 'open_ended' && newType !== 'comments') return;
-      // Tipo mudou OU slide mudou (mesmo tipo, mas slide diferente conta como
-      // sessão nova e o SSR refetch traz initialEntries/initialResponses do slide certo).
-      if (newType !== lastSeenTypeRef.current || newId !== lastSeenIdRef.current) {
+      // Só faz router.refresh() quando o TIPO muda — caso contrário a tela
+      // pisca toda vez que troca de slide do mesmo tipo. Slides de mesmo
+      // tipo são atualizados in-place pelo useActiveSlideConfig dentro
+      // do switcher (sem unmount + remount).
+      if (newType !== lastSeenTypeRef.current) {
         lastSeenTypeRef.current = newType;
         lastSeenIdRef.current = newId;
         router.refresh();
+      } else if (newId !== lastSeenIdRef.current) {
+        // Atualiza ref pra não disparar refresh quando voltar a este id depois.
+        lastSeenIdRef.current = newId;
       }
     };
 
@@ -68,9 +73,9 @@ export function ActiveSlideWatcher({
       },
     ).subscribe();
 
-    // Polling fallback — caso o websocket do Realtime caia (firewall, CSP,
-    // browser_source com restrição de rede), pega mudança de slide ativo
-    // em até 2s. Quase grátis: 1 query SELECT por evento a cada 2s.
+    // Polling fallback agressivo (500ms) — caso o websocket caia, pega mudança
+    // de slide ativo quase instantaneamente. Quase grátis: 1 SELECT por evento.
+    // Quando Realtime funciona, o subscribe acima fira primeiro e o poll vira no-op.
     const poll = async () => {
       const { data } = await sb
         .from('events')
@@ -83,7 +88,7 @@ export function ActiveSlideWatcher({
         await refreshIfTypeChanged(newId);
       }
     };
-    const pollInterval = setInterval(() => void poll(), 2000);
+    const pollInterval = setInterval(() => void poll(), 500);
 
     return () => {
       ch.unsubscribe();
