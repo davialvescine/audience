@@ -1,5 +1,6 @@
 'use client';
 
+import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useRef, useState } from 'react';
 
 import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
@@ -108,6 +109,7 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
               key={slide.id}
               slide={slide as Slide<'comments'>}
               liveConfig={liveConfig as unknown as CommentsConfig | undefined}
+              joinUrl={joinUrl}
               stageRef={stageRef}
             />
           ) : (
@@ -251,6 +253,8 @@ function CommentsCanvasToolbar({
   const cardOn = cfg.showCardBackground !== false;
   const titleOn = cfg.showTitle === true;
   const authorOn = cfg.showAvatar !== false;
+  const qrOn = cfg.showQr === true;
+  const qrFullscreenOn = cfg.qrFullscreen === true;
   const flip = (patch: Partial<CommentsConfig>) => {
     void updateSlide(slide.id, { ...cfg, ...patch } as unknown as Record<string, unknown>);
   };
@@ -286,6 +290,34 @@ function CommentsCanvasToolbar({
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="8" r="3" />
           <path d="M5 20a7 7 0 0114 0" />
+        </svg>
+      </CanvasBtn>
+      <span className="h-6 w-px bg-paper/15 mx-1" aria-hidden />
+      <CanvasBtn
+        active={qrOn}
+        onClick={() => flip({ showQr: !qrOn })}
+        label={qrOn ? 'QR lateral' : 'Mostrar QR'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <path d="M14 14h3v3h-3zM20 14h1v1h-1zM14 20h3v1h-3zM20 17h1v4M17 20h1" />
+        </svg>
+      </CanvasBtn>
+      <CanvasBtn
+        active={qrFullscreenOn}
+        onClick={() => flip({ qrFullscreen: !qrFullscreenOn })}
+        label={qrFullscreenOn ? 'QR gigante' : 'QR gigante'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <rect x="7" y="7" width="3" height="3" />
+          <rect x="14" y="7" width="3" height="3" />
+          <rect x="7" y="14" width="3" height="3" />
+          <path d="M14 14h2v2M16 16h2M14 18h2v2" />
         </svg>
       </CanvasBtn>
     </div>
@@ -421,15 +453,27 @@ function makeNoopChannel(): ChannelLike {
 function CommentsCanvas({
   slide,
   liveConfig,
+  joinUrl,
   stageRef,
 }: {
   slide: Slide<'comments'>;
   liveConfig: CommentsConfig | undefined;
+  joinUrl: string | undefined;
   stageRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const cfg = liveConfig ?? slide.config;
   const bg = cfg.background ?? { type: 'none' as const };
   const wrapBg = backgroundStyle(bg);
+  const qrOn = cfg.showQr === true;
+  const qrFullscreenOn = cfg.qrFullscreen === true;
+  const joinHost = (() => {
+    if (!joinUrl) return '';
+    try {
+      return new URL(joinUrl).host;
+    } catch {
+      return '';
+    }
+  })();
   return (
     <div className="absolute inset-0" style={wrapBg}>
       <TelaoClient
@@ -446,6 +490,29 @@ function CommentsCanvas({
           void updateSlide(slide.id, { ...cfg, posXPct, posYPct } as unknown as Record<string, unknown>);
         }}
       />
+      {qrFullscreenOn && joinUrl ? (
+        <div
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
+          style={{ background: '#FFFFFF' }}
+        >
+          <p className="text-4xl font-semibold text-ink/70">Aponte a câmera</p>
+          <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
+            <QRCodeSVG value={joinUrl} size={520} level="M" />
+          </div>
+          <p className="text-3xl font-semibold text-ink">{joinHost}</p>
+        </div>
+      ) : null}
+      {qrOn && !qrFullscreenOn && joinUrl ? (
+        <div
+          className="absolute right-12 top-1/2 -translate-y-1/2 z-20 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl"
+          style={{ background: '#F5F5F0', color: '#0A1834', minWidth: 280 }}
+        >
+          <div className="bg-white p-3 rounded-lg">
+            <QRCodeSVG value={joinUrl} size={220} level="M" />
+          </div>
+          <p className="text-lg font-semibold">{joinHost}</p>
+        </div>
+      ) : null}
     </div>
   );
 }

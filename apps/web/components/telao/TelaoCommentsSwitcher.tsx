@@ -1,5 +1,6 @@
 'use client';
 
+import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { TelaoClient } from '@/components/telao/TelaoClient';
@@ -21,6 +22,9 @@ type Props = {
    *  Em modo browser_source (?mode=browser_source), passar false pra manter
    *  transparência absoluta. */
   showBackground: boolean;
+  /** URL pública pra audiência escanear via QR. Quando undefined ou em modo
+   *  browser_source (sem fundo), o QR não é exibido. */
+  joinUrl?: string | undefined;
 };
 
 /**
@@ -36,6 +40,7 @@ export function TelaoCommentsSwitcher({
   initialConfig,
   intervalSeconds,
   showBackground,
+  joinUrl,
 }: Props) {
   const [channel, setChannel] = useState<ChannelLike | undefined>(undefined);
 
@@ -76,6 +81,20 @@ export function TelaoCommentsSwitcher({
     ? backgroundStyle(merged.background ?? { type: 'none' })
     : undefined;
 
+  // QR só faz sentido quando há joinUrl + estamos pintando fundo (no OBS,
+  // showBackground=false → QR off pra não bagunçar a sobreposição).
+  const qrEnabled = !!joinUrl && showBackground;
+  const showQr = qrEnabled && merged.showQr !== false;
+  const qrFullscreen = qrEnabled && merged.qrFullscreen === true;
+  const joinHost = useMemo(() => {
+    if (!joinUrl) return '';
+    try {
+      return new URL(joinUrl).host;
+    } catch {
+      return '';
+    }
+  }, [joinUrl]);
+
   return (
     <div className="absolute inset-0" style={wrapStyle}>
       <TelaoClient
@@ -88,6 +107,37 @@ export function TelaoCommentsSwitcher({
         showTitle={merged.showTitle === true}
         titleColor={merged.titleColor}
       />
+      {qrFullscreen && joinUrl ? (
+        <div
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
+          style={{ background: '#FFFFFF' }}
+        >
+          <div className="text-center">
+            <p className="text-4xl font-semibold text-ink/70 mb-2">
+              Aponte a câmera do celular
+            </p>
+            <p className="text-2xl text-ink/55">e participe agora</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
+            <QRCodeSVG value={joinUrl} size={520} level="M" />
+          </div>
+          <p className="text-3xl font-semibold text-ink">{joinHost}</p>
+        </div>
+      ) : null}
+      {showQr && !qrFullscreen && joinUrl ? (
+        <div
+          className="absolute right-12 top-1/2 -translate-y-1/2 z-20 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl"
+          style={{ background: '#F5F5F0', color: '#0A1834', minWidth: 280 }}
+        >
+          <div className="bg-white p-3 rounded-lg">
+            <QRCodeSVG value={joinUrl} size={220} level="M" />
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold">{joinHost}</p>
+            <p className="text-sm opacity-70 mt-1">Aponte sua câmera</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

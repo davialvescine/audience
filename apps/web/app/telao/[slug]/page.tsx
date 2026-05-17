@@ -194,6 +194,7 @@ export default async function TelaoPage({
         initialConfig={activeCommentsConfig}
         intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
         showBackground={showWordcloudBackground}
+        joinUrl={showWordcloudBackground ? joinUrl : undefined}
       />
     );
   } else if (activeSlideType === 'open_ended' && activeOpenEndedConfig && activeSlideId) {
