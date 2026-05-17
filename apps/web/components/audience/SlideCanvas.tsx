@@ -227,6 +227,67 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
           </CanvasBtn>
         </div>
       ) : null}
+
+      {/* Toolbar pro slide `comments` — toggles ao vivo (showCardBackground,
+          showTitle, showAvatar). Mesmo estilo do wordcloud. */}
+      {slide.type === 'comments' ? (
+        <CommentsCanvasToolbar
+          slide={slide as Slide<'comments'>}
+          liveConfig={liveConfig as unknown as CommentsConfig | undefined}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CommentsCanvasToolbar({
+  slide,
+  liveConfig,
+}: {
+  slide: Slide<'comments'>;
+  liveConfig: CommentsConfig | undefined;
+}) {
+  const cfg: CommentsConfig = (liveConfig ?? slide.config) as CommentsConfig;
+  const cardOn = cfg.showCardBackground !== false;
+  const titleOn = cfg.showTitle === true;
+  const authorOn = cfg.showAvatar !== false;
+  const flip = (patch: Partial<CommentsConfig>) => {
+    void updateSlide(slide.id, { ...cfg, ...patch } as unknown as Record<string, unknown>);
+  };
+  return (
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-[calc(100%-16px)] overflow-x-auto flex items-center gap-1 rounded-full bg-ink text-paper px-2 py-2 z-20 shadow-lg [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <CanvasBtn
+        active={cardOn}
+        onClick={() => flip({ showCardBackground: !cardOn })}
+        label={cardOn ? 'Fundo do card' : 'Sem fundo do card'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="7" width="18" height="10" rx="2" />
+          <line x1="7" y1="11" x2="14" y2="11" />
+        </svg>
+      </CanvasBtn>
+      <CanvasBtn
+        active={titleOn}
+        onClick={() => flip({ showTitle: !titleOn })}
+        label={titleOn ? 'Esconder título' : 'Mostrar título'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 6h16M4 6v2M20 6v2M12 8v12" />
+        </svg>
+      </CanvasBtn>
+      <CanvasBtn
+        active={authorOn}
+        onClick={() => flip({ showAvatar: !authorOn })}
+        label={authorOn ? 'Esconder autor' : 'Mostrar autor'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="3" />
+          <path d="M5 20a7 7 0 0114 0" />
+        </svg>
+      </CanvasBtn>
     </div>
   );
 }
