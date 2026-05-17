@@ -10,8 +10,10 @@ type Props = {
   /** active_slide_id no momento do SSR — pra detectar quando muda no client. */
   initialActiveSlideId: string | null;
   /** Tipo do slide ativo no SSR — refresh quando o tipo muda. */
-  initialActiveType: 'wordcloud' | 'open_ended' | null;
+  initialActiveType: 'wordcloud' | 'open_ended' | 'comments' | null;
 };
+
+type WatchedType = 'wordcloud' | 'open_ended' | 'comments';
 
 /**
  * Telão: força router.refresh() quando o tipo do slide ativo muda.
@@ -29,7 +31,7 @@ export function ActiveSlideWatcher({
 }: Props) {
   const router = useRouter();
   const lastSeenIdRef = useRef<string | null>(initialActiveSlideId);
-  const lastSeenTypeRef = useRef<'wordcloud' | 'open_ended' | null>(initialActiveType);
+  const lastSeenTypeRef = useRef<WatchedType | null>(initialActiveType);
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
@@ -47,7 +49,7 @@ export function ActiveSlideWatcher({
       }
       const { data } = await sb.from('slides').select('type').eq('id', newId).maybeSingle();
       const newType = (data as { type?: string } | null)?.type;
-      if (newType !== 'wordcloud' && newType !== 'open_ended') return;
+      if (newType !== 'wordcloud' && newType !== 'open_ended' && newType !== 'comments') return;
       // Tipo mudou OU slide mudou (mesmo tipo, mas slide diferente conta como
       // sessão nova e o SSR refetch traz initialEntries/initialResponses do slide certo).
       if (newType !== lastSeenTypeRef.current || newId !== lastSeenIdRef.current) {

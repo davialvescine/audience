@@ -48,7 +48,7 @@ export default async function PublicEventPage({
   const activeSlideId = wcRow?.active_slide_id ?? null;
 
   let activeSlideConfig: WordcloudConfig | null = null;
-  let activeSlideType: 'wordcloud' | 'open_ended' | null = null;
+  let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null = null;
   let openEndedConfig: OpenEndedConfig | null = null;
   let openEndedInitialResponses: OpenEndedResponse[] = [];
   if (activeSlideId) {
@@ -57,7 +57,11 @@ export default async function PublicEventPage({
       .select('config, type')
       .eq('id', activeSlideId)
       .maybeSingle();
-    if (slideRow?.type === 'wordcloud') {
+    if (slideRow?.type === 'comments') {
+      // Audiência usa o input padrão de comentário (fluxo de moderação atual).
+      // Não precisa de config aqui — só sinaliza o tipo pra UI escolher input.
+      activeSlideType = 'comments';
+    } else if (slideRow?.type === 'wordcloud') {
       activeSlideConfig = (slideRow.config as WordcloudConfig | null) ?? null;
       activeSlideType = 'wordcloud';
     } else if (slideRow?.type === 'open_ended') {

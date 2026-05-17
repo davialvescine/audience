@@ -4,12 +4,18 @@ import { ActiveSlideWatcher } from '@/components/telao/ActiveSlideWatcher';
 import { FullscreenAuto } from '@/components/telao/FullscreenAuto';
 import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
+import { TelaoCommentsSwitcher } from '@/components/telao/TelaoCommentsSwitcher';
 import { TelaoOpenEndedSwitcher } from '@/components/telao/TelaoOpenEndedSwitcher';
 import { TelaoStage } from '@/components/telao/TelaoStage';
 import { TelaoWordcloudSwitcher } from '@/components/telao/TelaoWordcloudSwitcher';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
-import { DEFAULT_OPEN_ENDED_CONFIG, type OpenEndedConfig } from '@/lib/slides/types';
+import {
+  DEFAULT_COMMENTS_CONFIG,
+  DEFAULT_OPEN_ENDED_CONFIG,
+  type CommentsConfig,
+  type OpenEndedConfig,
+} from '@/lib/slides/types';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
@@ -99,8 +105,9 @@ export default async function TelaoPage({
   // Fetch active slide config (sistema novo multi-slide). Tem precedência
   // sobre wordcloud_config legacy quando existe e é do tipo wordcloud.
   let activeSlideConfig: WordcloudConfig | null = null;
-  let activeSlideType: 'wordcloud' | 'open_ended' | null = null;
+  let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null = null;
   let activeOpenEndedConfig: OpenEndedConfig | null = null;
+  let activeCommentsConfig: CommentsConfig | null = null;
   if (activeSlideId) {
     const { data: slideRow } = await supabase
       .from('slides')
@@ -113,6 +120,9 @@ export default async function TelaoPage({
     } else if (slideRow?.type === 'open_ended') {
       activeOpenEndedConfig = { ...DEFAULT_OPEN_ENDED_CONFIG, ...((slideRow.config as Partial<OpenEndedConfig>) ?? {}) };
       activeSlideType = 'open_ended';
+    } else if (slideRow?.type === 'comments') {
+      activeCommentsConfig = { ...DEFAULT_COMMENTS_CONFIG, ...((slideRow.config as Partial<CommentsConfig>) ?? {}) };
+      activeSlideType = 'comments';
     }
   }
 
@@ -174,6 +184,18 @@ export default async function TelaoPage({
   let telao: React.ReactNode;
   if (isPreview) {
     telao = telaoClient;
+  } else if (activeSlideType === 'comments' && activeCommentsConfig && activeSlideId) {
+    telao = (
+      <TelaoCommentsSwitcher
+        slug={slug}
+        eventId={event.event_id}
+        eventName={event.event_name}
+        initialActiveSlideId={activeSlideId}
+        initialConfig={activeCommentsConfig}
+        intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
+        showBackground={showWordcloudBackground}
+      />
+    );
   } else if (activeSlideType === 'open_ended' && activeOpenEndedConfig && activeSlideId) {
     telao = (
       <TelaoOpenEndedSwitcher

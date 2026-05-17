@@ -11,7 +11,7 @@ type Props = {
   wordcloudActive: boolean;
   wordcloudConfig: WordcloudConfig;
   activeSlideId: string | null;
-  activeSlideType: 'wordcloud' | 'open_ended' | null;
+  activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null;
   activeSlideConfig: WordcloudConfig | null;
   openEndedConfig: OpenEndedConfig | null;
   openEndedInitialResponses: OpenEndedResponse[];
@@ -34,13 +34,15 @@ export function PublicEventShell({
 }: Props) {
   const showingSlide =
     forceMode === 'slides' || (forceMode === 'auto' && (activeSlideId != null || wordcloudActive));
-  // Hero text adapta: aberto pede "resposta", nuvem pede "palavra".
+  // Hero text adapta: aberto pede "resposta", comentários "mensagem", nuvem "palavra".
   const heroSubtitle =
     activeSlideType === 'open_ended'
       ? 'Sua resposta no telão'
-      : showingSlide
-        ? 'Sua palavra na nuvem'
-        : 'Mande sua mensagem';
+      : activeSlideType === 'comments'
+        ? 'Mande sua mensagem'
+        : showingSlide
+          ? 'Sua palavra na nuvem'
+          : 'Mande sua mensagem';
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-primary via-primary-deep to-primary text-paper relative overflow-hidden">
       {/* Decorative gradient blobs */}
@@ -89,9 +91,11 @@ export function PublicEventShell({
         <div className="text-center mt-6 text-xs opacity-60">
           {activeSlideType === 'open_ended'
             ? '✨ Sua resposta aparece no telão na hora'
-            : showingSlide
-              ? '✨ Sua palavra entra na nuvem em tempo real'
-              : '🔒 Sua mensagem passa por moderação antes de aparecer'}
+            : activeSlideType === 'comments'
+              ? '🔒 Sua mensagem passa por moderação antes de aparecer'
+              : showingSlide
+                ? '✨ Sua palavra entra na nuvem em tempo real'
+                : '🔒 Sua mensagem passa por moderação antes de aparecer'}
         </div>
       </div>
     </div>

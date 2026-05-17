@@ -18,7 +18,7 @@ type Props = {
   initialWordcloudActive: boolean;
   initialWordcloudConfig: WordcloudConfig;
   initialActiveSlideId: string | null;
-  initialActiveSlideType: 'wordcloud' | 'open_ended' | null;
+  initialActiveSlideType: 'wordcloud' | 'open_ended' | 'comments' | null;
   initialActiveSlideConfig: WordcloudConfig | null;
   initialOpenEndedConfig: OpenEndedConfig | null;
   initialOpenEndedResponses: OpenEndedResponse[];
@@ -131,6 +131,19 @@ export function AudienceInputSwitcher({
           initialResponses={responses}
         />
       );
+    }
+    if (activeType === 'comments') {
+      // Slide `comments` usa o mesmo input padrão de comentário com moderação
+      // — audiência envia, moderador aprova, vai pro card rotativo no telão.
+      if (!submissionsOpen) {
+        return (
+          <div className="text-center py-8">
+            <p className="text-2xl font-display text-primary mb-2">⏸️</p>
+            <p className="text-ink/60">Submissões encerradas</p>
+          </div>
+        );
+      }
+      return <SubmissionForm slug={slug} />;
     }
     return <WordCloudInput slug={slug} config={wcConfig} />;
   };

@@ -20,7 +20,7 @@ type ChannelLike = {
   unsubscribe: () => void;
 };
 
-export type ActiveSlideType = 'wordcloud' | 'open_ended' | null;
+export type ActiveSlideType = 'wordcloud' | 'open_ended' | 'comments' | null;
 
 export type UseActiveSlideOptions = {
   initialActiveSlideId: string | null;
@@ -82,7 +82,11 @@ export function useActiveSlideConfig(
               .maybeSingle()
               .then(({ data }) => {
                 const row2 = data as { type?: string; config?: unknown } | null;
-                if (row2?.type === 'wordcloud' || row2?.type === 'open_ended') {
+                if (
+                  row2?.type === 'wordcloud' ||
+                  row2?.type === 'open_ended' ||
+                  row2?.type === 'comments'
+                ) {
                   setActiveType(row2.type);
                 }
                 if (row2?.config) setConfig(row2.config);
@@ -100,7 +104,11 @@ export function useActiveSlideConfig(
         (payload) => {
           const row = payload.new as { id?: string; type?: string; config?: unknown };
           if (row.id && row.id === activeSlideIdRef.current) {
-            if (row.type === 'wordcloud' || row.type === 'open_ended') {
+            if (
+              row.type === 'wordcloud' ||
+              row.type === 'open_ended' ||
+              row.type === 'comments'
+            ) {
               setActiveType(row.type);
             }
             if (row.config) setConfig(row.config);
@@ -141,7 +149,7 @@ export function useActiveSlideConfig(
           .maybeSingle();
         if (cancelled) return;
         const row = slideRow as { type?: string; config?: unknown } | null;
-        if (row?.type === 'wordcloud' || row?.type === 'open_ended') {
+        if (row?.type === 'wordcloud' || row?.type === 'open_ended' || row?.type === 'comments') {
           setActiveType((prev) => (prev === row.type ? prev : row.type as ActiveSlideType));
         }
         if (row?.config) {
