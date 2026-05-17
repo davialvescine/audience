@@ -287,18 +287,25 @@ export function SlidesTab({
             type="button"
             onClick={openTelao}
             className="hidden sm:inline-flex items-center gap-2 h-9 px-4 rounded-full text-sm font-medium text-ink hover:bg-ink/[0.06] transition"
+            title="Abre o telão numa aba/janela nova sem mexer no slide ativo"
           >
-            Preview ↗
+            Abrir telão ↗
           </button>
           <button
             type="button"
             onClick={() => {
-              if (selected && !activeId) {
-                void onActivate(selected.id);
+              // Iniciar apresentação = sempre começa do slide 1 + abre telão.
+              // Independente do que estava selecionado/ativo antes.
+              const first = slides[0];
+              if (first) {
+                void onActivate(first.id);
+                setSelectedId(first.id);
               }
               openTelao();
             }}
-            className="inline-flex items-center gap-2 h-9 px-3 lg:px-4 rounded-full bg-primary text-paper text-sm font-bold hover:bg-primary-deep shadow-sm transition"
+            disabled={slides.length === 0}
+            className="inline-flex items-center gap-2 h-9 px-3 lg:px-4 rounded-full bg-primary text-paper text-sm font-bold hover:bg-primary-deep shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Ativa o slide 1 e abre o telão"
           >
             <span>▶</span>
             <span className="hidden sm:inline">Iniciar apresentação</span>
