@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { backgroundStyle } from '@/components/telao/WordCloudDisplay';
@@ -57,12 +57,20 @@ export function TelaoCommentsSwitcher({
     channel,
   });
 
-  const merged: CommentsConfig = {
-    ...DEFAULT_COMMENTS_CONFIG,
-    ...((slide.activeType === 'comments' && slide.config
-      ? (slide.config as Partial<CommentsConfig>)
-      : initialConfig) ?? {}),
-  };
+  // useMemo: estabiliza a referência de `merged` por slide.config — sem isso,
+  // toda re-renderização cria objeto novo, dispara useEffect interno do
+  // TelaoClient que ressetta state, causando flicker e mix de configs entre
+  // slides quando o usuário troca rápido.
+  const slideConfigKey = JSON.stringify(slide.config);
+  const initialConfigKey = JSON.stringify(initialConfig);
+  const merged: CommentsConfig = useMemo(() => {
+    const source =
+      slide.activeType === 'comments' && slide.config
+        ? (slide.config as Partial<CommentsConfig>)
+        : initialConfig;
+    return { ...DEFAULT_COMMENTS_CONFIG, ...(source ?? {}) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slideConfigKey, initialConfigKey, slide.activeType]);
 
   const wrapStyle = showBackground
     ? backgroundStyle(merged.background ?? { type: 'none' })

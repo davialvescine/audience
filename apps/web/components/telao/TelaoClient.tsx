@@ -71,10 +71,14 @@ export function TelaoClient({
   // Quando o TelaoClient está embed direto (não em iframe), o prop
   // initialConfig muda quando o parent atualiza a config do slide. Sincroniza
   // o state interno pra refletir as mudanças do painel lateral em tempo real.
+  // Deep-compare antes de setState — evita re-render loop quando o parent
+  // re-cria o objeto config a cada render (mesmo conteúdo, ref nova).
   // Em preview iframe (TelaoTab antiga), o initialConfig nunca muda — usa
   // postMessage. Em ambos os casos esse useEffect é safe (no-op no iframe).
   useEffect(() => {
-    setConfig(initialConfig);
+    setConfig((prev) =>
+      JSON.stringify(prev) === JSON.stringify(initialConfig) ? prev : initialConfig,
+    );
   }, [initialConfig]);
   const [visible, setVisible] = useState<Submission[]>([]);
   const [pinned, setPinned] = useState<Submission | null>(null);
@@ -556,14 +560,28 @@ export function TelaoClient({
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="mb-3"
             style={{
-              background: config.cardBg,
+              // showCardBackground vive em CommentsConfig (subtype). Cast inline
+              // pra ler de TelaoConfig sem afetar wordcloud/open_ended.
+              background:
+                (config as { showCardBackground?: boolean }).showCardBackground === false
+                  ? 'transparent'
+                  : config.cardBg,
               color: config.cardText,
               borderRadius: `${config.borderRadius}px`,
-              boxShadow: shadowStyle(config.shadow),
+              boxShadow:
+                (config as { showCardBackground?: boolean }).showCardBackground === false
+                  ? 'none'
+                  : shadowStyle(config.shadow),
               backdropFilter:
-                config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
+                (config as { showCardBackground?: boolean }).showCardBackground !== false &&
+                config.backdropBlur > 0
+                  ? `blur(${config.backdropBlur}px)`
+                  : undefined,
               WebkitBackdropFilter:
-                config.backdropBlur > 0 ? `blur(${config.backdropBlur}px)` : undefined,
+                (config as { showCardBackground?: boolean }).showCardBackground !== false &&
+                config.backdropBlur > 0
+                  ? `blur(${config.backdropBlur}px)`
+                  : undefined,
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
               fontSize: `${config.fontSizePx}px`,
               lineHeight: 1.3,

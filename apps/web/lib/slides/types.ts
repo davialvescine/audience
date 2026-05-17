@@ -58,6 +58,9 @@ export type CommentsConfig = TelaoConfig & {
   /** Cor do título — separada de cardText pra não somer no fundo transparente. */
   titleColor?: string;
   background?: WordcloudBackground;
+  /** Quando false, o card flutua com texto puro (sem caixa de fundo). Útil
+   *  pra overlay no OBS onde só os textos devem aparecer sobre a apresentação. */
+  showCardBackground?: boolean;
   /** Mostra overlay de QR + URL no canto pra audiência escanear durante o slide. */
   showQr?: boolean;
   /** Quando ligado, QR ocupa a tela toda (chamada à ação grande). */
@@ -71,6 +74,7 @@ export const DEFAULT_COMMENTS_CONFIG: CommentsConfig = {
   maxConcurrent: 1,
   showTitle: false,
   title: '',
+  showCardBackground: true,
   // Default escuro funciona bem em fundo branco/transparente do OBS.
   // Operador pode mudar pra contraste com fundo customizado.
   titleColor: '#0A2540',
