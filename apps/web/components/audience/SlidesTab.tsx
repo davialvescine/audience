@@ -431,6 +431,10 @@ export function SlidesTab({
             />
           ) : selected && selected.type === 'comments' ? (
             <CommentsPropsPanel
+              // key={selected.id} força remount completo do panel quando
+              // troca de slide — garante state local + debounce timer
+              // limpos. Evita race condition de autosave stale.
+              key={selected.id}
               slide={selected as Slide<'comments'>}
               slug={slug}
               onChange={(cfg) => {

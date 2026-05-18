@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { notFound } from 'next/navigation';
 
 import { ActiveSlideWatcher } from '@/components/telao/ActiveSlideWatcher';
@@ -40,6 +41,10 @@ export default async function TelaoPage({
   params: Promise<Params>;
   searchParams: Promise<SearchParams>;
 }) {
+  // noStore() opt-out de qualquer cache (memoização de fetch, route cache,
+  // etc). Garante SELECTs sempre frescas do DB — caro ficar adivinhando
+  // se o cache do Next 16 está nos enganando.
+  noStore();
   const { slug } = await params;
   const { preview, mode } = await searchParams;
   const supabase = getSupabaseServiceClient();
