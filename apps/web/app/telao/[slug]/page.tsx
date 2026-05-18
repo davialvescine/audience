@@ -220,10 +220,11 @@ export default async function TelaoPage({
         isOperator={isOperator}
       />
     );
-  } else {
+  } else if (activeSlideType === 'wordcloud' && activeSlideId) {
+    // Slide do tipo wordcloud explícito.
     telao = (
       <TelaoWordcloudSwitcher
-        key={activeSlideId ?? 'no-slide'}
+        key={activeSlideId}
         eventId={event.event_id}
         eventSlug={slug}
         initialWordcloudActive={cloudMode}
@@ -236,6 +237,38 @@ export default async function TelaoPage({
       >
         {telaoClient}
       </TelaoWordcloudSwitcher>
+    );
+  } else if (cloudMode) {
+    // Legacy: evento sem multi-slide ainda mas wordcloud_active=true.
+    telao = (
+      <TelaoWordcloudSwitcher
+        key="legacy-wordcloud"
+        eventId={event.event_id}
+        eventSlug={slug}
+        initialWordcloudActive={cloudMode}
+        initialWordcloudConfig={wordcloudConfig}
+        initialActiveSlideId={null}
+        initialWordcloudEntries={initialEntries}
+        showBackground={showWordcloudBackground}
+        joinUrl={showWordcloudBackground ? joinUrl : undefined}
+        isOperator={isOperator}
+      >
+        {telaoClient}
+      </TelaoWordcloudSwitcher>
+    );
+  } else {
+    // Sem slide ativo. NÃO cai mais no fallback legado (events.telao_config)
+    // que confundia o operador mostrando cores antigas como se fosse um
+    // slide. Mostra placeholder limpo — operador deve ativar um slide.
+    telao = (
+      <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#0A2540' }}>
+        <div className="text-center text-paper/70 max-w-2xl px-12">
+          <p className="text-5xl font-display mb-4">Nenhum slide ativo</p>
+          <p className="text-2xl text-paper/55">
+            Selecione um slide no painel pra começar
+          </p>
+        </div>
+      </div>
     );
   }
 
