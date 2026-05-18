@@ -245,6 +245,13 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
           liveConfig={liveConfig as unknown as CommentsConfig | undefined}
         />
       ) : null}
+      {/* Toolbar pro slide `poll` — toggles ao vivo (QR, revelar resultado). */}
+      {slide.type === 'poll' ? (
+        <PollCanvasToolbar
+          slide={slide as Slide<'poll'>}
+          liveConfig={liveConfig as unknown as PollConfig | undefined}
+        />
+      ) : null}
     </div>
   );
 }
@@ -550,5 +557,79 @@ function PollCanvas({
       channel={makeNoopChannel() as unknown as Parameters<typeof PollDisplay>[0]['channel']}
       showBackground
     />
+  );
+}
+
+function PollCanvasToolbar({
+  slide,
+  liveConfig,
+}: {
+  slide: Slide<'poll'>;
+  liveConfig: PollConfig | undefined;
+}) {
+  const cfg: PollConfig = (liveConfig ?? slide.config) as PollConfig;
+  const qrOn = cfg.showQr !== false;
+  const qrFullscreenOn = cfg.qrFullscreen === true;
+  const revealed = cfg.revealed === true;
+  const isAfterReveal = cfg.showResults === 'after_reveal';
+  const factCheck = cfg.factCheckMode === true;
+  const flip = (patch: Partial<PollConfig>) => {
+    void updateSlide(slide.id, { ...cfg, ...patch } as unknown as Record<string, unknown>);
+  };
+  return (
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-[calc(100%-16px)] overflow-x-auto flex items-center gap-1 rounded-full bg-ink text-paper px-2 py-2 z-20 shadow-lg [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <CanvasBtn
+        active={factCheck}
+        onClick={() => flip({ factCheckMode: !factCheck })}
+        label={factCheck ? 'Modo Fato/Fake (verde/vermelho)' : 'Modo Fato/Fake'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      </CanvasBtn>
+      {isAfterReveal ? (
+        <CanvasBtn
+          active={revealed}
+          onClick={() => flip({ revealed: !revealed })}
+          label={revealed ? 'Esconder resultado' : 'Revelar resultado'}
+          live
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </CanvasBtn>
+      ) : null}
+      <span className="h-6 w-px bg-paper/15 mx-1" aria-hidden />
+      <CanvasBtn
+        active={qrOn}
+        onClick={() => flip({ showQr: !qrOn })}
+        label={qrOn ? 'QR lateral' : 'Mostrar QR'}
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <path d="M14 14h3v3h-3zM20 14h1v1h-1zM14 20h3v1h-3zM20 17h1v4M17 20h1" />
+        </svg>
+      </CanvasBtn>
+      <CanvasBtn
+        active={qrFullscreenOn}
+        onClick={() => flip({ qrFullscreen: !qrFullscreenOn })}
+        label="QR gigante (tela cheia)"
+        live
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <rect x="7" y="7" width="3" height="3" />
+          <rect x="14" y="7" width="3" height="3" />
+          <rect x="7" y="14" width="3" height="3" />
+          <path d="M14 14h2v2M16 16h2M14 18h2v2" />
+        </svg>
+      </CanvasBtn>
+    </div>
   );
 }
