@@ -76,17 +76,7 @@ export function TelaoCommentsSwitcher({
       sameSlide && slide.activeType === 'comments' && slide.config
         ? (slide.config as Partial<CommentsConfig>)
         : initialConfig;
-    const result = { ...DEFAULT_COMMENTS_CONFIG, ...(source ?? {}) };
-    console.log('[TelaoCommentsSwitcher merged]', {
-      initialActiveSlideId,
-      hookActiveSlideId: slide.activeSlideId,
-      sameSlide,
-      hookActiveType: slide.activeType,
-      sourceUsed: sameSlide && slide.activeType === 'comments' && slide.config ? 'HOOK' : 'INITIAL',
-      cardBg: result.cardBg,
-      title: result.title,
-    });
-    return result;
+    return { ...DEFAULT_COMMENTS_CONFIG, ...(source ?? {}) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideConfigKey, initialConfigKey, slide.activeType, sameSlide]);
 

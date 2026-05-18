@@ -117,28 +117,11 @@ export function SlidesTab({
 
   const onActivate = async (slideId: string | null) => {
     const previous = activeId;
-    console.log('[onActivate] firing', { eventId, slideId, previous });
     setActiveId(slideId); // optimistic
     const r = await setActiveSlide(eventId, slideId);
-    console.log('[onActivate] setActiveSlide result', r);
     if (!r.ok) {
-      console.error('setActiveSlide falhou:', r.error);
       setActiveId(previous);
       window.alert(`Erro ao ativar slide: ${r.error}`);
-      return;
-    }
-    // Server retornou ok — mas pode o DB ter sido sobrescrito por alguém? Verifica.
-    if (r.data.verifiedActiveSlideId !== slideId) {
-      console.error(
-        '[onActivate] DB MISMATCH: pedimos',
-        slideId,
-        'mas DB tem',
-        r.data.verifiedActiveSlideId,
-      );
-      window.alert(
-        `Erro: pedimos ativar ${slideId} mas o DB ficou com ${r.data.verifiedActiveSlideId}. ` +
-          `Algo está sobrescrevendo o slide ativo.`,
-      );
     }
   };
 

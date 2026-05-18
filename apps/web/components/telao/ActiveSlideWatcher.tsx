@@ -49,18 +49,11 @@ export function ActiveSlideWatcher({
       }
       const { data } = await sb.from('slides').select('type').eq('id', newId).maybeSingle();
       const newType = (data as { type?: string } | null)?.type;
-      console.log('[ActiveSlideWatcher refreshIfTypeChanged]', {
-        newId,
-        newType,
-        lastId: lastSeenIdRef.current,
-        lastType: lastSeenTypeRef.current,
-      });
       if (newType !== 'wordcloud' && newType !== 'open_ended' && newType !== 'comments') return;
       // Refresh em qualquer mudança (tipo OU id). O optimization de
       // "só refresh em type change" causava vazamento de config entre
       // slides quando realtime/polling não recompunha corretamente.
       if (newType !== lastSeenTypeRef.current || newId !== lastSeenIdRef.current) {
-        console.log('[ActiveSlideWatcher] router.refresh() FIRING', { newId, newType });
         lastSeenTypeRef.current = newType;
         lastSeenIdRef.current = newId;
         router.refresh();
@@ -72,12 +65,9 @@ export function ActiveSlideWatcher({
       { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` } as never,
       (payload: { new: { active_slide_id?: string | null } }) => {
         const newId = payload.new?.active_slide_id ?? null;
-        console.log('[ActiveSlideWatcher REALTIME events.UPDATE]', { newId, payload });
         void refreshIfTypeChanged(newId);
       },
-    ).subscribe((status) => {
-      console.log('[ActiveSlideWatcher subscribe status]', status);
-    });
+    ).subscribe();
 
     // Polling fallback agressivo (500ms) — caso o websocket caia, pega mudança
     // de slide ativo quase instantaneamente. Quase grátis: 1 SELECT por evento.
@@ -91,10 +81,6 @@ export function ActiveSlideWatcher({
       const newId =
         (data as { active_slide_id?: string | null } | null)?.active_slide_id ?? null;
       if (newId !== lastSeenIdRef.current) {
-        console.log('[ActiveSlideWatcher POLL detected change]', {
-          newId,
-          lastId: lastSeenIdRef.current,
-        });
         await refreshIfTypeChanged(newId);
       }
     };
