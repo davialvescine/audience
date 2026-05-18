@@ -32,6 +32,7 @@ export async function createSlide(
   });
   if (error) return mapError(error.message);
   revalidatePath('/admin/events/[slug]', 'page');
+  revalidatePath('/telao/[slug]', 'page');
   return { ok: true, data: data as Slide };
 }
 
@@ -46,6 +47,7 @@ export async function updateSlide(
   });
   if (error) return mapError(error.message);
   revalidatePath('/admin/events/[slug]', 'page');
+  revalidatePath('/telao/[slug]', 'page');
   return { ok: true, data: data as Slide };
 }
 
@@ -84,6 +86,7 @@ export async function setActiveSlide(
   });
   if (error) return mapError(error.message);
   revalidatePath('/admin/events/[slug]', 'page');
+  revalidatePath('/telao/[slug]', 'page');
   return { ok: true, data: null };
 }
 
