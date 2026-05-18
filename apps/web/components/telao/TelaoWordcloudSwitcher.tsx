@@ -5,18 +5,17 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
-import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 import type { WordEntry } from '@/lib/wordcloud/types';
 import { updateSlide } from '@/server-actions/slides';
 
-type ChannelLike = NonNullable<Parameters<typeof useWordcloudActive>[1]['channel']>;
+type ChannelLike = NonNullable<Parameters<typeof useActiveSlideConfig>[1]['channel']>;
 type PresenceChannelLike = Parameters<typeof useOnlinePresence>[0]['channel'];
 
 type Props = {
   eventId: string;
   eventSlug: string;
-  initialWordcloudActive: boolean;
   initialWordcloudConfig: WordcloudConfig;
   initialActiveSlideId?: string | null | undefined;
   initialWordcloudEntries: WordEntry[];
@@ -25,36 +24,33 @@ type Props = {
   /** Quando true, renderiza OperatorToolbar (toggles QR / ocultar / fullscreen).
    *  Calculado server-side via SSR auth — só owner/member do evento vê. */
   isOperator?: boolean | undefined;
-  children: ReactNode;
+  /** Mantido pra compat com page.tsx mas não usado — quando o slide não está
+   *  ativo, renderiza placeholder embutido. */
+  children?: ReactNode;
 };
 
 /**
- * Decide o que o telão mostra:
- *   - Se tem slide ativo do tipo wordcloud → WordCloudDisplay com config do slide
- *     (escuta `slides.UPDATE` em tempo real pra pegar mudanças do operador).
- *   - Senão se legacy `wordcloud_active=true` → WordCloudDisplay com config legacy.
- *   - Senão → renderiza children (TelaoClient com comentários).
- *
- * Cada hook tem seu próprio canal Supabase porque supabase-js não aceita
- * chamar `.on()` depois do primeiro `.subscribe()`.
+ * Renderiza WordCloudDisplay quando tem slide ativo do tipo wordcloud.
+ * Quando não tem slide ativo, mostra placeholder "Nenhum slide ativo".
+ * Escuta `slides.UPDATE` via useActiveSlideConfig pra pegar mudanças do
+ * operador (cor, posição, etc) em tempo real.
  */
 export function TelaoWordcloudSwitcher({
   eventId,
   eventSlug,
-  initialWordcloudActive,
   initialWordcloudConfig,
   initialActiveSlideId = null,
   initialWordcloudEntries,
   showBackground = false,
   joinUrl,
   isOperator = false,
-  children,
+  children: _children,
 }: Props) {
+  void _children;
   // Entries por slide. Inicial vem do SSR (do slide ativo no momento do
   // request); quando operador troca de slide, refetch via RPC.
   const [currentEntries, setCurrentEntries] = useState<WordEntry[]>(initialWordcloudEntries);
   const [entriesSlideId, setEntriesSlideId] = useState<string | null>(initialActiveSlideId);
-  const [legacyChannel, setLegacyChannel] = useState<ChannelLike | undefined>(undefined);
   const [slidesChannel, setSlidesChannel] = useState<ChannelLike | undefined>(undefined);
   const [wordsChannel, setWordsChannel] = useState<ChannelLike | undefined>(undefined);
   const [presenceChannel, setPresenceChannel] = useState<PresenceChannelLike | undefined>(
@@ -64,46 +60,32 @@ export function TelaoWordcloudSwitcher({
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
     const ts = Date.now();
-    const legacy = rt.channel(`telao:${eventId}:events:${ts}`) as unknown as ChannelLike;
     const slides = rt.channel(`telao:${eventId}:slides:${ts}`) as unknown as ChannelLike;
     const wc = rt.channel(`telao:${eventId}:words:${ts}`) as unknown as ChannelLike;
     const pres = rt.channel(`presence:event:${eventId}`, {
       config: { presence: { key: '' } },
     }) as unknown as PresenceChannelLike;
-    setLegacyChannel(legacy);
     setSlidesChannel(slides);
     setWordsChannel(wc);
     setPresenceChannel(pres);
     return () => {
-      legacy?.unsubscribe();
       slides?.unsubscribe();
       wc?.unsubscribe();
       pres?.unsubscribe();
     };
   }, [eventId]);
 
-  // Legacy toggle (events.wordcloud_active + events.wordcloud_config).
-  const legacy = useWordcloudActive(eventId, {
-    initialActive: initialWordcloudActive,
-    initialConfig: initialWordcloudConfig,
-    channel: legacyChannel,
-  });
-
-  // Sistema novo: slide ativo + sua config (events.active_slide_id + slides.config).
   const slide = useActiveSlideConfig(eventId, {
     initialActiveSlideId,
     initialActiveConfig: initialActiveSlideId ? initialWordcloudConfig : null,
     channel: slidesChannel,
   });
 
-  // Precedência: slide ativo > legacy toggle.
-  const active = slide.activeSlideId !== null || legacy.active;
-  // slide.config agora é `unknown` (pode ser WordcloudConfig OU OpenEndedConfig).
-  // Este switcher só renderiza wordcloud, então fazer cast quando type === 'wordcloud'.
+  const active = slide.activeSlideId !== null;
   const config: WordcloudConfig =
     slide.activeType === 'wordcloud' && slide.config
       ? (slide.config as WordcloudConfig)
-      : legacy.config;
+      : initialWordcloudConfig;
 
   // Quando active_slide_id muda (operador clica próximo/anterior), refetch
   // palavras desse slide pelo RPC. Cada slide = sessão isolada.
@@ -175,7 +157,6 @@ export function TelaoWordcloudSwitcher({
     );
   }, [
     active,
-    children,
     config,
     eventId,
     currentEntries,

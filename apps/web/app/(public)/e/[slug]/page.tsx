@@ -11,15 +11,6 @@ import { loadTheme } from '@/lib/themes/loadTheme';
 type Params = { slug: string };
 type SearchParams = { mode?: string };
 
-const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
-  question: 'Em uma palavra, o que você espera deste evento?',
-  maxWordsPerSubmission: 1,
-  filterStopwords: true,
-  filterProfanity: true,
-  palette: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF'],
-  showTotal: true,
-};
-
 export default async function PublicEventPage({
   params,
   searchParams,
@@ -38,13 +29,9 @@ export default async function PublicEventPage({
 
   const { data: wcRow } = await supabase
     .from('events')
-    .select('wordcloud_active, wordcloud_config, active_slide_id')
+    .select('active_slide_id')
     .eq('slug', slug)
     .maybeSingle();
-
-  const wordcloudActive = wcRow?.wordcloud_active ?? false;
-  const wordcloudConfig =
-    (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
   const activeSlideId = wcRow?.active_slide_id ?? null;
 
   let activeSlideConfig: WordcloudConfig | null = null;
@@ -98,8 +85,6 @@ export default async function PublicEventPage({
         slug={event.slug}
         eventId={event.id}
         submissionsOpen={event.submissions_open}
-        wordcloudActive={wordcloudActive}
-        wordcloudConfig={wordcloudConfig}
         activeSlideId={activeSlideId}
         activeSlideType={activeSlideType}
         activeSlideConfig={activeSlideConfig}

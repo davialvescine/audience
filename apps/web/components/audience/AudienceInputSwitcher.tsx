@@ -8,15 +8,13 @@ import { WordCloudInput } from '@/components/audience/WordCloudInput';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import { usePresenceJoin } from '@/hooks/usePresenceJoin';
-import { useWordcloudActive, type WordcloudConfig } from '@/hooks/useWordcloudActive';
+import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import type { OpenEndedConfig } from '@/lib/slides/types';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 
 type Props = {
   slug: string;
   eventId: string;
-  initialWordcloudActive: boolean;
-  initialWordcloudConfig: WordcloudConfig;
   initialActiveSlideId: string | null;
   initialActiveSlideType: 'wordcloud' | 'open_ended' | 'comments' | null;
   initialActiveSlideConfig: WordcloudConfig | null;
@@ -28,14 +26,12 @@ type Props = {
   forceMode?: 'auto' | 'comments' | 'slides' | undefined;
 };
 
-type ChannelLike = Parameters<typeof useWordcloudActive>[1]['channel'];
+type ChannelLike = Parameters<typeof useActiveSlideConfig>[1]['channel'];
 type PresenceChannelLike = Parameters<typeof usePresenceJoin>[0]['channel'];
 
 export function AudienceInputSwitcher({
   slug,
   eventId,
-  initialWordcloudActive,
-  initialWordcloudConfig,
   initialActiveSlideId,
   initialActiveSlideType,
   initialActiveSlideConfig,
@@ -44,7 +40,6 @@ export function AudienceInputSwitcher({
   submissionsOpen,
   forceMode = 'auto',
 }: Props) {
-  const [legacyChannel, setLegacyChannel] = useState<ChannelLike | undefined>(undefined);
   const [slidesChannel, setSlidesChannel] = useState<ChannelLike | undefined>(undefined);
   const [presenceChannel, setPresenceChannel] = useState<PresenceChannelLike | undefined>(
     undefined,
@@ -52,32 +47,19 @@ export function AudienceInputSwitcher({
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
-    // 1 canal Realtime POR hook — Supabase não deixa adicionar .on() depois
-    // do primeiro subscribe(). Hooks separados precisam de canais separados.
-    const legacy = rt.channel(`event:${eventId}:legacy:${Date.now()}`) as unknown as ChannelLike;
     const slides = rt.channel(`event:${eventId}:slides:${Date.now()}`) as unknown as ChannelLike;
     const pres = rt.channel(`presence:event:${eventId}`, {
       config: { presence: { key: '' } },
     }) as unknown as PresenceChannelLike;
-    setLegacyChannel(legacy);
     setSlidesChannel(slides);
     setPresenceChannel(pres);
     return () => {
-      legacy?.unsubscribe();
       slides?.unsubscribe();
       pres?.unsubscribe();
     };
   }, [eventId]);
 
-  // Legacy: lê events.wordcloud_active/_config (eventos antigos sem slides)
-  const { active: legacyActive, config: legacyConfig } = useWordcloudActive(eventId, {
-    initialActive: initialWordcloudActive,
-    initialConfig: initialWordcloudConfig,
-    channel: legacyChannel,
-  });
-
-  // Novo: lê slide ativo + tipo + config dele em tempo real (escuta
-  // events.active_slide_id e slides UPDATE filtrado por event_id).
+  // Lê slide ativo + tipo + config dele em tempo real.
   // initialActiveConfig precisa refletir o TIPO do SSR — se for open_ended,
   // passa openEndedConfig; senão wordcloud. Sem isso, audiência abre em
   // open_ended mas slideConfig=null e cai no fallback do wordcloud.
@@ -92,11 +74,8 @@ export function AudienceInputSwitcher({
     channel: slidesChannel,
   });
 
-  // Prioridade: novo (slide ativo) → fallback legacy.
-  const active = activeSlideId != null || legacyActive;
-  const wcConfig = (activeType === 'wordcloud'
-    ? (slideConfig as WordcloudConfig | null)
-    : null) ?? legacyConfig;
+  const active = activeSlideId != null;
+  const wcConfig = activeType === 'wordcloud' ? (slideConfig as WordcloudConfig | null) : null;
 
   // Always join presence (independent of wordcloud_active) so the count is
   // accurate even before the operator enables the nuvem and so this hook
@@ -145,7 +124,10 @@ export function AudienceInputSwitcher({
       }
       return <SubmissionForm slug={slug} />;
     }
-    return <WordCloudInput slug={slug} config={wcConfig} />;
+    if (wcConfig) {
+      return <WordCloudInput slug={slug} config={wcConfig} />;
+    }
+    return null;
   };
 
   const view = useMemo(() => {

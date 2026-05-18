@@ -22,15 +22,6 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import type { WordEntry } from '@/lib/wordcloud/types';
 
-const DEFAULT_WORDCLOUD_CONFIG: WordcloudConfig = {
-  question: 'Em uma palavra, o que você espera deste evento?',
-  maxWordsPerSubmission: 1,
-  filterStopwords: true,
-  filterProfanity: true,
-  palette: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF'],
-  showTotal: true,
-};
-
 type Params = { slug: string };
 type SearchParams = { preview?: string; mode?: string };
 
@@ -99,16 +90,12 @@ export default async function TelaoPage({
 
   const { data: wcRow } = await supabase
     .from('events')
-    .select('wordcloud_active, wordcloud_config, active_slide_id')
+    .select('active_slide_id')
     .eq('id', event.event_id)
     .maybeSingle();
-  const wordcloudActive = wcRow?.wordcloud_active ?? false;
-  const wordcloudConfig =
-    (wcRow?.wordcloud_config as WordcloudConfig | null) ?? DEFAULT_WORDCLOUD_CONFIG;
   const activeSlideId = (wcRow?.active_slide_id as string | null) ?? null;
 
-  // Fetch active slide config (sistema novo multi-slide). Tem precedência
-  // sobre wordcloud_config legacy quando existe e é do tipo wordcloud.
+  // Fetch active slide config.
   let activeSlideConfig: WordcloudConfig | null = null;
   let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null = null;
   let activeOpenEndedConfig: OpenEndedConfig | null = null;
@@ -151,9 +138,8 @@ export default async function TelaoPage({
     }));
   }
 
-  // Telão fica em modo nuvem quando: legacy `wordcloud_active=true` OU tem
-  // slide ativo do tipo wordcloud (sistema novo).
-  const cloudMode = wordcloudActive || activeSlideConfig !== null;
+  // Telão fica em modo nuvem quando tem slide ativo do tipo wordcloud.
+  const cloudMode = activeSlideConfig !== null;
 
   let initialEntries: WordEntry[] = [];
   if (cloudMode) {
@@ -172,23 +158,21 @@ export default async function TelaoPage({
   // Reconstruída a partir do mesmo host do request.
   const joinUrl = `https://audience-opal.vercel.app/e/${slug}`;
 
-  // Preview da aba Telão (no admin) = sempre o card de comentário, ignora
-  // slide ativo da nuvem — a configuração visual dessa aba é específica
-  // do card de comentário.
-  const telaoClient = (
-    <TelaoClient
-      slug={slug}
-      eventId={event.event_id}
-      eventName={event.event_name}
-      config={config}
-      intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
-      preview={isPreview}
-    />
-  );
-
   let telao: React.ReactNode;
   if (isPreview) {
-    telao = telaoClient;
+    // Preview legado (?preview=1): renderiza TelaoClient direto com config
+    // global (events.telao_config). Mantido pra compat com URLs antigas
+    // de iframe; ninguém deveria estar criando preview novo desse jeito.
+    telao = (
+      <TelaoClient
+        slug={slug}
+        eventId={event.event_id}
+        eventName={event.event_name}
+        config={config}
+        intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
+        preview
+      />
+    );
   } else if (activeSlideType === 'comments' && activeCommentsConfig && activeSlideId) {
     telao = (
       <TelaoCommentsSwitcher
@@ -227,34 +211,13 @@ export default async function TelaoPage({
         key={activeSlideId}
         eventId={event.event_id}
         eventSlug={slug}
-        initialWordcloudActive={cloudMode}
-        initialWordcloudConfig={activeSlideConfig ?? wordcloudConfig}
+        initialWordcloudConfig={activeSlideConfig!}
         initialActiveSlideId={activeSlideId}
         initialWordcloudEntries={initialEntries}
         showBackground={showWordcloudBackground}
         joinUrl={showWordcloudBackground ? joinUrl : undefined}
         isOperator={isOperator}
-      >
-        {telaoClient}
-      </TelaoWordcloudSwitcher>
-    );
-  } else if (cloudMode) {
-    // Legacy: evento sem multi-slide ainda mas wordcloud_active=true.
-    telao = (
-      <TelaoWordcloudSwitcher
-        key="legacy-wordcloud"
-        eventId={event.event_id}
-        eventSlug={slug}
-        initialWordcloudActive={cloudMode}
-        initialWordcloudConfig={wordcloudConfig}
-        initialActiveSlideId={null}
-        initialWordcloudEntries={initialEntries}
-        showBackground={showWordcloudBackground}
-        joinUrl={showWordcloudBackground ? joinUrl : undefined}
-        isOperator={isOperator}
-      >
-        {telaoClient}
-      </TelaoWordcloudSwitcher>
+      />
     );
   } else {
     // Sem slide ativo. NÃO cai mais no fallback legado (events.telao_config)

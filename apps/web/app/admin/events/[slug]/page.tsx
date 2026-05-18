@@ -10,15 +10,13 @@ import { H2RStatusBadge } from '@/components/audience/H2RStatusBadge';
 import { ModeratorLinks } from '@/components/audience/ModeratorLinks';
 import { QueueControls } from '@/components/audience/QueueControls';
 import { ModerationQueue } from '@/components/audience/ModerationQueue';
-import { ShareCard } from '@/components/audience/ShareCard';
 import { SlidesTab } from '@/components/audience/SlidesTab';
-import { TelaoTab } from '@/components/audience/TelaoTab';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import { requireUser } from '@/lib/auth/requireUser';
 import type { Slide } from '@/lib/slides/types';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { DEFAULT_TELAO_CONFIG, type TelaoConfig, type TelaoDisplayMode } from '@/lib/telao/config';
+import type { TelaoDisplayMode } from '@/lib/telao/config';
 
 // Sempre fresh: evento e global, multiplos moderadores. Cada GET puxa
 // DB pra refletir mudancas que outro moderador fez (polling de 2s
@@ -37,7 +35,7 @@ export default async function EventModerationPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, telao_config, telao_configs, enabled_display_modes, owner_id, pinned_submission_id',
+      'id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, enabled_display_modes, owner_id, pinned_submission_id',
     )
     .eq('slug', slug)
     .single();
@@ -124,48 +122,6 @@ export default async function EventModerationPage({
       />
     </div>
   );
-
-  const telaoContent = (
-    <TelaoTab
-      eventId={event.id}
-      slug={event.slug}
-      initialConfig={{
-        ...DEFAULT_TELAO_CONFIG,
-        ...((event.telao_config as Partial<TelaoConfig>) ?? {}),
-      }}
-      initialModes={(event.enabled_display_modes as TelaoDisplayMode[] | null) ?? ['h2r']}
-      initialOverrides={
-        (event.telao_configs as Partial<Record<TelaoDisplayMode, TelaoConfig>> | null) ?? {}
-      }
-      publicTelaoUrl={`${proto}://${host}/telao/${event.slug}`}
-      h2r={{
-        alreadyPaired: Boolean(event.h2r_paired_at),
-        lastHeartbeat: event.h2r_last_heartbeat,
-        dispatchIntervalSeconds: event.dispatch_interval_seconds ?? 3,
-      }}
-    />
-  );
-
-  const shareContent = (
-    <div className="space-y-4">
-      <ShareCard publicUrl={publicUrl} />
-      <Card>
-        <h3 className="font-display text-lg mb-2">Como divulgar</h3>
-        <ul className="space-y-2 text-sm text-ink/70">
-          <li>• Cola o link no chat do evento, banner ou stories</li>
-          <li>• Imprime o QR code e coloca no púlpito ou mesas</li>
-          <li>• Mostra o QR no telão durante intervalos</li>
-          <li>• Compartilha o link no WhatsApp do grupo</li>
-        </ul>
-      </Card>
-    </div>
-  );
-
-  // telaoContent e shareContent não são mais usados — telão e compartilhamento
-  // viraram parte do sistema de slides (configurado por slide no painel lateral).
-  // Mantidos no escopo só pro caso de futuro debug; ESLint silenciado.
-  void telaoContent;
-  void shareContent;
 
   const tabs = [
     {

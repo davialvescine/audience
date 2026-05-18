@@ -8,8 +8,6 @@ type Props = {
   slug: string;
   eventId: string;
   submissionsOpen: boolean;
-  wordcloudActive: boolean;
-  wordcloudConfig: WordcloudConfig;
   activeSlideId: string | null;
   activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null;
   activeSlideConfig: WordcloudConfig | null;
@@ -23,8 +21,6 @@ export function PublicEventShell({
   slug,
   eventId,
   submissionsOpen,
-  wordcloudActive,
-  wordcloudConfig,
   activeSlideId,
   activeSlideType,
   activeSlideConfig,
@@ -33,7 +29,7 @@ export function PublicEventShell({
   forceMode = 'auto',
 }: Props) {
   const showingSlide =
-    forceMode === 'slides' || (forceMode === 'auto' && (activeSlideId != null || wordcloudActive));
+    forceMode === 'slides' || (forceMode === 'auto' && activeSlideId != null);
   // Hero text adapta: aberto pede "resposta", comentários "mensagem", nuvem "palavra".
   const heroSubtitle =
     activeSlideType === 'open_ended'
@@ -75,8 +71,6 @@ export function PublicEventShell({
               slug={slug}
               eventId={eventId}
               submissionsOpen={submissionsOpen}
-              initialWordcloudActive={wordcloudActive}
-              initialWordcloudConfig={wordcloudConfig}
               initialActiveSlideId={activeSlideId}
               initialActiveSlideType={activeSlideType}
               initialActiveSlideConfig={activeSlideConfig}
