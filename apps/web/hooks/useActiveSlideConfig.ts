@@ -108,6 +108,12 @@ export function useActiveSlideConfig(
         .maybeSingle();
       if (cancelled) return;
       const newActiveId = (ev as { active_slide_id?: string | null } | null)?.active_slide_id ?? null;
+      console.log('[useActiveSlideConfig poll]', {
+        eventId,
+        dbActiveId: newActiveId,
+        currentRef: activeSlideIdRef.current,
+        willChange: newActiveId !== activeSlideIdRef.current,
+      });
       if (newActiveId !== activeSlideIdRef.current) {
         setActiveSlideId(newActiveId);
         activeSlideIdRef.current = newActiveId;
@@ -120,6 +126,13 @@ export function useActiveSlideConfig(
           .maybeSingle();
         if (cancelled) return;
         const row = slideRow as { type?: string; config?: unknown } | null;
+        console.log('[useActiveSlideConfig poll] slide row', {
+          slideId: newActiveId,
+          type: row?.type,
+          configSnippet: row?.config
+            ? JSON.stringify(row.config).slice(0, 100)
+            : null,
+        });
         if (row?.type === 'wordcloud' || row?.type === 'open_ended' || row?.type === 'comments') {
           setActiveType((prev) => (prev === row.type ? prev : row.type as ActiveSlideType));
         }

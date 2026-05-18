@@ -104,8 +104,10 @@ export function SlidesTab({
 
   const onActivate = async (slideId: string | null) => {
     const previous = activeId;
+    console.log('[onActivate] firing', { eventId, slideId, previous });
     setActiveId(slideId); // optimistic
     const r = await setActiveSlide(eventId, slideId);
+    console.log('[onActivate] setActiveSlide result', r);
     if (!r.ok) {
       // RPC falhou (auth, slide_not_in_event, etc) — reverte e mostra erro.
       // Sem isso, admin pensa que ativou mas telão continua no slide antigo
