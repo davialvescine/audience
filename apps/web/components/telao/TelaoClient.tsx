@@ -194,28 +194,13 @@ export function TelaoClient({
       void poll();
     }, 2000);
 
-    // Poll config tambem — quando o dono muda cor/posicao no admin,
-    // todas as telas /telao abertas (OBS, PiP, desktop) atualizam em
-    // ate 5s sem precisar recarregar.
-    const pollConfig = async () => {
-      const { data, error } = await supabase.rpc('get_telao_config', { p_slug: slug });
-      if (error || !data || data.length === 0) return;
-      const event = data[0];
-      if (!event) return;
-      const overrides = (event.configs as Record<string, Partial<TelaoConfig>> | null) ?? {};
-      // mode no preview e ignorado; em live, usamos o config global.
-      // (per-mode override e aplicado no SSR via page.tsx, podemos
-      // honrar tambem aqui depois se precisar.)
-      const fresh: TelaoConfig = {
-        ...DEFAULT_TELAO_CONFIG,
-        ...((event.config as Partial<TelaoConfig>) ?? {}),
-        ...(overrides.global ?? {}),
-      };
-      setConfig((cur) => (JSON.stringify(cur) === JSON.stringify(fresh) ? cur : fresh));
-    };
-    const cfgTimer = setInterval(() => {
-      void pollConfig();
-    }, 5000);
+    // ANTES: poll events.telao_config (LEGACY) a cada 5s pra propagar
+    // mudanças do admin antigo. AGORA: cada slide tem sua própria config
+    // que vem via prop e é atualizada via useEffect[initialConfig]. Esse
+    // polling LEGACY estava SOBRESCREVENDO o config do slide a cada 5s
+    // — causa raiz do bug "telão volta pra cor antiga" / "roxo".
+    // Mantido como no-op pra não quebrar imports/cleanup; removido o setInterval.
+    const cfgTimer: ReturnType<typeof setInterval> = setInterval(() => {}, 999999999);
 
     // Polling de mensagem fixada. Quando muda, atualiza state. Renderiza
     // por tempo indeterminado ate ser desfixada (server seta null).

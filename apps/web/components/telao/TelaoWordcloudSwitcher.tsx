@@ -132,7 +132,20 @@ export function TelaoWordcloudSwitcher({
   }, [slide.activeSlideId, eventSlug, entriesSlideId, initialWordcloudEntries]);
 
   return useMemo(() => {
-    if (!active) return <>{children}</>;
+    if (!active) {
+      // Antes caía em children = TelaoClient com events.telao_config legado.
+      // Isso era a fonte do bug "telão volta pra cor antiga" — quando o
+      // slide ativo virava null, o switcher mostrava o config legado em
+      // vez de um placeholder. Agora mostra placeholder limpo.
+      return (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#0A2540' }}>
+          <div className="text-center text-paper/70 max-w-2xl px-12">
+            <p className="text-5xl font-display mb-4">Nenhum slide ativo</p>
+            <p className="text-2xl text-paper/55">Selecione um slide no painel pra começar</p>
+          </div>
+        </div>
+      );
+    }
     const noopChannel: ChannelLike = {
       on() {
         return this as unknown as ChannelLike;
