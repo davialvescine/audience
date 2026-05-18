@@ -86,8 +86,9 @@ export function TelaoCommentsSwitcher({
 
   // QR só faz sentido quando há joinUrl + estamos pintando fundo (no OBS,
   // showBackground=false → QR off pra não bagunçar a sobreposição).
+  // Default = off (escondido). Admin liga explicitamente pelo toggle.
   const qrEnabled = !!joinUrl && showBackground;
-  const showQr = qrEnabled && merged.showQr !== false;
+  const showQr = qrEnabled && merged.showQr === true;
   const qrFullscreen = qrEnabled && merged.qrFullscreen === true;
   const joinHost = useMemo(() => {
     if (!joinUrl) return '';

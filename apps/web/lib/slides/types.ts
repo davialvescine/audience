@@ -77,6 +77,10 @@ export const DEFAULT_COMMENTS_CONFIG: CommentsConfig = {
   showTitle: false,
   title: '',
   showCardBackground: true,
+  // QR escondido por padrão. Operador liga via toolbar quando quiser
+  // mostrar pra audiência escanear.
+  showQr: false,
+  showJoinUrl: true,
   // Default escuro funciona bem em fundo branco/transparente do OBS.
   // Operador pode mudar pra contraste com fundo customizado.
   titleColor: '#0A2540',

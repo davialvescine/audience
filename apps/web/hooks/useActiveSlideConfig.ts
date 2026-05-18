@@ -58,61 +58,33 @@ export function useActiveSlideConfig(
     activeSlideIdRef.current = activeSlideId;
   }, [activeSlideId]);
 
+  // Polling = fonte única de verdade. Realtime apenas dispara um poll
+  // imediato (não aplica payload direto). Isso evita o bug clássico de
+  // realtime: mensagens stale/buffered chegando fora de ordem e revertendo
+  // o estado pra um valor antigo (o "as vezes troca mas volta").
+  //
+  // Sempre que o poll roda, ele lê o ESTADO ATUAL do DB. Mesmo que um
+  // realtime velho dispare um poll extra, o poll lê o mesmo valor que
+  // estaria lá, sem reverter.
+  const pollNowRef = useRef<() => Promise<void>>(async () => {});
+
   useEffect(() => {
     const ch = opts.channel;
     if (!ch) return;
 
-    const sb = getSupabaseBrowserClient();
+    // Realtime = "alguma coisa mudou, vai ler o DB agora".
     ch.on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
-      (payload) => {
-        const row = payload.new as { active_slide_id?: string | null };
-        if ('active_slide_id' in row) {
-          const newId = row.active_slide_id ?? null;
-          setActiveSlideId(newId);
-          activeSlideIdRef.current = newId;
-          // Refetch tipo + config quando o slide ativo muda — operador pode
-          // ter trocado de nuvem pra aberto, audiência precisa adaptar input.
-          if (newId) {
-            void sb
-              .from('slides')
-              .select('type, config')
-              .eq('id', newId)
-              .maybeSingle()
-              .then(({ data }) => {
-                const row2 = data as { type?: string; config?: unknown } | null;
-                if (
-                  row2?.type === 'wordcloud' ||
-                  row2?.type === 'open_ended' ||
-                  row2?.type === 'comments'
-                ) {
-                  setActiveType(row2.type);
-                }
-                if (row2?.config) setConfig(row2.config);
-              });
-          } else {
-            setActiveType(null);
-            setConfig(null);
-          }
-        }
+      () => {
+        void pollNowRef.current();
       },
     )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'slides', filter: `event_id=eq.${eventId}` },
-        (payload) => {
-          const row = payload.new as { id?: string; type?: string; config?: unknown };
-          if (row.id && row.id === activeSlideIdRef.current) {
-            if (
-              row.type === 'wordcloud' ||
-              row.type === 'open_ended' ||
-              row.type === 'comments'
-            ) {
-              setActiveType(row.type);
-            }
-            if (row.config) setConfig(row.config);
-          }
+        () => {
+          void pollNowRef.current();
         },
       )
       .subscribe();
@@ -123,9 +95,8 @@ export function useActiveSlideConfig(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, opts.channel]);
 
-  // Polling fallback — refetch active slide + config every 3s. Caso o
-  // Realtime falhe (firewall, CSP, transport, etc.), o celular ainda
-  // pega as mudanças do operador em ~3s.
+  // Polling = fonte única. Re-fetch a cada 1s + dispara também quando
+  // realtime fira (latência praticamente zero quando funciona).
   useEffect(() => {
     let cancelled = false;
     const sb = getSupabaseBrowserClient();
@@ -162,9 +133,10 @@ export function useActiveSlideConfig(
         setConfig(null);
       }
     };
+    pollNowRef.current = poll;
     void poll();
-    // Polling agressivo (1s) — captura mudanças mesmo se Realtime falhar.
-    // Quase de graça: 2 SELECTs simples por evento por segundo.
+    // Polling 1s — captura mudanças mesmo se Realtime cair. Em fluxo
+    // normal, Realtime fira primeiro e dispara o poll instantâneo.
     const id = setInterval(poll, 1000);
     return () => {
       cancelled = true;
