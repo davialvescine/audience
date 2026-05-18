@@ -95,11 +95,24 @@ export function SlidesTab({
 
   const onDelete = async (slideId: string) => {
     if (!window.confirm('Excluir este slide? Apaga as palavras enviadas nele.')) return;
+    const wasActive = activeId === slideId;
+    const fallback = slides.find((s) => s.id !== slideId);
     const r = await deleteSlide(slideId);
-    if (r.ok && selectedId === slideId) {
-      setSelectedId(slides.find((s) => s.id !== slideId)?.id ?? null);
+    if (!r.ok) return;
+    if (selectedId === slideId) {
+      setSelectedId(fallback?.id ?? null);
     }
-    if (r.ok && activeId === slideId) setActiveId(null);
+    if (wasActive) {
+      // Sem isso, events.active_slide_id vira null (CASCADE on delete) e o
+      // telão cai no fallback legado de events.telao_config — que tem cores
+      // antigas. Auto-ativa o próximo slide pra manter o telão funcionando.
+      if (fallback) {
+        setActiveId(fallback.id);
+        void setActiveSlide(eventId, fallback.id);
+      } else {
+        setActiveId(null);
+      }
+    }
   };
 
   const onActivate = async (slideId: string | null) => {
