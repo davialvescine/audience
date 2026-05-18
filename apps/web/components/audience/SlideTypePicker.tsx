@@ -27,7 +27,7 @@ const GROUPS: Group[] = [
       { type: 'wordcloud', label: 'Nuvem de palavras', icon: <CloudIcon />, enabled: true },
       { type: 'open_ended', label: 'Aberto', icon: <ChatIcon />, enabled: true },
       { type: 'comments', label: 'Cards rotativos', icon: <CommentsIcon />, enabled: true },
-      { type: 'poll', label: 'Múltipla escolha', icon: <BarsIcon />, enabled: false },
+      { type: 'poll', label: 'Múltipla escolha · Fato/Fake', icon: <BarsIcon />, enabled: true },
       { type: 'rating', label: 'Escalas', icon: <ScaleIcon />, enabled: false },
       { type: 'qa', label: 'Perguntas e respostas', icon: <QnaIcon />, enabled: false },
       { type: 'placeholder', label: 'Classificação', icon: <RankIcon />, enabled: false },

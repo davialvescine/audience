@@ -3,23 +3,25 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { OpenEndedInput } from '@/components/audience/OpenEndedInput';
+import { PollInput } from '@/components/audience/PollInput';
 import { SubmissionForm } from '@/components/audience/SubmissionForm';
 import { WordCloudInput } from '@/components/audience/WordCloudInput';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import { usePresenceJoin } from '@/hooks/usePresenceJoin';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
-import type { OpenEndedConfig } from '@/lib/slides/types';
+import type { OpenEndedConfig, PollConfig } from '@/lib/slides/types';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 
 type Props = {
   slug: string;
   eventId: string;
   initialActiveSlideId: string | null;
-  initialActiveSlideType: 'wordcloud' | 'open_ended' | 'comments' | null;
+  initialActiveSlideType: 'wordcloud' | 'open_ended' | 'comments' | 'poll' | null;
   initialActiveSlideConfig: WordcloudConfig | null;
   initialOpenEndedConfig: OpenEndedConfig | null;
   initialOpenEndedResponses: OpenEndedResponse[];
+  initialPollConfig?: PollConfig | null;
   submissionsOpen: boolean;
   /** 'auto' (default) segue o slide ativo; 'comments' força form de comentário;
    *  'slides' força nuvem (mostra 'aguardando slide' se nenhum ativo). */
@@ -37,6 +39,7 @@ export function AudienceInputSwitcher({
   initialActiveSlideConfig,
   initialOpenEndedConfig,
   initialOpenEndedResponses,
+  initialPollConfig,
   submissionsOpen,
   forceMode = 'auto',
 }: Props) {
@@ -66,7 +69,9 @@ export function AudienceInputSwitcher({
   const ssrInitialConfig =
     initialActiveSlideType === 'open_ended'
       ? (initialOpenEndedConfig as unknown as WordcloudConfig | null)
-      : initialActiveSlideConfig;
+      : initialActiveSlideType === 'poll'
+        ? (initialPollConfig as unknown as WordcloudConfig | null)
+        : initialActiveSlideConfig;
   const { activeSlideId, activeType, config: slideConfig } = useActiveSlideConfig(eventId, {
     initialActiveSlideId,
     initialActiveType: initialActiveSlideType,
@@ -112,8 +117,6 @@ export function AudienceInputSwitcher({
       );
     }
     if (activeType === 'comments') {
-      // Slide `comments` usa o mesmo input padrão de comentário com moderação
-      // — audiência envia, moderador aprova, vai pro card rotativo no telão.
       if (!submissionsOpen) {
         return (
           <div className="text-center py-8">
@@ -123,6 +126,11 @@ export function AudienceInputSwitcher({
         );
       }
       return <SubmissionForm slug={slug} />;
+    }
+    if ((activeType as string) === 'poll' && slideConfig && activeSlideId) {
+      return (
+        <PollInput slug={slug} slideId={activeSlideId} config={slideConfig as PollConfig} />
+      );
     }
     if (wcConfig) {
       return <WordCloudInput slug={slug} config={wcConfig} />;

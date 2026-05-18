@@ -4,9 +4,10 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useRef, useState } from 'react';
 
 import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
+import { PollDisplay } from '@/components/telao/PollDisplay';
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { backgroundStyle, WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
-import type { CommentsConfig } from '@/lib/slides/types';
+import type { CommentsConfig, PollConfig } from '@/lib/slides/types';
 import { updateSlide } from '@/server-actions/slides';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
@@ -111,6 +112,12 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
               liveConfig={liveConfig as unknown as CommentsConfig | undefined}
               joinUrl={joinUrl}
               stageRef={stageRef}
+            />
+          ) : slide.type === 'poll' ? (
+            <PollCanvas
+              key={slide.id}
+              slide={slide as Slide<'poll'>}
+              liveConfig={liveConfig as unknown as PollConfig | undefined}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-ink/5">
@@ -518,5 +525,30 @@ function CommentsCanvas({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function PollCanvas({
+  slide,
+  liveConfig,
+}: {
+  slide: Slide<'poll'>;
+  liveConfig: PollConfig | undefined;
+}) {
+  const cfg = liveConfig ?? (slide.config as PollConfig);
+  // Sample counts pra preview no admin (audiência simulada).
+  const sampleCounts = cfg.options.map((_, idx) => {
+    if (cfg.correctOption != null && idx === cfg.correctOption) return 12;
+    return Math.max(2, 8 - idx * 2);
+  });
+  return (
+    <PollDisplay
+      slug="preview"
+      slideId={slide.id}
+      config={cfg}
+      initialCounts={sampleCounts}
+      channel={makeNoopChannel() as unknown as Parameters<typeof PollDisplay>[0]['channel']}
+      showBackground
+    />
   );
 }

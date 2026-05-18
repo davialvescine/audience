@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 
 import { CommentsPropsPanel } from '@/components/audience/CommentsPropsPanel';
 import { OpenEndedPropsPanel } from '@/components/audience/OpenEndedPropsPanel';
+import { PollPropsPanel } from '@/components/audience/PollPropsPanel';
 import { SlideCanvas } from '@/components/audience/SlideCanvas';
 import { SlidePropsPanel } from '@/components/audience/SlidePropsPanel';
 import { SlideThumbnail } from '@/components/audience/SlideThumbnail';
@@ -13,7 +14,7 @@ import { useSlides } from '@/hooks/useSlides';
 import { useTauri } from '@/hooks/useTauri';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
-import { DEFAULT_COMMENTS_CONFIG, DEFAULT_OPEN_ENDED_CONFIG, type Slide, type SlideType } from '@/lib/slides/types';
+import { DEFAULT_COMMENTS_CONFIG, DEFAULT_OPEN_ENDED_CONFIG, DEFAULT_POLL_CONFIG, type Slide, type SlideType } from '@/lib/slides/types';
 import {
   createSlide,
   deleteSlide,
@@ -87,7 +88,9 @@ export function SlidesTab({
           ? { ...DEFAULT_OPEN_ENDED_CONFIG }
           : type === 'comments'
             ? { ...DEFAULT_COMMENTS_CONFIG }
-            : { ...DEFAULT_WORDCLOUD_CONFIG };
+            : type === 'poll'
+              ? { ...DEFAULT_POLL_CONFIG }
+              : { ...DEFAULT_WORDCLOUD_CONFIG };
       const r = await createSlide(eventId, type, config);
       if (r.ok) setSelectedId(r.data.id);
     });
@@ -444,6 +447,16 @@ export function SlidesTab({
               key={selected.id}
               slide={selected as Slide<'comments'>}
               slug={slug}
+              onChange={(cfg) => {
+                setLiveConfig(cfg as unknown as WordcloudConfig);
+                void updateSlide(selected.id, cfg as unknown as Record<string, unknown>);
+              }}
+              onLiveChange={(cfg) => setLiveConfig(cfg as unknown as WordcloudConfig)}
+            />
+          ) : selected && selected.type === 'poll' ? (
+            <PollPropsPanel
+              key={selected.id}
+              slide={selected as Slide<'poll'>}
               onChange={(cfg) => {
                 setLiveConfig(cfg as unknown as WordcloudConfig);
                 void updateSlide(selected.id, cfg as unknown as Record<string, unknown>);

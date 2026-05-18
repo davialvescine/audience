@@ -20,7 +20,7 @@ type ChannelLike = {
   unsubscribe: () => void;
 };
 
-export type ActiveSlideType = 'wordcloud' | 'open_ended' | 'comments' | null;
+export type ActiveSlideType = 'wordcloud' | 'open_ended' | 'comments' | 'poll' | null;
 
 export type UseActiveSlideOptions = {
   initialActiveSlideId: string | null;
@@ -120,7 +120,12 @@ export function useActiveSlideConfig(
           .maybeSingle();
         if (cancelled) return;
         const row = slideRow as { type?: string; config?: unknown } | null;
-        if (row?.type === 'wordcloud' || row?.type === 'open_ended' || row?.type === 'comments') {
+        if (
+          row?.type === 'wordcloud' ||
+          row?.type === 'open_ended' ||
+          row?.type === 'comments' ||
+          row?.type === 'poll'
+        ) {
           setActiveType((prev) => (prev === row.type ? prev : row.type as ActiveSlideType));
         }
         if (row?.config) {

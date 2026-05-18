@@ -4,7 +4,7 @@ import { PublicEventShell } from '@/components/audience/PublicEventShell';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
-import { DEFAULT_OPEN_ENDED_CONFIG, type OpenEndedConfig } from '@/lib/slides/types';
+import { DEFAULT_OPEN_ENDED_CONFIG, DEFAULT_POLL_CONFIG, type OpenEndedConfig, type PollConfig } from '@/lib/slides/types';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { loadTheme } from '@/lib/themes/loadTheme';
 
@@ -35,8 +35,9 @@ export default async function PublicEventPage({
   const activeSlideId = wcRow?.active_slide_id ?? null;
 
   let activeSlideConfig: WordcloudConfig | null = null;
-  let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null = null;
+  let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | 'poll' | null = null;
   let openEndedConfig: OpenEndedConfig | null = null;
+  let pollConfig: PollConfig | null = null;
   let openEndedInitialResponses: OpenEndedResponse[] = [];
   if (activeSlideId) {
     const { data: slideRow } = await supabase
@@ -45,9 +46,10 @@ export default async function PublicEventPage({
       .eq('id', activeSlideId)
       .maybeSingle();
     if (slideRow?.type === 'comments') {
-      // Audiência usa o input padrão de comentário (fluxo de moderação atual).
-      // Não precisa de config aqui — só sinaliza o tipo pra UI escolher input.
       activeSlideType = 'comments';
+    } else if (slideRow?.type === 'poll') {
+      pollConfig = { ...DEFAULT_POLL_CONFIG, ...((slideRow.config as Partial<PollConfig>) ?? {}) };
+      activeSlideType = 'poll';
     } else if (slideRow?.type === 'wordcloud') {
       activeSlideConfig = (slideRow.config as WordcloudConfig | null) ?? null;
       activeSlideType = 'wordcloud';
@@ -90,6 +92,7 @@ export default async function PublicEventPage({
         activeSlideConfig={activeSlideConfig}
         openEndedConfig={openEndedConfig}
         openEndedInitialResponses={openEndedInitialResponses}
+        pollConfig={pollConfig}
         forceMode={forceMode}
       />
     </ThemeProvider>

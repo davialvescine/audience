@@ -7,6 +7,7 @@ import { PipLauncher } from '@/components/telao/PipLauncher';
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { TelaoCommentsSwitcher } from '@/components/telao/TelaoCommentsSwitcher';
 import { TelaoOpenEndedSwitcher } from '@/components/telao/TelaoOpenEndedSwitcher';
+import { TelaoPollSwitcher } from '@/components/telao/TelaoPollSwitcher';
 import { TelaoStage } from '@/components/telao/TelaoStage';
 import { TelaoWordcloudSwitcher } from '@/components/telao/TelaoWordcloudSwitcher';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
@@ -14,8 +15,10 @@ import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import {
   DEFAULT_COMMENTS_CONFIG,
   DEFAULT_OPEN_ENDED_CONFIG,
+  DEFAULT_POLL_CONFIG,
   type CommentsConfig,
   type OpenEndedConfig,
+  type PollConfig,
 } from '@/lib/slides/types';
 import { DEFAULT_TELAO_CONFIG, type TelaoConfig } from '@/lib/telao/config';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -97,9 +100,10 @@ export default async function TelaoPage({
 
   // Fetch active slide config.
   let activeSlideConfig: WordcloudConfig | null = null;
-  let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | null = null;
+  let activeSlideType: 'wordcloud' | 'open_ended' | 'comments' | 'poll' | null = null;
   let activeOpenEndedConfig: OpenEndedConfig | null = null;
   let activeCommentsConfig: CommentsConfig | null = null;
+  let activePollConfig: PollConfig | null = null;
   if (activeSlideId) {
     const { data: slideRow } = await supabase
       .from('slides')
@@ -115,6 +119,28 @@ export default async function TelaoPage({
     } else if (slideRow?.type === 'comments') {
       activeCommentsConfig = { ...DEFAULT_COMMENTS_CONFIG, ...((slideRow.config as Partial<CommentsConfig>) ?? {}) };
       activeSlideType = 'comments';
+    } else if (slideRow?.type === 'poll') {
+      activePollConfig = { ...DEFAULT_POLL_CONFIG, ...((slideRow.config as Partial<PollConfig>) ?? {}) };
+      activeSlideType = 'poll';
+    }
+  }
+
+  // Pra poll, busca contagens iniciais do slide ativo.
+  let initialPollCounts: number[] = [];
+  if (activeSlideType === 'poll' && activeSlideId && activePollConfig) {
+    type PollRow = { option_index: number; vote_count: number | string };
+    const { data: pollRows } = (await (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: PollRow[] | null; error: { message: string } | null }>)(
+      'get_poll_state',
+      { p_slug: slug, p_slide_id: activeSlideId },
+    )) as { data: PollRow[] | null };
+    initialPollCounts = Array(activePollConfig.options.length).fill(0);
+    for (const r of pollRows ?? []) {
+      if (r.option_index >= 0 && r.option_index < initialPollCounts.length) {
+        initialPollCounts[r.option_index] = Number(r.vote_count);
+      }
     }
   }
 
@@ -189,6 +215,20 @@ export default async function TelaoPage({
         intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
         showBackground={showWordcloudBackground}
         joinUrl={showWordcloudBackground ? joinUrl : undefined}
+      />
+    );
+  } else if (activeSlideType === 'poll' && activePollConfig && activeSlideId) {
+    telao = (
+      <TelaoPollSwitcher
+        key={activeSlideId}
+        slug={slug}
+        eventId={event.event_id}
+        slideId={activeSlideId}
+        initialConfig={activePollConfig}
+        initialCounts={initialPollCounts}
+        showBackground={showWordcloudBackground}
+        joinUrl={showWordcloudBackground ? joinUrl : undefined}
+        isOperator={isOperator}
       />
     );
   } else if (activeSlideType === 'open_ended' && activeOpenEndedConfig && activeSlideId) {

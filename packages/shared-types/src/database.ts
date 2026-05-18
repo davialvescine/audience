@@ -336,6 +336,51 @@ export type Database = {
           },
         ]
       }
+      poll_votes: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          option_index: number
+          participant_fp: string
+          slide_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          option_index: number
+          participant_fp: string
+          slide_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          option_index?: number
+          participant_fp?: string
+          slide_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       slides: {
         Row: {
           config: Json
@@ -590,6 +635,13 @@ export type Database = {
           sent_at: string
         }[]
       }
+      get_poll_state: {
+        Args: { p_slide_id: string; p_slug: string }
+        Returns: {
+          option_index: number
+          vote_count: number
+        }[]
+      }
       get_submissions_via_token: {
         Args: { p_status_filter?: string; p_token: string }
         Returns: {
@@ -708,6 +760,7 @@ export type Database = {
         Returns: undefined
       }
       reset_open_ended_slide: { Args: { p_slide_id: string }; Returns: Json }
+      reset_poll_slide: { Args: { p_slide_id: string }; Returns: undefined }
       reset_slide_words: { Args: { p_slide_id: string }; Returns: undefined }
       reset_submission_for_retry: {
         Args: { p_submission_id: string }
@@ -789,6 +842,15 @@ export type Database = {
           p_fp: string
           p_slug: string
           p_text: string
+        }
+        Returns: Json
+      }
+      submit_poll_vote: {
+        Args: {
+          p_option_index: number
+          p_participant_fp: string
+          p_slide_id: string
+          p_slug: string
         }
         Returns: Json
       }

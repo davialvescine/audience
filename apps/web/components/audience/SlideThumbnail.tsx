@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
+import { PollDisplay } from '@/components/telao/PollDisplay';
 import { backgroundStyle, WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
-import type { CommentsConfig, OpenEndedConfig, Slide } from '@/lib/slides/types';
+import type { CommentsConfig, OpenEndedConfig, PollConfig, Slide } from '@/lib/slides/types';
 import { customPositionStyles, positionStyles, shadowStyle } from '@/lib/telao/config';
 import type { WordEntry } from '@/lib/wordcloud/types';
 
@@ -215,6 +216,8 @@ function ScaledSlidePreview({ slide }: { slide: Slide }) {
           />
         ) : slide.type === 'comments' ? (
           <CommentsThumb config={slide.config as CommentsConfig} />
+        ) : slide.type === 'poll' ? (
+          <PollThumb config={slide.config as PollConfig} slideId={slide.id} />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-3xl text-ink/40">
             {slide.type}
@@ -288,5 +291,29 @@ function CommentsThumb({ config }: { config: CommentsConfig }) {
         </div>
       </div>
     </div>
+  );
+}
+
+
+function PollThumb({ config, slideId }: { config: PollConfig; slideId: string }) {
+  const sampleCounts = config.options.map((_, idx) => {
+    if (config.correctOption != null && idx === config.correctOption) return 12;
+    return Math.max(2, 8 - idx * 2);
+  });
+  type AnyChan = Parameters<typeof PollDisplay>[0]['channel'];
+  const noop: AnyChan = {
+    on() { return noop; },
+    subscribe() { return noop; },
+    unsubscribe() {},
+  };
+  return (
+    <PollDisplay
+      slug="preview"
+      slideId={slideId}
+      config={config}
+      initialCounts={sampleCounts}
+      channel={noop}
+      showBackground
+    />
   );
 }

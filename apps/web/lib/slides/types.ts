@@ -86,10 +86,48 @@ export const DEFAULT_COMMENTS_CONFIG: CommentsConfig = {
   titleColor: '#0A2540',
 };
 
+/**
+ * Config do slide `poll` (Múltipla escolha / Quiz / Fato-Fake).
+ * Audiência vota numa opção. Telão mostra contagem em barras.
+ * Marcando `correctOption`, o slide vira modo quiz — operador revela a
+ * resposta certa depois da votação.
+ */
+export type PollConfig = {
+  question: string;
+  options: string[]; // 2-10 opções
+  /** Índice (0-based) da opção correta. Quando setado, slide vira quiz. */
+  correctOption?: number | null;
+  /** Quando 'instant', resultado aparece pro participante após votar.
+   *  'after_reveal' fica oculto até operador clicar Revelar.
+   *  'private' só operador vê. */
+  showResults?: 'instant' | 'after_reveal' | 'private';
+  /** Quando o operador clica "Revelar", flipa pra true e libera resultado
+   *  pra audiência. Persistido na config pra refletir entre sessions. */
+  revealed?: boolean;
+  background?: WordcloudBackground;
+  textColorOverride?: string;
+  showQr?: boolean;
+  qrFullscreen?: boolean;
+  joinInfoType?: 'qr' | 'url' | 'code' | 'qr_and_url';
+  /** Modo "fato/fake" — quando true, renderiza visual mais dramático
+   *  (botões verdes/vermelhos, animação de reveal). */
+  factCheckMode?: boolean;
+};
+
+export const DEFAULT_POLL_CONFIG: PollConfig = {
+  question: 'O que você acha?',
+  options: ['Fato', 'Fake'],
+  correctOption: null,
+  showResults: 'instant',
+  revealed: false,
+  factCheckMode: true,
+  showQr: true,
+};
+
 /** Discriminated union de configs por tipo de slide. */
 export type SlideConfigByType = {
   wordcloud: WordcloudConfig;
-  poll: { question: string; options: string[]; allowMultiple: boolean };
+  poll: PollConfig;
   open_ended: OpenEndedConfig;
   rating: { question: string; scaleMin: number; scaleMax: number };
   qa: { question: string };

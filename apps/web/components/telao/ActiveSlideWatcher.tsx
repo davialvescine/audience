@@ -10,10 +10,10 @@ type Props = {
   /** active_slide_id no momento do SSR — pra detectar quando muda no client. */
   initialActiveSlideId: string | null;
   /** Tipo do slide ativo no SSR — refresh quando o tipo muda. */
-  initialActiveType: 'wordcloud' | 'open_ended' | 'comments' | null;
+  initialActiveType: 'wordcloud' | 'open_ended' | 'comments' | 'poll' | null;
 };
 
-type WatchedType = 'wordcloud' | 'open_ended' | 'comments';
+type WatchedType = 'wordcloud' | 'open_ended' | 'comments' | 'poll';
 
 /**
  * Telão: força router.refresh() quando o tipo do slide ativo muda.
@@ -49,7 +49,14 @@ export function ActiveSlideWatcher({
       }
       const { data } = await sb.from('slides').select('type').eq('id', newId).maybeSingle();
       const newType = (data as { type?: string } | null)?.type;
-      if (newType !== 'wordcloud' && newType !== 'open_ended' && newType !== 'comments') return;
+      if (
+        newType !== 'wordcloud' &&
+        newType !== 'open_ended' &&
+        newType !== 'comments' &&
+        newType !== 'poll'
+      ) {
+        return;
+      }
       // Refresh em qualquer mudança (tipo OU id). O optimization de
       // "só refresh em type change" causava vazamento de config entre
       // slides quando realtime/polling não recompunha corretamente.
