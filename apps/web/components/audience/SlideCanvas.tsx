@@ -118,6 +118,7 @@ export function SlideCanvas({ slide, liveConfig, joinUrl, onConfigChange }: Prop
               key={slide.id}
               slide={slide as Slide<'poll'>}
               liveConfig={liveConfig as unknown as PollConfig | undefined}
+              joinUrl={joinUrl}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-ink/5">
@@ -538,9 +539,11 @@ function CommentsCanvas({
 function PollCanvas({
   slide,
   liveConfig,
+  joinUrl,
 }: {
   slide: Slide<'poll'>;
   liveConfig: PollConfig | undefined;
+  joinUrl: string | undefined;
 }) {
   const cfg = liveConfig ?? (slide.config as PollConfig);
   // Sample counts pra preview no admin (audiência simulada).
@@ -556,6 +559,7 @@ function PollCanvas({
       initialCounts={sampleCounts}
       channel={makeNoopChannel() as unknown as Parameters<typeof PollDisplay>[0]['channel']}
       showBackground
+      joinUrl={joinUrl}
     />
   );
 }
