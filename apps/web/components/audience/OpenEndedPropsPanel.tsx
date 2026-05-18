@@ -32,6 +32,12 @@ export function OpenEndedPropsPanel({ slide, onChange, onLiveChange, onApplyToAl
   const [tab, setTab] = useState<'conteudo' | 'design' | 'avancado'>('conteudo');
 
   useEffect(() => {
+    // Cancela autosave pendente de outro slide antes de trocar — evita race
+    // que sobrescrevia o slide novo com config do anterior.
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     setConfig(slide.config);
     skipNext.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -69,6 +69,14 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    // CRÍTICO: cancela qualquer autosave PENDENTE de outro slide antes de
+    // resetar o local config. Sem isso, o debounce do slide anterior dispara
+    // depois e chama updateSlide com o id do slide ATUAL + config do
+    // ANTERIOR — sobrescrevendo o slide novo com config errada.
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     setConfig({ ...DEFAULT_COMMENTS_CONFIG, ...slide.config });
     skipNext.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
