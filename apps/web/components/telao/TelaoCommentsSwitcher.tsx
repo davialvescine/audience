@@ -62,20 +62,23 @@ export function TelaoCommentsSwitcher({
     channel,
   });
 
-  // useMemo: estabiliza a referência de `merged` por slide.config — sem isso,
-  // toda re-renderização cria objeto novo, dispara useEffect interno do
-  // TelaoClient que ressetta state, causando flicker e mix de configs entre
-  // slides quando o usuário troca rápido.
+  // useMemo estabiliza a referência de merged. Estratégia:
+  // - Se slide.activeSlideId (vindo do hook) BATE com o slide do SSR (mesma sessão),
+  //   usa slide.config do hook (pega updates em tempo real).
+  // - Se NÃO bate (hook ainda não atualizou após troca de slide), usa initialConfig
+  //   do SSR — evita mostrar config do slide ANTERIOR enquanto o hook async não
+  //   recebeu o config do slide novo.
   const slideConfigKey = JSON.stringify(slide.config);
   const initialConfigKey = JSON.stringify(initialConfig);
+  const sameSlide = slide.activeSlideId === initialActiveSlideId;
   const merged: CommentsConfig = useMemo(() => {
     const source =
-      slide.activeType === 'comments' && slide.config
+      sameSlide && slide.activeType === 'comments' && slide.config
         ? (slide.config as Partial<CommentsConfig>)
         : initialConfig;
     return { ...DEFAULT_COMMENTS_CONFIG, ...(source ?? {}) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slideConfigKey, initialConfigKey, slide.activeType]);
+  }, [slideConfigKey, initialConfigKey, slide.activeType, sameSlide]);
 
   const wrapStyle = showBackground
     ? backgroundStyle(merged.background ?? { type: 'none' })
