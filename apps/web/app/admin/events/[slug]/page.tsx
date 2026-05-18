@@ -161,17 +161,18 @@ export default async function EventModerationPage({
     </div>
   );
 
+  // telaoContent e shareContent não são mais usados — telão e compartilhamento
+  // viraram parte do sistema de slides (configurado por slide no painel lateral).
+  // Mantidos no escopo só pro caso de futuro debug; ESLint silenciado.
+  void telaoContent;
+  void shareContent;
+
   const tabs = [
     {
       id: 'comments',
       label: `Comentários${counts.pending > 0 ? ` (${counts.pending})` : ''}`,
       content: (
-        <CommentsTab
-          moderation={moderationContent}
-          telao={telaoContent}
-          share={shareContent}
-          pendingCount={counts.pending}
-        />
+        <CommentsTab moderation={moderationContent} pendingCount={counts.pending} />
       ),
     },
     {
