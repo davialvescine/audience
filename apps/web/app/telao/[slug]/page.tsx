@@ -187,6 +187,11 @@ export default async function TelaoPage({
   } else if (activeSlideType === 'comments' && activeCommentsConfig && activeSlideId) {
     telao = (
       <TelaoCommentsSwitcher
+        // key força remount quando slide muda — sem isso, state interno do
+        // useActiveSlideConfig (que inicializa só na primeira render) fica
+        // grudado na config do slide anterior e props novos do SSR são
+        // ignorados, vazando config entre slides.
+        key={activeSlideId}
         slug={slug}
         eventId={event.event_id}
         eventName={event.event_name}
@@ -200,6 +205,7 @@ export default async function TelaoPage({
   } else if (activeSlideType === 'open_ended' && activeOpenEndedConfig && activeSlideId) {
     telao = (
       <TelaoOpenEndedSwitcher
+        key={activeSlideId}
         eventId={event.event_id}
         slideId={activeSlideId}
         initialConfig={activeOpenEndedConfig}
@@ -212,6 +218,7 @@ export default async function TelaoPage({
   } else {
     telao = (
       <TelaoWordcloudSwitcher
+        key={activeSlideId ?? 'no-slide'}
         eventId={event.event_id}
         eventSlug={slug}
         initialWordcloudActive={cloudMode}
