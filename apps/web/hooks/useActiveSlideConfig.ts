@@ -163,7 +163,9 @@ export function useActiveSlideConfig(
       }
     };
     void poll();
-    const id = setInterval(poll, 3000);
+    // Polling agressivo (1s) — captura mudanças mesmo se Realtime falhar.
+    // Quase de graça: 2 SELECTs simples por evento por segundo.
+    const id = setInterval(poll, 1000);
     return () => {
       cancelled = true;
       clearInterval(id);
