@@ -109,12 +109,23 @@ export function SlidesTab({
     const r = await setActiveSlide(eventId, slideId);
     console.log('[onActivate] setActiveSlide result', r);
     if (!r.ok) {
-      // RPC falhou (auth, slide_not_in_event, etc) — reverte e mostra erro.
-      // Sem isso, admin pensa que ativou mas telão continua no slide antigo
-      // (DB inalterado), causando mismatch visível pro operador.
       console.error('setActiveSlide falhou:', r.error);
       setActiveId(previous);
       window.alert(`Erro ao ativar slide: ${r.error}`);
+      return;
+    }
+    // Server retornou ok — mas pode o DB ter sido sobrescrito por alguém? Verifica.
+    if (r.data.verifiedActiveSlideId !== slideId) {
+      console.error(
+        '[onActivate] DB MISMATCH: pedimos',
+        slideId,
+        'mas DB tem',
+        r.data.verifiedActiveSlideId,
+      );
+      window.alert(
+        `Erro: pedimos ativar ${slideId} mas o DB ficou com ${r.data.verifiedActiveSlideId}. ` +
+          `Algo está sobrescrevendo o slide ativo.`,
+      );
     }
   };
 

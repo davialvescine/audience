@@ -76,7 +76,7 @@ export async function reorderSlides(
 export async function setActiveSlide(
   eventId: string,
   slideId: string | null,
-): Promise<Result<null>> {
+): Promise<Result<{ verifiedActiveSlideId: string | null }>> {
   const sb = await getSupabaseServerClient();
   const { error } = await sb.rpc('set_active_slide', {
     p_event_id: eventId,
@@ -85,9 +85,19 @@ export async function setActiveSlide(
     p_slide_id: slideId as string,
   });
   if (error) return mapError(error.message);
+  // VERIFICA que o DB realmente persistiu o slideId. Se algum trigger/RLS/
+  // outra coisa estiver sobrescrevendo, isso vai expor o problema.
+  const { data: verify } = await sb
+    .from('events')
+    .select('active_slide_id')
+    .eq('id', eventId)
+    .maybeSingle();
+  const verifiedActiveSlideId =
+    (verify as { active_slide_id?: string | null } | null)?.active_slide_id ?? null;
+  console.log('[setActiveSlide server] requested:', slideId, '| DB after:', verifiedActiveSlideId);
   revalidatePath('/admin/events/[slug]', 'page');
   revalidatePath('/telao/[slug]', 'page');
-  return { ok: true, data: null };
+  return { ok: true, data: { verifiedActiveSlideId } };
 }
 
 /**
