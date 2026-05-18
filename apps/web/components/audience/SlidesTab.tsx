@@ -103,8 +103,17 @@ export function SlidesTab({
   };
 
   const onActivate = async (slideId: string | null) => {
-    setActiveId(slideId);
-    await setActiveSlide(eventId, slideId);
+    const previous = activeId;
+    setActiveId(slideId); // optimistic
+    const r = await setActiveSlide(eventId, slideId);
+    if (!r.ok) {
+      // RPC falhou (auth, slide_not_in_event, etc) — reverte e mostra erro.
+      // Sem isso, admin pensa que ativou mas telão continua no slide antigo
+      // (DB inalterado), causando mismatch visível pro operador.
+      console.error('setActiveSlide falhou:', r.error);
+      setActiveId(previous);
+      window.alert(`Erro ao ativar slide: ${r.error}`);
+    }
   };
 
   // useCallback estabiliza a identidade — sem isso, cada re-render do
