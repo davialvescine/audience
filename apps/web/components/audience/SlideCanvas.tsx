@@ -500,6 +500,8 @@ function CommentsCanvas({
         title={cfg.title}
         showTitle={cfg.showTitle === true}
         titleColor={cfg.titleColor}
+        titleFontFamily={cfg.titleFontFamily}
+        titleShadow={cfg.titleShadow}
         stageRef={stageRef}
         qrSidebarActive={qrOn && !qrFullscreenOn && !!joinUrl}
         onPositionChange={({ posXPct, posYPct }) => {

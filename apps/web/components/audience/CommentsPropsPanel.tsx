@@ -65,8 +65,15 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
     }
     setConfig({ ...DEFAULT_COMMENTS_CONFIG, ...slide.config });
     skipNext.current = true;
+    // CRÍTICO: só re-sincroniza quando o SLIDE muda (slide.id diferente).
+    // Antes dependia também de JSON.stringify(slide.config) — toda vez
+    // que o autosave salvava no DB, o realtime devolvia o config novo,
+    // o useEffect disparava e SOBRESCREVIA o config local. Se o usuário
+    // estava digitando ("Palestr...") durante o autosave debounce de
+    // 500ms, letras eram perdidas porque o input voltava pro valor que
+    // estava no DB no momento do save.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slide.id, JSON.stringify(slide.config)]);
+  }, [slide.id]);
 
   useEffect(() => {
     if (skipNext.current) {
@@ -163,10 +170,28 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
                 maxLength={140}
                 placeholder="Ex: O que você achou do evento?"
               />
+              <div>
+                <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">
+                  Fonte do título
+                </p>
+                <p className="text-[11px] text-ink/55 mb-1.5">
+                  Vazio = mesma fonte do card.
+                </p>
+                <FontPicker
+                  value={config.titleFontFamily ?? ''}
+                  onChange={(v) => setConfig((c) => ({ ...c, titleFontFamily: v }))}
+                />
+              </div>
               <ColorInput
                 label="Cor do título"
                 value={config.titleColor ?? '#0A2540'}
                 onChange={(v) => setConfig((c) => ({ ...c, titleColor: v }))}
+              />
+              <PresetGroup
+                label="Sombra do título"
+                options={['none', 'subtle', 'medium', 'strong'] as const}
+                value={config.titleShadow ?? 'none'}
+                onChange={(v) => setConfig((c) => ({ ...c, titleShadow: v }))}
               />
             </div>
           ) : null}

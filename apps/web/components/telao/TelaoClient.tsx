@@ -39,6 +39,10 @@ type Props = {
   /** Cor do título — separada do cardText pra evitar título branco invisível
    *  no fundo branco do browser_source. */
   titleColor?: string | undefined;
+  /** Fonte do título — quando undefined, herda config.fontFamily. */
+  titleFontFamily?: string | undefined;
+  /** Sombra do título — útil pra contrastar em fundos coloridos. */
+  titleShadow?: 'none' | 'subtle' | 'medium' | 'strong' | undefined;
   /** Chamado no pointerup do drag em preview mode. Alternativa ao postMessage
    *  pra quando o TelaoClient está no mesmo doc (ex: SlideCanvas). */
   onPositionChange?: ((pos: { posXPct: number; posYPct: number }) => void) | undefined;
@@ -61,6 +65,8 @@ export function TelaoClient({
   title,
   showTitle = false,
   titleColor,
+  titleFontFamily,
+  titleShadow,
   onPositionChange,
   stageRef,
   qrSidebarActive = false,
@@ -504,7 +510,7 @@ export function TelaoClient({
             left: '50%',
             transform: 'translateX(-50%)',
             color: titleColor ?? '#0A2540',
-            fontFamily: resolveTelaoFont(config.fontFamily),
+            fontFamily: resolveTelaoFont(titleFontFamily ?? config.fontFamily),
             fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
             fontWeight: 700,
             textAlign: 'center',
@@ -513,6 +519,14 @@ export function TelaoClient({
             zIndex: 5,
             maxWidth: '90%',
             wordBreak: 'break-word',
+            textShadow:
+              titleShadow === 'strong'
+                ? '0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.45)'
+                : titleShadow === 'medium'
+                  ? '0 2px 8px rgba(0,0,0,0.40), 0 1px 2px rgba(0,0,0,0.30)'
+                  : titleShadow === 'subtle'
+                    ? '0 1px 3px rgba(0,0,0,0.25)'
+                    : 'none',
           }}
         >
           {title}
