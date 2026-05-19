@@ -316,6 +316,20 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
           </div>
           <div className="mt-3">
             <Slider
+              label="Altura do card (0 = automática)"
+              suffix="px"
+              min={0}
+              max={800}
+              value={config.heightPx}
+              onChange={(v) => setConfig((c) => ({ ...c, heightPx: v }))}
+            />
+            <p className="text-[11px] text-ink/55 mt-1">
+              0 deixa o card crescer com o texto. Maior que 0 fixa a altura mínima — texto fica
+              centralizado verticalmente.
+            </p>
+          </div>
+          <div className="mt-3">
+            <Slider
               label="Cantos arredondados"
               suffix="px"
               min={0}
