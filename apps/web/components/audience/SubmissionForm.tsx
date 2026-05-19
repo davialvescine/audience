@@ -112,7 +112,7 @@ export function SubmissionForm({ slug }: Props) {
         id="comment"
         name="comment"
         required
-        maxLength={280}
+        maxLength={150}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="Escreva aqui…"

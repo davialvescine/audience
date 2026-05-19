@@ -39,10 +39,12 @@ export function CommentCard({ m, config, eventName, effectiveHeight, stackedSing
     (config as { showCardBackground?: boolean }).showCardBackground !== false &&
     config.backdropBlur > 0;
 
-  // Auto-shrink do texto. Quanto maior o comentário, menor a fonte.
-  // Mantém leiturabilidade e evita estourar o card de altura fixa.
+  // Auto-shrink do texto. Curva re-ajustada pra limite de 150 chars:
+  //   ≤50  → 1.00 (fonte cheia, texto curto)
+  //   ≤100 → 0.82
+  //   ≤150 → 0.68
   const len = m.comment.length;
-  const commentFontScale = len <= 80 ? 1 : len <= 160 ? 0.82 : len <= 280 ? 0.66 : 0.52;
+  const commentFontScale = len <= 50 ? 1 : len <= 100 ? 0.82 : 0.68;
 
   return (
     <motion.div
