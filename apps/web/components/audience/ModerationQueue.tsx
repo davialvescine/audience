@@ -14,6 +14,7 @@ import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supab
 import {
   approveSubmission,
   rejectSubmission,
+  resetEventSubmissions,
   setAutoSendOnApprove,
   undoModerationAction,
 } from '@/server-actions/moderation';
@@ -404,6 +405,29 @@ export function ModerationQueue({
           ))}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              const c1 = window.confirm(
+                'Apaga TODOS os comentários deste evento (pendentes, aprovados, exibidos, rejeitados).\n\nNão pode ser desfeito. Continuar?',
+              );
+              if (!c1) return;
+              const c2 = window.confirm(
+                'Tem certeza ABSOLUTA? Vai apagar tudo agora.',
+              );
+              if (!c2) return;
+              const r = await resetEventSubmissions(eventId);
+              if (!r.ok) {
+                window.alert(`Erro: ${r.error}`);
+                return;
+              }
+              window.alert(`✓ ${r.deleted} comentário(s) apagado(s).`);
+            }}
+            className="text-xs h-8 px-2.5 rounded-md border border-ink/15 text-ink/65 hover:border-danger hover:text-danger hover:bg-danger/[0.05] transition"
+            title="Apaga TODOS os comentários deste evento — não dá pra desfazer"
+          >
+            🗑 Zerar comentários
+          </button>
           <button
             type="button"
             onClick={toggleSound}

@@ -362,3 +362,29 @@ export async function updateDispatchInterval(eventId: string, seconds: number): 
   revalidatePath(`/admin/events/${data.slug}`);
   return { ok: true, status: 'sent' };
 }
+
+/**
+ * Apaga TODOS os comentários (submissions) de um evento. Operação
+ * destrutiva — UI confirma duplo antes de chamar. Owner-only.
+ */
+export async function resetEventSubmissions(
+  eventId: string,
+): Promise<{ ok: true; deleted: number } | { ok: false; error: string }> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await (supabase.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: { deleted: number } | null; error: { message: string } | null }>)(
+    'reset_event_submissions',
+    { p_event_id: eventId },
+  );
+  if (error) return { ok: false, error: error.message ?? 'Falha ao zerar.' };
+  const { data: ev } = await supabase
+    .from('events')
+    .select('slug')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (ev?.slug) revalidatePath(`/admin/events/${ev.slug}`);
+  return { ok: true, deleted: data?.deleted ?? 0 };
+}
