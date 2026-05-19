@@ -88,6 +88,23 @@ export function TelaoClient({
   const [visible, setVisible] = useState<Submission[]>([]);
   const [pinned, setPinned] = useState<Submission | null>(null);
   const queueRef = useRef<Submission[]>([]);
+  // High-watermark da altura do wrapper de cards. Quando #telao-root está
+  // ancorado por bottom (bottom-center, bottom-left, etc), mudanças na
+  // altura do conteúdo fazem o card "cair pra baixo" porque a posição
+  // base é a inferior. Travar minHeight no maior valor já visto evita
+  // que o container encolha durante exit, mantendo o card no mesmo ponto.
+  const [stackMinHeight, setStackMinHeight] = useState(0);
+  const stackRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = stackRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const h = el.offsetHeight;
+      setStackMinHeight((prev) => (h > prev ? h : prev));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const seenIdsRef = useRef<Set<string>>(new Set());
   // Id da submission atualmente fixada. Atualizado no pollPinned. Usado
   // pelo enqueue pra nao colocar na fila de rotacao a propria fixada
@@ -558,9 +575,17 @@ export function TelaoClient({
         const stackedSingle = config.maxConcurrent <= 1;
         return (
           <div
+            ref={stackRef}
             style={
               stackedSingle
-                ? { display: 'grid', gridTemplateColumns: '1fr' }
+                ? {
+                    display: 'grid',
+                    gridTemplateColumns: '1fr',
+                    // Trava altura no maior card já visto. Quando o
+                    // container é bottom-aligned, isso evita o card
+                    // "cair pra baixo" quando o conteúdo encolhe.
+                    minHeight: stackMinHeight > 0 ? `${stackMinHeight}px` : undefined,
+                  }
                 : { display: 'flex', flexDirection: 'column', gap: '12px' }
             }
           >
