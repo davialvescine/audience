@@ -304,33 +304,45 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
           <div className="mt-3">
             <Slider
               label="Altura do card"
-              suffix={config.heightPx === 0 ? ' (auto)' : 'px'}
-              min={0}
+              suffix="px"
+              min={120}
               max={1080}
-              value={config.heightPx}
+              value={config.heightPx > 0 ? config.heightPx : 240}
               onChange={(v) => setConfig((c) => ({ ...c, heightPx: v }))}
             />
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <button
                 type="button"
-                onClick={() => setConfig((c) => ({ ...c, heightPx: 0 }))}
-                className="text-[11px] text-primary hover:underline"
+                onClick={() => setConfig((c) => ({ ...c, heightPx: 240 }))}
+                className="text-[11px] text-ink/65 hover:text-primary hover:underline"
               >
-                Auto (acompanha texto)
+                Pequeno
+              </button>
+              <span className="text-ink/30">·</span>
+              <button
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, heightPx: 480 }))}
+                className="text-[11px] text-ink/65 hover:text-primary hover:underline"
+              >
+                Médio
+              </button>
+              <span className="text-ink/30">·</span>
+              <button
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, heightPx: 720 }))}
+                className="text-[11px] text-ink/65 hover:text-primary hover:underline"
+              >
+                Grande
               </button>
               <span className="text-ink/30">·</span>
               <button
                 type="button"
                 onClick={() => setConfig((c) => ({ ...c, heightPx: 1080 }))}
-                className="text-[11px] text-primary hover:underline"
+                className="text-[11px] text-ink/65 hover:text-primary hover:underline"
               >
-                Tela cheia (1080px)
+                Tela cheia
               </button>
             </div>
-            <p className="text-[11px] text-ink/55 mt-1.5">
-              0 = altura automática (cresce com o texto). Maior que 0 = altura fixa, texto
-              centralizado verticalmente.
-            </p>
           </div>
           <div className="mt-3">
             <Slider

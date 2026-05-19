@@ -88,23 +88,9 @@ export function TelaoClient({
   const [visible, setVisible] = useState<Submission[]>([]);
   const [pinned, setPinned] = useState<Submission | null>(null);
   const queueRef = useRef<Submission[]>([]);
-  // High-watermark da altura do wrapper de cards. Quando #telao-root está
-  // ancorado por bottom (bottom-center, bottom-left, etc), mudanças na
-  // altura do conteúdo fazem o card "cair pra baixo" porque a posição
-  // base é a inferior. Travar minHeight no maior valor já visto evita
-  // que o container encolha durante exit, mantendo o card no mesmo ponto.
-  const [stackMinHeight, setStackMinHeight] = useState(0);
+  // Altura do wrapper é controlada 100% pelo slider (effectiveHeight).
+  // Ref mantido só pro caso futuro de drag/resize.
   const stackRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const el = stackRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      const h = el.offsetHeight;
-      setStackMinHeight((prev) => (h > prev ? h : prev));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   const seenIdsRef = useRef<Set<string>>(new Set());
   // Id da submission atualmente fixada. Atualizado no pollPinned. Usado
   // pelo enqueue pra nao colocar na fila de rotacao a propria fixada
@@ -413,6 +399,9 @@ export function TelaoClient({
   }, [config.maxConcurrent, visible]);
 
   const variants = animationVariants(config.animation);
+  // Altura efetiva do card. Slider controla 100% — sem fallback pra
+  // auto. Configs legadas com heightPx=0 caem em 240px (Pequeno).
+  const effectiveHeight = config.heightPx > 0 ? config.heightPx : 240;
   // Pra anchors superiores, novos no topo (empilha pra baixo).
   // Pra anchors inferiores, novos embaixo (empilha pra cima).
   const renderList = pinned
@@ -581,18 +570,15 @@ export function TelaoClient({
                 ? {
                     display: 'grid',
                     gridTemplateColumns: '1fr',
-                    // minHeight = MAX entre high-watermark (altura natural
-                    // dos cards passados) e heightPx do config (altura
-                    // fixa que o operador escolheu). Sem o Math.max, o
-                    // slider de altura não tinha efeito porque o
-                    // high-watermark sobrescrevia.
-                    minHeight: `${Math.max(stackMinHeight, config.heightPx)}px`,
+                    // Altura controlada PELO USUÁRIO via slider. Compat:
+                    // configs antigas (heightPx=0) caem em 240px default.
+                    height: `${effectiveHeight}px`,
                   }
                 : {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '12px',
-                    minHeight: config.heightPx > 0 ? `${config.heightPx}px` : undefined,
+                    minHeight: `${effectiveHeight}px`,
                   }
             }
           >
@@ -639,22 +625,16 @@ export function TelaoClient({
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
               fontSize: `${config.fontSizePx}px`,
               lineHeight: 1.3,
-              // heightPx > 0 = altura FIXA (não só mínima). Texto é
-              // centralizado verticalmente via flex. Antes era minHeight,
-              // mas o usuário queria controle total — agora o slider
-              // determina exatamente a altura do card.
-              ...(config.heightPx > 0
-                ? {
-                    height: `${config.heightPx}px`,
-                    display: 'flex',
-                    flexDirection: 'column' as const,
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                  }
-                : {}),
-              // Grid stacking: todos os cards ficam na MESMA célula
-              // (1/1), empilhados no mesmo ponto. Altura do grid é
-              // a do maior card visível — sem layout shift.
+              // Altura controlada 100% pelo slider — sempre fixa.
+              // Card tem display flex pra centralizar verticalmente.
+              // overflow:hidden evita estourar quando texto é gigante.
+              height: `${effectiveHeight}px`,
+              display: 'flex',
+              flexDirection: 'column' as const,
+              justifyContent: 'center',
+              overflow: 'hidden',
+              // Grid stacking: todos os cards na MESMA célula (1/1).
+              // Como agora altura é fixa, não há layout shift.
               ...(stackedSingle ? { gridArea: '1 / 1' } : {}),
             }}
           >
