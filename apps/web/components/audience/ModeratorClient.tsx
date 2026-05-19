@@ -1,7 +1,7 @@
 'use client';
 
 import type { SubmissionStatus } from '@audience/shared-types';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
@@ -21,34 +21,59 @@ type Props = {
   initial: Item[];
 };
 
+type Action = 'approve' | 'reject' | 'send' | 'undo' | 'pin' | 'unpin' | 'reshow';
+
+type Filter = 'pending' | 'approved' | 'sent' | 'all';
+
 export function ModeratorClient({ token, eventName, moderatorName, initial }: Props) {
   const [items, setItems] = useState<Item[]>(initial);
-  const [filter, setFilter] = useState<'pending' | 'all'>('pending');
+  const [filter, setFilter] = useState<Filter>('pending');
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Polling — same idea as /telao receiver. Realtime postgres_changes
-  // would need the moderator JWT and full RLS plumbing; polling is
-  // simpler and cheap enough for moderation.
+  // Polling — atualiza items + pinned via duas RPCs.
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    const fetchItems = async () => {
-      const { data, error } = await supabase.rpc('get_submissions_via_token', {
-        p_token: token,
-      });
-      if (error) {
-        setError(error.message);
+    const fetchAll = async () => {
+      const [subsRes, pinRes] = await Promise.all([
+        supabase.rpc('get_submissions_via_token', { p_token: token }),
+        (supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: Array<{ id: string }> | null; error: { message: string } | null }>)(
+          'get_pinned_via_token',
+          { p_token: token },
+        ),
+      ]);
+      if (subsRes.error) {
+        setError(subsRes.error.message);
         return;
       }
-      if (data) setItems(data as Item[]);
+      if (subsRes.data) setItems(subsRes.data as Item[]);
+      if (!pinRes.error && pinRes.data) {
+        const row = pinRes.data[0];
+        setPinnedId(row?.id ?? null);
+      }
     };
+    void fetchAll();
     const t = setInterval(() => {
-      void fetchItems();
+      void fetchAll();
     }, 2500);
     return () => clearInterval(t);
   }, [token]);
 
-  const moderate = (id: string, action: 'approve' | 'reject') => {
+  const counts = useMemo(
+    () => ({
+      pending: items.filter((it) => it.status === 'pending').length,
+      approved: items.filter((it) => it.status === 'approved').length,
+      sent: items.filter((it) => it.status === 'sent').length,
+      all: items.length,
+    }),
+    [items],
+  );
+
+  const moderate = (id: string, action: Action) => {
     start(async () => {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.rpc('moderate_with_token', {
@@ -60,17 +85,33 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
         setError(error.message);
         return;
       }
-      // Optimistic local update — polling will reconcile in <3s
-      setItems((prev) =>
-        prev.map((it) =>
-          it.id === id ? { ...it, status: action === 'approve' ? 'approved' : 'rejected' } : it,
-        ),
-      );
+      setError(null);
+      // Optimistic local — polling reconcilia.
+      if (action === 'approve') {
+        setItems((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, status: 'sent' as const } : it)),
+        );
+      } else if (action === 'reject') {
+        setItems((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, status: 'rejected' as const } : it)),
+        );
+      } else if (action === 'send' || action === 'reshow') {
+        setItems((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, status: 'sent' as const } : it)),
+        );
+      } else if (action === 'undo') {
+        setItems((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, status: 'pending' as const } : it)),
+        );
+      } else if (action === 'pin') {
+        setPinnedId(id);
+      } else if (action === 'unpin') {
+        setPinnedId(null);
+      }
     });
   };
 
-  const visible = items.filter((it) => filter === 'all' || it.status === 'pending');
-  const pendingCount = items.filter((it) => it.status === 'pending').length;
+  const visible = items.filter((it) => filter === 'all' || it.status === filter);
 
   return (
     <div className="min-h-screen bg-surface text-ink">
@@ -81,29 +122,31 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
           {moderatorName ? (
             <p className="text-xs text-ink/60 mt-0.5">Olá, {moderatorName}</p>
           ) : null}
-          <div className="mt-3 flex items-center gap-2 text-xs">
-            <button
-              type="button"
+          <div className="mt-3 flex items-center gap-1.5 text-xs overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <FilterBtn
+              active={filter === 'pending'}
               onClick={() => setFilter('pending')}
-              className={`px-3 h-8 rounded-md border transition ${
-                filter === 'pending'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-ink/15 text-ink/60'
-              }`}
-            >
-              Pendentes ({pendingCount})
-            </button>
-            <button
-              type="button"
+              label="Pendentes"
+              count={counts.pending}
+            />
+            <FilterBtn
+              active={filter === 'approved'}
+              onClick={() => setFilter('approved')}
+              label="Na fila"
+              count={counts.approved}
+            />
+            <FilterBtn
+              active={filter === 'sent'}
+              onClick={() => setFilter('sent')}
+              label="Exibidas"
+              count={counts.sent}
+            />
+            <FilterBtn
+              active={filter === 'all'}
               onClick={() => setFilter('all')}
-              className={`px-3 h-8 rounded-md border transition ${
-                filter === 'all'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-ink/15 text-ink/60'
-              }`}
-            >
-              Tudo ({items.length})
-            </button>
+              label="Tudo"
+              count={counts.all}
+            />
           </div>
         </div>
       </header>
@@ -114,52 +157,18 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
         ) : null}
         {visible.length === 0 ? (
           <div className="text-center py-12 text-ink/55">
-            <p className="text-base">Nenhuma mensagem {filter === 'pending' ? 'pendente' : ''}.</p>
-            <p className="text-xs mt-1">A página atualiza sozinha a cada 3s.</p>
+            <p className="text-base">Nenhuma mensagem aqui.</p>
+            <p className="text-xs mt-1">A página atualiza sozinha a cada 2.5s.</p>
           </div>
         ) : (
           visible.map((it) => (
-            <div key={it.id} className="rounded-lg bg-paper border border-ink/10 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-ink truncate">{it.name}</span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    it.status === 'pending'
-                      ? 'bg-warning/15 text-warning'
-                      : it.status === 'approved'
-                        ? 'bg-accent/15 text-accent'
-                        : it.status === 'sent'
-                          ? 'bg-success/15 text-success'
-                          : it.status === 'rejected'
-                            ? 'bg-ink/10 text-ink/60'
-                            : 'bg-danger/15 text-danger'
-                  }`}
-                >
-                  {it.status}
-                </span>
-              </div>
-              <p className="text-ink/85 break-words">{it.comment}</p>
-              {it.status === 'pending' ? (
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => moderate(it.id, 'approve')}
-                    disabled={pending}
-                    className="flex-1 h-11 rounded-md bg-accent text-paper font-medium disabled:opacity-50"
-                  >
-                    Aprovar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moderate(it.id, 'reject')}
-                    disabled={pending}
-                    className="flex-1 h-11 rounded-md border border-ink/15 text-ink/70 disabled:opacity-50"
-                  >
-                    Rejeitar
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <Card
+              key={it.id}
+              item={it}
+              isPinned={pinnedId === it.id}
+              pending={pending}
+              onModerate={moderate}
+            />
           ))
         )}
       </main>
@@ -168,5 +177,201 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
         Audience · Moderador via link
       </footer>
     </div>
+  );
+}
+
+function FilterBtn({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 h-8 rounded-md border transition shrink-0 inline-flex items-center gap-1.5 ${
+        active
+          ? 'border-primary bg-primary/10 text-primary'
+          : 'border-ink/15 text-ink/60 hover:border-ink/30'
+      }`}
+    >
+      <span>{label}</span>
+      <span
+        className={`text-[10px] px-1.5 rounded-full ${
+          active ? 'bg-primary/20' : 'bg-ink/10'
+        }`}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
+function Card({
+  item,
+  isPinned,
+  pending,
+  onModerate,
+}: {
+  item: Item;
+  isPinned: boolean;
+  pending: boolean;
+  onModerate: (id: string, action: Action) => void;
+}) {
+  return (
+    <div
+      className={`rounded-lg bg-paper border p-4 ${
+        isPinned ? 'border-accent ring-1 ring-accent/30' : 'border-ink/10'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <span className="font-medium text-ink truncate flex-1">{item.name}</span>
+        {isPinned ? (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent font-semibold">
+            📌 Fixada
+          </span>
+        ) : null}
+        <StatusPill status={item.status} />
+      </div>
+      <p className="text-ink/85 break-words mb-3">{item.comment}</p>
+
+      <div className="flex flex-wrap gap-2">
+        {item.status === 'pending' ? (
+          <>
+            <ActionBtn
+              variant="primary"
+              onClick={() => onModerate(item.id, 'approve')}
+              disabled={pending}
+            >
+              ✓ Aprovar
+            </ActionBtn>
+            <ActionBtn
+              variant="ghost"
+              onClick={() => onModerate(item.id, 'reject')}
+              disabled={pending}
+            >
+              ✗ Rejeitar
+            </ActionBtn>
+          </>
+        ) : null}
+
+        {item.status === 'approved' ? (
+          <>
+            <ActionBtn
+              variant="primary"
+              onClick={() => onModerate(item.id, 'send')}
+              disabled={pending}
+            >
+              ▶ Mostrar no telão
+            </ActionBtn>
+            <ActionBtn
+              variant="ghost"
+              onClick={() => onModerate(item.id, 'undo')}
+              disabled={pending}
+            >
+              ↶ Desfazer
+            </ActionBtn>
+          </>
+        ) : null}
+
+        {item.status === 'sent' ? (
+          <>
+            {isPinned ? (
+              <ActionBtn
+                variant="ghost"
+                onClick={() => onModerate(item.id, 'unpin')}
+                disabled={pending}
+              >
+                Soltar
+              </ActionBtn>
+            ) : (
+              <ActionBtn
+                variant="ghost"
+                onClick={() => onModerate(item.id, 'pin')}
+                disabled={pending}
+              >
+                📌 Fixar no telão
+              </ActionBtn>
+            )}
+            <ActionBtn
+              variant="ghost"
+              onClick={() => onModerate(item.id, 'reshow')}
+              disabled={pending}
+            >
+              ↻ Mostrar de novo
+            </ActionBtn>
+            <ActionBtn
+              variant="ghost"
+              onClick={() => onModerate(item.id, 'undo')}
+              disabled={pending}
+            >
+              ↶ Desfazer
+            </ActionBtn>
+          </>
+        ) : null}
+
+        {item.status === 'rejected' || item.status === 'failed' ? (
+          <ActionBtn
+            variant="ghost"
+            onClick={() => onModerate(item.id, 'undo')}
+            disabled={pending}
+          >
+            ↶ Desfazer
+          </ActionBtn>
+        ) : null}
+      </div>
+      {item.error_message ? (
+        <p className="mt-2 text-xs text-danger">{item.error_message}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ActionBtn({
+  variant,
+  onClick,
+  disabled,
+  children,
+}: {
+  variant: 'primary' | 'ghost';
+  onClick: () => void;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`h-10 px-4 rounded-md text-sm font-medium disabled:opacity-50 transition ${
+        variant === 'primary'
+          ? 'bg-accent text-paper hover:opacity-90'
+          : 'border border-ink/15 text-ink/75 hover:bg-ink/5'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StatusPill({ status }: { status: SubmissionStatus }) {
+  const map: Record<SubmissionStatus, { label: string; cls: string }> = {
+    pending: { label: 'Aguardando', cls: 'bg-warning/15 text-warning' },
+    approved: { label: 'Na fila', cls: 'bg-accent/15 text-accent' },
+    sent: { label: 'Exibida', cls: 'bg-success/15 text-success' },
+    rejected: { label: 'Rejeitada', cls: 'bg-ink/10 text-ink/60' },
+    failed: { label: 'Falhou', cls: 'bg-danger/15 text-danger' },
+  };
+  const m = map[status];
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${m.cls}`}>
+      {m.label}
+    </span>
   );
 }
