@@ -71,6 +71,7 @@ export type Database = {
       events: {
         Row: {
           active_slide_id: string | null
+          auto_send_on_approve: boolean
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
@@ -92,6 +93,7 @@ export type Database = {
         }
         Insert: {
           active_slide_id?: string | null
+          auto_send_on_approve?: boolean
           created_at?: string
           dispatch_interval_seconds?: number
           enabled_display_modes?: Database["public"]["Enums"]["telao_display_mode"][]
@@ -113,6 +115,7 @@ export type Database = {
         }
         Update: {
           active_slide_id?: string | null
+          auto_send_on_approve?: boolean
           created_at?: string
           dispatch_interval_seconds?: number
           enabled_display_modes?: Database["public"]["Enums"]["telao_display_mode"][]
@@ -771,6 +774,7 @@ export type Database = {
         Args: { p_event_id: string; p_slide_id: string }
         Returns: {
           active_slide_id: string | null
+          auto_send_on_approve: boolean
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
@@ -801,6 +805,7 @@ export type Database = {
         Args: { p_active: boolean; p_event_id: string }
         Returns: {
           active_slide_id: string | null
+          auto_send_on_approve: boolean
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]
@@ -885,6 +890,7 @@ export type Database = {
         Args: { p_config: Json; p_event_id: string }
         Returns: {
           active_slide_id: string | null
+          auto_send_on_approve: boolean
           created_at: string
           dispatch_interval_seconds: number
           enabled_display_modes: Database["public"]["Enums"]["telao_display_mode"][]

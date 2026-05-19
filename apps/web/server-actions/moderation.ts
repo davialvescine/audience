@@ -107,13 +107,41 @@ export async function approveSubmission(submissionId: string): Promise<Result> {
   if (!data) return { ok: true, status: 'sent' };
 
   Sentry.setTag('event_slug', data.event_slug);
-  const outcome = await deliverToH2R(supabase, data);
+
+  // Lê a flag auto_send_on_approve do evento. Quando ligada, eventos sem
+  // webhook H2R pulam o estado 'approved' (queued) e marcam direto como
+  // 'sent' — mensagem aparece no telão na hora.
+  const { data: ev } = await supabase
+    .from('events')
+    .select('auto_send_on_approve')
+    .eq('slug', data.event_slug)
+    .maybeSingle();
+  const autoSend = (ev as { auto_send_on_approve?: boolean } | null)?.auto_send_on_approve === true;
+
+  const outcome = await deliverToH2R(supabase, data, { autoMarkSent: autoSend });
   revalidatePath(`/admin/events/${data.event_slug}`);
 
   if (outcome === 'failed') {
     return { ok: false, error: 'H2R rejeitou a mensagem. Tente novamente.' };
   }
   return { ok: true, status: outcome === 'sent' ? 'sent' : 'queued' };
+}
+
+export async function setAutoSendOnApprove(
+  eventId: string,
+  value: boolean,
+): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('events')
+    .update({ auto_send_on_approve: value } as never)
+    .eq('id', eventId)
+    .select('slug')
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: 'Falha ao salvar preferência.' };
+  revalidatePath(`/admin/events/${data.slug}`);
+  return { ok: true, status: 'sent' };
 }
 
 export async function rejectSubmission(submissionId: string): Promise<Result> {

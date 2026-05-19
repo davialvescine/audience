@@ -14,6 +14,7 @@ import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supab
 import {
   approveSubmission,
   rejectSubmission,
+  setAutoSendOnApprove,
   undoModerationAction,
 } from '@/server-actions/moderation';
 
@@ -27,14 +28,38 @@ type Item = {
   display_count?: number;
 };
 
-type Props = { eventId: string; initial: Item[]; pinnedSubmissionId?: string | null };
+type Props = {
+  eventId: string;
+  initial: Item[];
+  pinnedSubmissionId?: string | null;
+  initialAutoSendOnApprove?: boolean;
+};
 
-export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props) {
+export function ModerationQueue({
+  eventId,
+  initial,
+  pinnedSubmissionId,
+  initialAutoSendOnApprove = false,
+}: Props) {
   const [items, setItems] = useState(initial);
   const [pinnedId, setPinnedId] = useState<string | null>(pinnedSubmissionId ?? null);
   const [rtStatus, setRtStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [tab, setTab] = useState<SubmissionFilter['tab']>('all');
   const [query, setQuery] = useState('');
+  const [autoSend, setAutoSend] = useState<boolean>(initialAutoSendOnApprove);
+  const [autoSendPending, setAutoSendPending] = useState(false);
+
+  const toggleAutoSend = async () => {
+    const next = !autoSend;
+    setAutoSend(next); // optimistic
+    setAutoSendPending(true);
+    const r = await setAutoSendOnApprove(eventId, next);
+    setAutoSendPending(false);
+    if (!r.ok) {
+      setAutoSend(!next);
+      window.alert(`Erro: ${r.error}`);
+    }
+  };
 
   const counts = useMemo(
     () => ({
@@ -301,7 +326,27 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void toggleAutoSend()}
+            disabled={autoSendPending}
+            className={`text-xs h-8 px-2.5 rounded-md border transition inline-flex items-center gap-1.5 disabled:opacity-60 ${
+              autoSend
+                ? 'border-success bg-success/10 text-success'
+                : 'border-ink/15 text-ink/60 hover:border-ink/30'
+            }`}
+            title={
+              autoSend
+                ? 'Aprovar manda direto pro telão (sem fila). Clique pra voltar ao modo manual.'
+                : 'Aprovar deixa em Na fila. Clique pra mandar direto pro telão ao aprovar.'
+            }
+          >
+            <span>{autoSend ? '⚡' : '⏸'}</span>
+            <span className="hidden sm:inline">
+              {autoSend ? 'Aprovar = telão direto' : 'Aprovar = fila'}
+            </span>
+          </button>
           <button
             type="button"
             onClick={toggleSound}
@@ -312,7 +357,7 @@ export function ModerationQueue({ eventId, initial, pinnedSubmissionId }: Props)
             }`}
             title={soundOn ? 'Som ligado — beep em cada nova mensagem pendente' : 'Som desligado'}
           >
-            {soundOn ? '🔔 Som' : '🔕 Som'}
+            {soundOn ? '🔔' : '🔕'}
           </button>
           <RealtimeStatusBadge status={rtStatus} />
         </div>

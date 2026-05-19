@@ -35,7 +35,7 @@ export default async function EventModerationPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, enabled_display_modes, owner_id, pinned_submission_id',
+      'id, name, slug, h2r_paired_at, h2r_last_heartbeat, submissions_open, dispatch_interval_seconds, enabled_display_modes, owner_id, pinned_submission_id, auto_send_on_approve',
     )
     .eq('slug', slug)
     .single();
@@ -119,6 +119,14 @@ export default async function EventModerationPage({
         eventId={event.id}
         initial={subs ?? []}
         pinnedSubmissionId={event.pinned_submission_id}
+        initialAutoSendOnApprove={
+          (event as { auto_send_on_approve?: boolean }).auto_send_on_approve === true
+        }
+      />
+      <ModeratorLinks
+        eventId={event.id}
+        baseUrl={`${proto}://${host}`}
+        existing={modTokens ?? []}
       />
     </div>
   );
@@ -165,15 +173,10 @@ export default async function EventModerationPage({
             platformUsers={(platformUsers ?? []) as Array<{ user_id: string; email: string }>}
             isOwner={isOwner}
           />
-          <ModeratorLinks
-            eventId={event.id}
-            baseUrl={`${proto}://${host}`}
-            existing={modTokens ?? []}
-          />
           <Card>
             <p className="text-xs text-ink/50">
-              Dica: configurações de exibição e disparos pra H2R ficam dentro de{' '}
-              <strong>Comentários → Telão</strong>.
+              Dica: link de moderador externo ficou na aba <strong>Comentários</strong>.
+              Configurações de exibição/H2R ficam no painel de cada slide.
             </p>
           </Card>
         </div>
