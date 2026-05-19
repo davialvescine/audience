@@ -47,6 +47,9 @@ type Props = {
    *  Quando passado, o drag calcula % relativo a esse elemento (resolve o
    *  problema de iframe scaled). Sem ele, assume viewport nativo 1920x1080. */
   stageRef?: React.RefObject<HTMLElement | null> | undefined;
+  /** Quando true, há um QR code sidebar à direita do stage. Empurra o
+   *  card pra esquerda pra não sobrepor o QR. */
+  qrSidebarActive?: boolean | undefined;
 };
 
 export function TelaoClient({
@@ -61,6 +64,7 @@ export function TelaoClient({
   titleColor,
   onPositionChange,
   stageRef,
+  qrSidebarActive = false,
 }: Props) {
   const intervalRef = useRef(intervalSeconds);
   intervalRef.current = intervalSeconds;
@@ -528,6 +532,16 @@ export function TelaoClient({
       onPointerCancel={onPointerUp}
       style={{
         ...positionStyle,
+        // qrSidebarActive: compõe transform existente do positionStyle com
+        // translateX(-240px) pra empurrar card à esquerda longe do QR (~340px
+        // QR + folga). Funciona com qualquer anchor (center, left, right…).
+        ...(qrSidebarActive
+          ? {
+              transform: positionStyle.transform
+                ? `${positionStyle.transform} translateX(-240px)`
+                : 'translateX(-240px)',
+            }
+          : {}),
         width: `${config.widthPct}%`,
         // Antes era 100vw e cortava card quando widthPct > 100 no admin.
         // Agora deixa crescer livre — slider já vai até 200%.
@@ -583,6 +597,8 @@ export function TelaoClient({
                   ? `blur(${config.backdropBlur}px)`
                   : undefined,
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
+              // fontSize do CARD = base. Comentário (linha 630) tem scale
+              // por char count pra texto longo não estourar a tela.
               fontSize: `${config.fontSizePx}px`,
               lineHeight: 1.3,
               minHeight: config.heightPx > 0 ? `${config.heightPx}px` : undefined,
@@ -613,7 +629,31 @@ export function TelaoClient({
                 </span>
               ) : null}
             </div>
-            <div style={{ fontWeight: 500, wordBreak: 'break-word' }}>{m.comment}</div>
+            <div
+              style={{
+                fontWeight: 500,
+                wordBreak: 'break-word',
+                // Auto-shrink: comentário longo reduz proporcionalmente
+                // pra caber sem estourar o card. Slido/Menti fazem isso.
+                // Curva escalonada:
+                //   ≤80 chars  → 1.00 (tamanho cheio)
+                //   ≤160 chars → 0.82
+                //   ≤280 chars → 0.66
+                //   >280 chars → 0.52
+                fontSize: `${Math.round(
+                  config.fontSizePx *
+                    (m.comment.length <= 80
+                      ? 1
+                      : m.comment.length <= 160
+                        ? 0.82
+                        : m.comment.length <= 280
+                          ? 0.66
+                          : 0.52),
+                )}px`,
+              }}
+            >
+              {m.comment}
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>

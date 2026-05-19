@@ -110,6 +110,7 @@ export function TelaoCommentsSwitcher({
         title={merged.title}
         showTitle={merged.showTitle === true}
         titleColor={merged.titleColor}
+        qrSidebarActive={showQr && !qrFullscreen}
       />
       {qrFullscreen && joinUrl ? (
         <div
