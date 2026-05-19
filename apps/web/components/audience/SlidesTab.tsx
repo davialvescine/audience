@@ -305,6 +305,45 @@ export function SlidesTab({
             <kbd className="ml-3 px-1.5 py-0.5 rounded bg-ink/[0.06] font-mono text-[10px]">F</kbd>
             <span className="ml-1">tela cheia</span>
           </span>
+          {(() => {
+            const activeSlide = activeId ? slides.find((s) => s.id === activeId) : null;
+            const isCommentsActive = activeSlide?.type === 'comments';
+            if (!isCommentsActive) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  const rt = getSupabaseRealtimeClient();
+                  const ch = rt.channel(`telao-test:${eventId}`);
+                  const fire = () => {
+                    void ch.send({
+                      type: 'broadcast',
+                      event: 'test-comment',
+                      payload: {
+                        name: 'Teste',
+                        comment: 'Esta é uma mensagem de teste pra ajustar o telão.',
+                      },
+                    });
+                    setTimeout(() => {
+                      void rt.removeChannel(ch);
+                    }, 500);
+                  };
+                  const state = (ch as unknown as { state?: string }).state;
+                  if (state === 'joined') {
+                    fire();
+                  } else {
+                    ch.subscribe((status) => {
+                      if (status === 'SUBSCRIBED') fire();
+                    });
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-medium border border-primary/40 text-primary hover:bg-primary/[0.06] transition"
+                title="Dispara uma mensagem-teste no telão (efêmera — não vai pro histórico nem conta nas stats)"
+              >
+                ▶ Testar no telão
+              </button>
+            );
+          })()}
           <button
             type="button"
             onClick={openTelao}

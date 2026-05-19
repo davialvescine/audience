@@ -407,41 +407,6 @@ export function ModerationQueue({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              const rt = getSupabaseRealtimeClient();
-              const ch = rt.channel(`telao-test:${eventId}`);
-              const fire = () => {
-                void ch.send({
-                  type: 'broadcast',
-                  event: 'test-comment',
-                  payload: {
-                    name: 'Teste',
-                    comment: 'Esta é uma mensagem de teste pra ajustar o telão.',
-                  },
-                });
-                // Sai do canal logo após enviar — não precisa manter aberto.
-                setTimeout(() => {
-                  void rt.removeChannel(ch);
-                }, 500);
-              };
-              // Se o canal ainda não tá inscrito, subscribe e dispara no
-              // callback. Se já tá, manda direto.
-              const state = (ch as unknown as { state?: string }).state;
-              if (state === 'joined') {
-                fire();
-              } else {
-                ch.subscribe((status) => {
-                  if (status === 'SUBSCRIBED') fire();
-                });
-              }
-            }}
-            className="text-xs h-8 px-2.5 rounded-md border border-primary/40 text-primary hover:bg-primary/[0.06] transition"
-            title="Dispara uma mensagem-teste no telão (efêmera — não vai pro histórico nem conta nas stats)"
-          >
-            ▶ Testar no telão
-          </button>
-          <button
-            type="button"
             onClick={async () => {
               const c1 = window.confirm(
                 'Apaga TODOS os comentários deste evento (pendentes, aprovados, exibidos, rejeitados).\n\nNão pode ser desfeito. Continuar?',
