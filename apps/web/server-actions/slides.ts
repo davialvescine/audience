@@ -105,3 +105,28 @@ export async function resetSlideWords(slideId: string): Promise<Result<null>> {
   revalidatePath('/admin/events/[slug]', 'page');
   return { ok: true, data: null };
 }
+
+/**
+ * Zera TODOS os dados de teste do evento (palavras, votos, respostas
+ * abertas). NÃO mexe nos slides em si nem em submissions (comentários).
+ * Útil pra limpar antes do evento real depois de testes.
+ */
+export async function resetAllEventSlides(
+  eventId: string,
+): Promise<Result<{ words_deleted: number; votes_deleted: number; responses_deleted: number }>> {
+  const sb = await getSupabaseServerClient();
+  const { data, error } = await sb.rpc('reset_all_event_slides' as never, {
+    p_event_id: eventId,
+  } as never);
+  if (error) return mapError(error.message);
+  revalidatePath('/admin/events/[slug]', 'page');
+  revalidatePath('/telao/[slug]', 'page');
+  return {
+    ok: true,
+    data: (data ?? { words_deleted: 0, votes_deleted: 0, responses_deleted: 0 }) as {
+      words_deleted: number;
+      votes_deleted: number;
+      responses_deleted: number;
+    },
+  };
+}

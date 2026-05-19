@@ -539,11 +539,24 @@ export function TelaoClient({
       <AnimatePresence>
         {renderList.map((m) => (
           <motion.div
-            key={`${m.id}-${config.animation}-${config.position}-${config.fontSizePx}-${config.cardBg}-${config.cardText}-${config.borderRadius}-${config.shadow}-${config.backdropBlur}-${config.widthPct}-${config.heightPx}`}
+            // Key estável — IDENTIDADE só pela mensagem. Antes incluía
+            // config.fontSizePx/cardBg/etc, então qualquer autosave do
+            // operador trocava o key → remount → re-animava entry/exit
+            // → parecia "saltando". Style muda via re-render normal,
+            // sem remount.
+            key={m.id}
+            layout="position"
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={{
+              duration: 0.55,
+              ease: [0.22, 1, 0.36, 1],
+              // Layout (movimento entre cards) usa transition mais suave
+              // pra não competir com fade/slide do entry.
+              layout: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+              opacity: { duration: 0.4 },
+            }}
             className="mb-3"
             style={{
               // showCardBackground vive em CommentsConfig (subtype). Cast inline
