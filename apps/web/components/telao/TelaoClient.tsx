@@ -11,7 +11,7 @@ import {
   type TelaoConfig,
 } from '@/lib/telao/config';
 import { resolveTelaoFont } from '@/lib/telao/fonts';
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
+import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 
 import { snapToGrid } from './snapToGrid';
 
@@ -242,9 +242,33 @@ export function TelaoClient({
       void pollPinned();
     }, 2000);
 
+    // Broadcast efêmero pra mensagem-teste disparada pelo operador. NÃO toca
+    // no banco — só empurra um card na fila local do telão pra ajustar
+    // layout/timing sem poluir submissions/stats.
+    const rt = getSupabaseRealtimeClient();
+    const testChannel = rt.channel(`telao-test:${eventId}`, {
+      config: { broadcast: { self: false } },
+    });
+    testChannel
+      .on('broadcast', { event: 'test-comment' }, (msg) => {
+        const payload = (msg.payload ?? {}) as { name?: string; comment?: string };
+        const name = (payload.name ?? '').toString().slice(0, 50) || 'Teste';
+        const comment =
+          (payload.comment ?? '').toString().slice(0, 280) ||
+          'Mensagem de teste — ajuste o telão.';
+        queueRef.current.push({
+          id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          name,
+          comment,
+          created_at: new Date().toISOString(),
+        });
+      })
+      .subscribe();
+
     return () => {
       clearInterval(pollTimer);
       clearInterval(pinTimer);
+      void rt.removeChannel(testChannel);
     };
   }, [eventId, slug, preview]);
 

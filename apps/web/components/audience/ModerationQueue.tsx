@@ -407,6 +407,41 @@ export function ModerationQueue({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => {
+              const rt = getSupabaseRealtimeClient();
+              const ch = rt.channel(`telao-test:${eventId}`);
+              const fire = () => {
+                void ch.send({
+                  type: 'broadcast',
+                  event: 'test-comment',
+                  payload: {
+                    name: 'Teste',
+                    comment: 'Esta é uma mensagem de teste pra ajustar o telão.',
+                  },
+                });
+                // Sai do canal logo após enviar — não precisa manter aberto.
+                setTimeout(() => {
+                  void rt.removeChannel(ch);
+                }, 500);
+              };
+              // Se o canal ainda não tá inscrito, subscribe e dispara no
+              // callback. Se já tá, manda direto.
+              const state = (ch as unknown as { state?: string }).state;
+              if (state === 'joined') {
+                fire();
+              } else {
+                ch.subscribe((status) => {
+                  if (status === 'SUBSCRIBED') fire();
+                });
+              }
+            }}
+            className="text-xs h-8 px-2.5 rounded-md border border-primary/40 text-primary hover:bg-primary/[0.06] transition"
+            title="Dispara uma mensagem-teste no telão (efêmera — não vai pro histórico nem conta nas stats)"
+          >
+            ▶ Testar no telão
+          </button>
+          <button
+            type="button"
             onClick={async () => {
               const c1 = window.confirm(
                 'Apaga TODOS os comentários deste evento (pendentes, aprovados, exibidos, rejeitados).\n\nNão pode ser desfeito. Continuar?',
@@ -469,7 +504,7 @@ export function ModerationQueue({
             <kbd className="px-1 rounded bg-ink/10">K</kbd> navegar ·{' '}
             <kbd className="px-1 rounded bg-ink/10">A</kbd> aprovar ·{' '}
             <kbd className="px-1 rounded bg-ink/10">R</kbd> rejeitar ·{' '}
-            <kbd className="px-1 rounded bg-ink/10">U</kbd> desfazer
+            <kbd className="px-1 rounded bg-ink/10">U</kbd> desaprovar/cancelar (volta pra Chegando)
           </span>
         </div>
       </div>
@@ -570,15 +605,24 @@ export function ModerationQueue({
       {undo ? (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
           <div className="flex items-center gap-3 bg-ink text-paper px-4 py-2.5 rounded-lg shadow-lg">
-            <span className="text-sm">{undo.action === 'approved' ? 'Aprovado' : 'Rejeitado'}</span>
+            <span className="text-sm">
+              {undo.action === 'approved' ? '✓ Aprovado' : '✕ Rejeitado'}
+            </span>
             <button
               type="button"
               onClick={() => {
                 void undoModerationAction(undo.id).then(() => setUndo(null));
               }}
               className="text-sm font-medium text-accent hover:underline"
+              title={
+                undo.action === 'approved'
+                  ? 'Volta a mensagem pra "Chegando" (desaprova)'
+                  : 'Volta a mensagem pra "Chegando" (cancela rejeição)'
+              }
             >
-              Desfazer (U)
+              {undo.action === 'approved'
+                ? 'Desaprovar — volta pra Chegando (U)'
+                : 'Cancelar rejeição — volta pra Chegando (U)'}
             </button>
           </div>
         </div>
