@@ -304,6 +304,83 @@ export function ModerationQueue({
 
   return (
     <div className="grid gap-3">
+      {/* Card claro com 2 modos de aprovação — substitui a pílula obscura
+          do header. Estilo radio pra não dar dúvida sobre o que faz. */}
+      <div className="rounded-xl border border-ink/10 bg-paper p-3">
+        <p className="text-xs uppercase tracking-wide text-ink/55 mb-2 font-semibold">
+          O que acontece quando você aprovar uma mensagem?
+        </p>
+        <div className="grid sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (autoSend && !autoSendPending) void toggleAutoSend();
+            }}
+            disabled={autoSendPending}
+            className={`text-left rounded-lg border-2 p-3 transition disabled:opacity-60 ${
+              !autoSend
+                ? 'border-primary bg-primary/[0.04]'
+                : 'border-ink/10 hover:border-ink/25'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                  !autoSend ? 'border-primary' : 'border-ink/25'
+                }`}
+                aria-hidden
+              >
+                {!autoSend ? (
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                ) : null}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink leading-tight">
+                  Vai pra fila (revisar antes)
+                </p>
+                <p className="text-xs text-ink/60 mt-1 leading-snug">
+                  Aprovar deixa a mensagem em <strong>Na fila</strong>. Você precisa clicar
+                  em <strong>Mostrar no telão</strong> ou usar o botão <strong>Flush</strong>{' '}
+                  pra exibir.
+                </p>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!autoSend && !autoSendPending) void toggleAutoSend();
+            }}
+            disabled={autoSendPending}
+            className={`text-left rounded-lg border-2 p-3 transition disabled:opacity-60 ${
+              autoSend
+                ? 'border-success bg-success/[0.05]'
+                : 'border-ink/10 hover:border-ink/25'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                  autoSend ? 'border-success' : 'border-ink/25'
+                }`}
+                aria-hidden
+              >
+                {autoSend ? <span className="h-2.5 w-2.5 rounded-full bg-success" /> : null}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink leading-tight">
+                  Vai direto pro telão ⚡
+                </p>
+                <p className="text-xs text-ink/60 mt-1 leading-snug">
+                  Aprovar exibe na hora respeitando o tempo de cada card configurado no slide.
+                  Bom pra eventos ao vivo com fluxo rápido.
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((t) => (
@@ -327,26 +404,6 @@ export function ModerationQueue({
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void toggleAutoSend()}
-            disabled={autoSendPending}
-            className={`text-xs h-8 px-2.5 rounded-md border transition inline-flex items-center gap-1.5 disabled:opacity-60 ${
-              autoSend
-                ? 'border-success bg-success/10 text-success'
-                : 'border-ink/15 text-ink/60 hover:border-ink/30'
-            }`}
-            title={
-              autoSend
-                ? 'Aprovar manda direto pro telão (sem fila). Clique pra voltar ao modo manual.'
-                : 'Aprovar deixa em Na fila. Clique pra mandar direto pro telão ao aprovar.'
-            }
-          >
-            <span>{autoSend ? '⚡' : '⏸'}</span>
-            <span className="hidden sm:inline">
-              {autoSend ? 'Aprovar = telão direto' : 'Aprovar = fila'}
-            </span>
-          </button>
           <button
             type="button"
             onClick={toggleSound}
