@@ -95,6 +95,10 @@ export function TelaoClient({
   }, [initialConfig]);
   const [visible, setVisible] = useState<Submission[]>([]);
   const [pinned, setPinned] = useState<Submission | null>(null);
+  // Mensagem-teste fixa: efêmera (broadcast Realtime, sem DB), fica
+  // visível até o operador clicar "Tirar teste". Precedência menor que
+  // o pinned real, maior que a fila normal.
+  const [testPinned, setTestPinned] = useState<Submission | null>(null);
   const queueRef = useRef<Submission[]>([]);
   // Altura do wrapper é controlada 100% pelo slider (effectiveHeight).
   // Ref mantido só pro caso futuro de drag/resize.
@@ -262,6 +266,22 @@ export function TelaoClient({
           comment,
           created_at: new Date().toISOString(),
         });
+      })
+      .on('broadcast', { event: 'test-pin' }, (msg) => {
+        const payload = (msg.payload ?? {}) as { name?: string; comment?: string };
+        const name = (payload.name ?? '').toString().slice(0, 50) || 'Teste';
+        const comment =
+          (payload.comment ?? '').toString().slice(0, 280) ||
+          'Mensagem de teste — ajuste o telão.';
+        setTestPinned({
+          id: `test-pin-${Date.now()}`,
+          name,
+          comment,
+          created_at: new Date().toISOString(),
+        });
+      })
+      .on('broadcast', { event: 'test-unpin' }, () => {
+        setTestPinned(null);
       })
       .subscribe();
 
@@ -437,9 +457,11 @@ export function TelaoClient({
   // Pra anchors inferiores, novos embaixo (empilha pra cima).
   const renderList = pinned
     ? [pinned]
-    : config.position.startsWith('top-')
-      ? [...visible].reverse()
-      : visible;
+    : testPinned
+      ? [testPinned]
+      : config.position.startsWith('top-')
+        ? [...visible].reverse()
+        : visible;
   const hasCustomPos = typeof config.posXPct === 'number' && typeof config.posYPct === 'number';
   const positionStyle = hasCustomPos
     ? customPositionStyles(config.posXPct as number, config.posYPct as number)

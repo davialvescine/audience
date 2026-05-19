@@ -65,6 +65,11 @@ export function SlidesTab({
   // Live overlay do config sendo editado — reflete keystrokes no canvas
   // imediatamente, sem esperar autosave + realtime.
   const [liveConfig, setLiveConfig] = useState<WordcloudConfig | null>(null);
+  // Tracking local: a UI sabe se o "Mostrar fixo" foi clicado nesta sessão
+  // pra alternar pro botão "Tirar teste". Estado some no F5 — mas o usuário
+  // pode clicar "Mostrar fixo" → "Tirar teste" novamente sem problema, o
+  // broadcast test-unpin é idempotente.
+  const [testPinShown, setTestPinShown] = useState(false);
   const { isTauri, invoke } = useTauri();
 
   useEffect(() => {
@@ -309,39 +314,72 @@ export function SlidesTab({
             const activeSlide = activeId ? slides.find((s) => s.id === activeId) : null;
             const isCommentsActive = activeSlide?.type === 'comments';
             if (!isCommentsActive) return null;
+            const TEST_PAYLOAD = {
+              name: 'Teste',
+              comment: 'Esta é uma mensagem de teste pra ajustar o telão.',
+            };
+            const broadcast = (event: 'test-comment' | 'test-pin' | 'test-unpin') => {
+              const rt = getSupabaseRealtimeClient();
+              const ch = rt.channel(`telao-test:${eventId}`);
+              const fire = () => {
+                void ch.send({
+                  type: 'broadcast',
+                  event,
+                  payload: event === 'test-unpin' ? {} : TEST_PAYLOAD,
+                });
+                setTimeout(() => void rt.removeChannel(ch), 500);
+              };
+              const state = (ch as unknown as { state?: string }).state;
+              if (state === 'joined') {
+                fire();
+              } else {
+                ch.subscribe((status) => {
+                  if (status === 'SUBSCRIBED') fire();
+                });
+              }
+            };
             return (
-              <button
-                type="button"
-                onClick={() => {
-                  const rt = getSupabaseRealtimeClient();
-                  const ch = rt.channel(`telao-test:${eventId}`);
-                  const fire = () => {
-                    void ch.send({
-                      type: 'broadcast',
-                      event: 'test-comment',
-                      payload: {
-                        name: 'Teste',
-                        comment: 'Esta é uma mensagem de teste pra ajustar o telão.',
-                      },
-                    });
-                    setTimeout(() => {
-                      void rt.removeChannel(ch);
-                    }, 500);
-                  };
-                  const state = (ch as unknown as { state?: string }).state;
-                  if (state === 'joined') {
-                    fire();
-                  } else {
-                    ch.subscribe((status) => {
-                      if (status === 'SUBSCRIBED') fire();
-                    });
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-medium border border-primary/40 text-primary hover:bg-primary/[0.06] transition"
-                title="Dispara uma mensagem-teste no telão (efêmera — não vai pro histórico nem conta nas stats)"
+              <div
+                className="inline-flex items-center rounded-full border border-primary/30 bg-primary/[0.04] p-0.5"
+                title="Mensagem-teste efêmera no telão — não vai pro histórico nem conta nas stats"
               >
-                ▶ Testar no telão
-              </button>
+                <span className="text-[10px] uppercase tracking-wider font-bold text-primary/70 px-2.5">
+                  Teste
+                </span>
+                <button
+                  type="button"
+                  onClick={() => broadcast('test-comment')}
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-semibold text-primary hover:bg-primary/[0.1] transition"
+                  title="Entra, fica visível pelo tempo configurado no slide e sai sozinha"
+                >
+                  ▶ Entra e sai
+                </button>
+                {testPinShown ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      broadcast('test-unpin');
+                      setTestPinShown(false);
+                    }}
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-semibold bg-danger text-paper hover:bg-danger/90 transition"
+                    title="Tira a mensagem-teste do telão agora"
+                  >
+                    ✕ Tirar teste
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      broadcast('test-pin');
+                      setTestPinShown(true);
+                    }}
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-semibold text-primary hover:bg-primary/[0.1] transition"
+                    title="Mostra no telão e fica fixada até você clicar 'Tirar teste'"
+                  >
+                    📌 Mostrar fixo
+                  </button>
+                )}
+              </div>
             );
           })()}
           <button
