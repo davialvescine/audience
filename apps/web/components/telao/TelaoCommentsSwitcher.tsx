@@ -9,7 +9,7 @@ import { TelaoClient } from '@/components/telao/TelaoClient';
 import { backgroundStyle } from '@/components/telao/WordCloudDisplay';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
-import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
+import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 import { DEFAULT_COMMENTS_CONFIG, type CommentsConfig } from '@/lib/slides/types';
 
 type ChannelLike = NonNullable<Parameters<typeof useActiveSlideConfig>[1]['channel']>;
@@ -50,6 +50,7 @@ export function TelaoCommentsSwitcher({
   const [channel, setChannel] = useState<ChannelLike | undefined>(undefined);
   type PresenceChannel = NonNullable<Parameters<typeof useOnlinePresence>[0]['channel']>;
   const [presenceChannel, setPresenceChannel] = useState<PresenceChannel | undefined>(undefined);
+  const [commentsCount, setCommentsCount] = useState(0);
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
@@ -65,6 +66,28 @@ export function TelaoCommentsSwitcher({
       pres?.unsubscribe();
     };
   }, [eventId]);
+
+  // Polling do contador de comentários sent. Anon-friendly via RPC
+  // count_event_sent_submissions (security definer). 3s é discreto.
+  useEffect(() => {
+    if (!showBackground) return;
+    const sb = getSupabaseBrowserClient();
+    let cancelled = false;
+    const fetchCount = async () => {
+      const { data } = await sb.rpc('count_event_sent_submissions' as never, {
+        p_slug: slug,
+      } as never);
+      if (cancelled) return;
+      const n = typeof data === 'number' ? data : Number(data ?? 0);
+      setCommentsCount(n);
+    };
+    void fetchCount();
+    const id = setInterval(fetchCount, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [slug, showBackground]);
 
   const slide = useActiveSlideConfig(eventId, {
     initialActiveSlideId,
@@ -145,7 +168,12 @@ export function TelaoCommentsSwitcher({
         </div>
       ) : null}
       {showBackground && presenceChannel ? (
-        <StatsBadge presenceChannel={presenceChannel} color={merged.cardText} />
+        <StatsBadge
+          presenceChannel={presenceChannel}
+          count={commentsCount}
+          label="comentário"
+          color={merged.cardText}
+        />
       ) : null}
       {showBackground && isOperator ? <FullscreenButton /> : null}
       {showQr && !qrFullscreen && joinUrl ? (

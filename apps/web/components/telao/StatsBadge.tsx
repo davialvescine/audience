@@ -24,7 +24,7 @@ export function StatsBadge({ presenceChannel, count, label, color = '#FFFFFF' }:
   const presence = useOnlinePresence({ channel: presenceChannel });
   return (
     <div
-      className="absolute bottom-8 left-8 z-20 flex items-center gap-5 px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-md text-base font-medium pointer-events-none"
+      className="absolute bottom-8 right-8 z-20 flex items-center gap-5 px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-md text-base font-medium pointer-events-none"
       style={{ color }}
     >
       {typeof count === 'number' ? (
