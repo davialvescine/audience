@@ -32,33 +32,54 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Polling — atualiza items + pinned via duas RPCs.
+  // Polling. RPCs em paralelo MAS com try/catch isolado — falha de uma
+  // (ex.: get_pinned_via_token não criada ainda em algum env) NÃO derruba
+  // o resto. Sem isso, "TypeError: Failed to fetch" do pinned vazava pro
+  // usuário e a lista de submissions sumia.
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    const fetchAll = async () => {
-      const [subsRes, pinRes] = await Promise.all([
-        supabase.rpc('get_submissions_via_token', { p_token: token }),
-        (supabase.rpc as unknown as (
-          fn: string,
-          args: Record<string, unknown>,
-        ) => Promise<{ data: Array<{ id: string }> | null; error: { message: string } | null }>)(
-          'get_pinned_via_token',
-          { p_token: token },
-        ),
-      ]);
-      if (subsRes.error) {
-        setError(subsRes.error.message);
-        return;
-      }
-      if (subsRes.data) setItems(subsRes.data as Item[]);
-      if (!pinRes.error && pinRes.data) {
-        const row = pinRes.data[0];
-        setPinnedId(row?.id ?? null);
+
+    const fetchItems = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_submissions_via_token', {
+          p_token: token,
+        });
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        if (data) {
+          setItems(data as Item[]);
+          setError(null);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Erro de rede ao buscar mensagens.');
       }
     };
-    void fetchAll();
+
+    const fetchPinned = async () => {
+      try {
+        type RpcFn = (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: Array<{ id: string }> | null; error: { message: string } | null }>;
+        const { data, error } = await (supabase.rpc as unknown as RpcFn)(
+          'get_pinned_via_token',
+          { p_token: token },
+        );
+        if (error) return; // silencioso — pin é nice-to-have
+        const row = data?.[0];
+        setPinnedId(row?.id ?? null);
+      } catch {
+        // ignore — RPC pode não existir, network fail, etc. Pin não-crítico.
+      }
+    };
+
+    void fetchItems();
+    void fetchPinned();
     const t = setInterval(() => {
-      void fetchAll();
+      void fetchItems();
+      void fetchPinned();
     }, 2500);
     return () => clearInterval(t);
   }, [token]);
