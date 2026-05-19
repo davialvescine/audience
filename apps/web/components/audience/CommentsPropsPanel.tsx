@@ -23,7 +23,6 @@ import {
   type Slide,
 } from '@/lib/slides/types';
 import type {
-  TelaoAnimation,
   TelaoShadow,
   TelaoTransitionMode,
 } from '@/lib/telao/config';
@@ -38,24 +37,10 @@ type Props = {
 
 const DEBOUNCE_MS = 500;
 
-const ANIMATIONS: readonly TelaoAnimation[] = [
-  'slide-up',
-  'slide-down',
-  'slide-left',
-  'slide-right',
-  'fade',
-  'scale',
-  'bounce',
-];
-const ANIMATION_ICON: Record<TelaoAnimation, string> = {
-  'slide-up': '↑',
-  'slide-down': '↓',
-  'slide-left': '←',
-  'slide-right': '→',
-  fade: '◐',
-  scale: '⊕',
-  bounce: '↕',
-};
+// ANIMATIONS removido — TelaoClient agora usa fade puro fixo (sem
+// slide/scale/bounce) pra eliminar layout shift. A propriedade
+// config.animation continua sendo persistida pra compat, mas é
+// ignorada no render. Slider removido do painel.
 const SHADOWS: readonly TelaoShadow[] = ['none', 'subtle', 'medium', 'dramatic'];
 const TRANSITIONS: readonly TelaoTransitionMode[] = ['sequential', 'overlap'];
 
@@ -272,7 +257,7 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
         </Section>
 
         <Section title="Cor do card">
-          <ColorInput
+          <ColorWithOpacity
             label="Fundo do card"
             value={config.cardBg}
             onChange={(v) => setConfig((c) => ({ ...c, cardBg: v }))}
@@ -388,15 +373,6 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
               onChange={(v) => setConfig((c) => ({ ...c, transitionMode: v }))}
             />
           </div>
-          <div className="mt-3">
-            <PresetGroup
-              label="Animação"
-              options={ANIMATIONS}
-              value={config.animation}
-              onChange={(v) => setConfig((c) => ({ ...c, animation: v }))}
-              iconFor={(o) => ANIMATION_ICON[o]}
-            />
-          </div>
         </Section>
 
         <Section title="No card" live>
@@ -453,6 +429,115 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
             </Button>
           </div>
         </Section>
+      </div>
+    </div>
+  );
+}
+
+/** Parseia uma cor CSS (#rgb, #rrggbb, rgb(), rgba()) em { hex, alpha }. */
+function parseColor(input: string): { hex: string; alpha: number } {
+  const v = (input ?? '').trim();
+  // rgba(r, g, b, a)
+  const rgba = v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/i);
+  if (rgba) {
+    const [, r, g, b, a] = rgba;
+    const hex = `#${[r, g, b]
+      .map((n) => Number(n).toString(16).padStart(2, '0'))
+      .join('')}`;
+    return { hex, alpha: a !== undefined ? Math.max(0, Math.min(1, Number(a))) : 1 };
+  }
+  // #rgb
+  const short = v.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+  if (short) {
+    return {
+      hex: `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`,
+      alpha: 1,
+    };
+  }
+  // #rrggbb ou #rrggbbaa
+  const long = v.match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+  if (long) {
+    const hex = `#${long[1]}`;
+    const alpha = long[2] !== undefined ? parseInt(long[2]!, 16) / 255 : 1;
+    return { hex, alpha };
+  }
+  return { hex: '#0A2540', alpha: 1 };
+}
+
+function composeColor(hex: string, alpha: number): string {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  if (alpha >= 1) return hex;
+  return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+}
+
+function ColorWithOpacity({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { hex, alpha } = parseColor(value);
+  const setHex = (h: string) => onChange(composeColor(h, alpha));
+  const setAlpha = (a: number) => onChange(composeColor(hex, a));
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">{label}</p>
+      <div className="flex gap-2 items-center">
+        <input
+          type="color"
+          value={hex}
+          onChange={(e) => setHex(e.target.value)}
+          className="h-10 w-12 rounded-md border border-ink/20 cursor-pointer shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 h-10 px-2 rounded-md border border-ink/20 bg-paper">
+            <span
+              className="h-6 w-6 rounded border border-ink/15 shrink-0"
+              style={{ background: value }}
+              aria-hidden
+            />
+            <input
+              type="text"
+              value={hex.toUpperCase()}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                if (/^#[0-9a-f]{6}$/i.test(v)) setHex(v);
+              }}
+              className="flex-1 min-w-0 bg-transparent text-ink text-xs font-mono uppercase outline-none"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard?.writeText(hex.toUpperCase());
+              }}
+              className="text-[10px] text-ink/50 hover:text-ink transition shrink-0"
+              title="Copiar código"
+            >
+              ⧉
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3">
+        <label className="text-xs uppercase tracking-wide text-ink/60 flex justify-between mb-1.5">
+          <span>Opacidade</span>
+          <span className="text-ink font-medium tabular-nums">{Math.round(alpha * 100)}%</span>
+        </label>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(alpha * 100)}
+          onChange={(e) => setAlpha(Number(e.target.value) / 100)}
+          className="w-full"
+        />
       </div>
     </div>
   );

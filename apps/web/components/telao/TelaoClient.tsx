@@ -581,12 +581,19 @@ export function TelaoClient({
                 ? {
                     display: 'grid',
                     gridTemplateColumns: '1fr',
-                    // Trava altura no maior card já visto. Quando o
-                    // container é bottom-aligned, isso evita o card
-                    // "cair pra baixo" quando o conteúdo encolhe.
-                    minHeight: stackMinHeight > 0 ? `${stackMinHeight}px` : undefined,
+                    // minHeight = MAX entre high-watermark (altura natural
+                    // dos cards passados) e heightPx do config (altura
+                    // fixa que o operador escolheu). Sem o Math.max, o
+                    // slider de altura não tinha efeito porque o
+                    // high-watermark sobrescrevia.
+                    minHeight: `${Math.max(stackMinHeight, config.heightPx)}px`,
                   }
-                : { display: 'flex', flexDirection: 'column', gap: '12px' }
+                : {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    minHeight: config.heightPx > 0 ? `${config.heightPx}px` : undefined,
+                  }
             }
           >
             {/* mode="wait" no caso 1-card: força exit terminar antes

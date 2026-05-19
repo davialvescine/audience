@@ -1,12 +1,36 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 type Tab = { id: string; label: string; content: ReactNode };
 type Props = { tabs: Tab[]; defaultTabId?: string };
 
 export function Tabs({ tabs, defaultTabId }: Props) {
-  const [active, setActive] = useState(defaultTabId ?? tabs[0]?.id ?? '');
+  // Persiste tab ativa na URL (?tab=slides). Sobrevive a revalidatePath,
+  // permite deep-link e mantém tab selecionada após server actions.
+  // Antes: state local resetava pro tabs[0] quando o componente remontava
+  // (ex: ao editar slide, server action revalidava → state perdido →
+  // usuário "voltava pra Comentários" sozinho).
+  const initial = (() => {
+    if (typeof window === 'undefined') return defaultTabId ?? tabs[0]?.id ?? '';
+    const fromUrl = new URLSearchParams(window.location.search).get('tab');
+    if (fromUrl && tabs.some((t) => t.id === fromUrl)) return fromUrl;
+    return defaultTabId ?? tabs[0]?.id ?? '';
+  })();
+  const [active, setActive] = useState(initial);
+
+  // Reflete tab → URL sem disparar navegação. Apenas replaceState pra
+  // que F5 e revalidatePath preservem a tab. Não dispara router push
+  // pra não re-renderizar a página inteira.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') !== active) {
+      url.searchParams.set('tab', active);
+      window.history.replaceState(null, '', url.toString());
+    }
+  }, [active]);
+
   const activeTab = tabs.find((t) => t.id === active) ?? tabs[0];
 
   return (
