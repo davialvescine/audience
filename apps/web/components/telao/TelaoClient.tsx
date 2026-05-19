@@ -199,14 +199,6 @@ export function TelaoClient({
       void poll();
     }, 2000);
 
-    // ANTES: poll events.telao_config (LEGACY) a cada 5s pra propagar
-    // mudanças do admin antigo. AGORA: cada slide tem sua própria config
-    // que vem via prop e é atualizada via useEffect[initialConfig]. Esse
-    // polling LEGACY estava SOBRESCREVENDO o config do slide a cada 5s
-    // — causa raiz do bug "telão volta pra cor antiga" / "roxo".
-    // Mantido como no-op pra não quebrar imports/cleanup; removido o setInterval.
-    const cfgTimer: ReturnType<typeof setInterval> = setInterval(() => {}, 999999999);
-
     // Polling de mensagem fixada. Quando muda, atualiza state. Renderiza
     // por tempo indeterminado ate ser desfixada (server seta null).
     const pollPinned = async () => {
@@ -241,7 +233,6 @@ export function TelaoClient({
 
     return () => {
       clearInterval(pollTimer);
-      clearInterval(cfgTimer);
       clearInterval(pinTimer);
     };
   }, [eventId, slug, preview]);
@@ -551,30 +542,42 @@ export function TelaoClient({
         touchAction: preview ? 'none' : undefined,
       }}
     >
-      {/* ANIMAÇÃO SIMPLIFICADA — cross-fade puro pra eliminar o "pulo".
-          Antes combinava slide-up/down/left/right + scale + bounce com
-          layout="position" + popLayout. Y deltas no enter+exit competiam
-          com a remoção do DOM, gerando saltos visíveis.
+      {/* ANIMAÇÃO — cross-fade puro com cards EMPILHADOS via absolute
+          quando maxConcurrent=1. Por que: popLayout faz o exit virar
+          position absolute, mas o container pai colapsa de altura por
+          frames até o enter expandir — daí o "salto" visual.
 
-          Agora: fade puro em ambos lados (ignora config.animation por
-          enquanto pra eliminar a fonte do bug). popLayout retira o card
-          que sai do flow imediatamente, o novo já mounta na posição
-          final. Sem layout="position" porque com keys diferentes ele
-          não tenta animar entre velho/novo. */}
-      <AnimatePresence mode="popLayout" initial={false}>
-        {renderList.map((m) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              // Fade bem suave (≈1.2s) com easeInOut clássico — entrada
-              // e saída longas pra não ser agressivo na audiência.
-              duration: 1.2,
-              ease: 'easeInOut',
+          Solução: quando maxConcurrent=1, ambos cards (saindo + entrando)
+          ficam absolute no mesmo ponto. O pai mantém altura controlada
+          via min-height. Cross-fade limpo, zero salto.
+
+          Quando maxConcurrent>1, mantemos flow normal pra cards
+          empilharem (mb-3). Nesse caso popLayout funciona melhor. */}
+      {(() => {
+        const stackedSingle = config.maxConcurrent <= 1;
+        return (
+          <div
+            style={{
+              position: 'relative',
+              minHeight: stackedSingle
+                ? `${Math.round(config.fontSizePx * 2.5)}px`
+                : undefined,
             }}
-            className="mb-3"
+          >
+            <AnimatePresence mode={stackedSingle ? 'sync' : 'popLayout'} initial={false}>
+              {renderList.map((m) => (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    // Fade bem suave (≈1.2s) com easeInOut — entrada/saída
+                    // longas pra audiência. Stagger evita "flash" do crossfade.
+                    duration: 1.2,
+                    ease: 'easeInOut',
+                  }}
+                  className={stackedSingle ? '' : 'mb-3'}
             style={{
               // showCardBackground vive em CommentsConfig (subtype). Cast inline
               // pra ler de TelaoConfig sem afetar wordcloud/open_ended.
@@ -607,6 +610,11 @@ export function TelaoClient({
               display: config.heightPx > 0 ? 'flex' : undefined,
               flexDirection: config.heightPx > 0 ? 'column' : undefined,
               justifyContent: config.heightPx > 0 ? 'center' : undefined,
+              // Quando empilhado (maxConcurrent=1), todo card é position
+              // absolute no mesmo ponto pra cross-fade limpo sem salto.
+              ...(stackedSingle
+                ? { position: 'absolute', left: 0, right: 0, top: 0 }
+                : {}),
             }}
           >
             <div
@@ -656,9 +664,12 @@ export function TelaoClient({
             >
               {m.comment}
             </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        );
+      })()}
       {preview && dragHud ? (
         <div
           style={{
