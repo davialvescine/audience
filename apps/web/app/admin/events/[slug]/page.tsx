@@ -115,6 +115,14 @@ export default async function EventModerationPage({
         initialSubmissionsOpen={event.submissions_open}
         pendingCount={counts.pending}
       />
+      {/* Link pra moderador externo — visível ANTES da fila pra owner
+          conseguir compartilhar com voluntários sem rolar a página toda.
+          Collapsed por default via <details>, expande quando preciso. */}
+      <ModeratorLinks
+        eventId={event.id}
+        baseUrl={`${proto}://${host}`}
+        existing={modTokens ?? []}
+      />
       <ModerationQueue
         eventId={event.id}
         initial={subs ?? []}
@@ -122,11 +130,6 @@ export default async function EventModerationPage({
         initialAutoSendOnApprove={
           (event as { auto_send_on_approve?: boolean }).auto_send_on_approve === true
         }
-      />
-      <ModeratorLinks
-        eventId={event.id}
-        baseUrl={`${proto}://${host}`}
-        existing={modTokens ?? []}
       />
     </div>
   );

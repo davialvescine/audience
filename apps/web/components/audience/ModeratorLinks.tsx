@@ -65,15 +65,30 @@ export function ModeratorLinks({ eventId, baseUrl, existing }: Props) {
     (t) => t.revoked_at || new Date(t.expires_at) <= new Date(),
   );
 
+  const hasActive = activeTokens.length > 0;
+
   return (
     <Card>
-      <h3 className="font-display text-lg mb-1">Link de moderador (sem login)</h3>
-      <p className="text-sm text-ink/60 mb-4">
-        Gera um link tokenizado que voluntários podem abrir no celular pra moderar comentários deste
-        evento — sem precisar de cadastro.
-      </p>
+      <details open={hasActive}>
+        <summary className="flex items-center justify-between cursor-pointer list-none gap-3 marker:hidden [&::-webkit-details-marker]:hidden">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-lg mb-0.5 flex items-center gap-2">
+              <span>🔗 Link de moderador externo (sem login)</span>
+              {hasActive ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-success/10 text-success">
+                  {activeTokens.length} ativo{activeTokens.length === 1 ? '' : 's'}
+                </span>
+              ) : null}
+            </h3>
+            <p className="text-sm text-ink/60">
+              Compartilhe um link tokenizado com voluntários — eles moderam sem precisar de
+              cadastro.
+            </p>
+          </div>
+          <span className="text-ink/45 text-lg shrink-0">▾</span>
+        </summary>
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-3">
+        <div className="grid sm:grid-cols-3 gap-3 mb-3 mt-4">
         <div className="sm:col-span-2">
           <label className="text-xs uppercase tracking-wide text-ink/60 mb-1 block">
             Nome do moderador (opcional)
@@ -175,6 +190,7 @@ export function ModeratorLinks({ eventId, baseUrl, existing }: Props) {
           </ul>
         </details>
       ) : null}
+      </details>
     </Card>
   );
 }
