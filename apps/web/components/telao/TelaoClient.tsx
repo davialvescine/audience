@@ -11,6 +11,7 @@ import {
   shadowStyle,
   type TelaoConfig,
 } from '@/lib/telao/config';
+import { resolveTelaoFont } from '@/lib/telao/fonts';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 import { snapToGrid } from './snapToGrid';
@@ -504,7 +505,7 @@ export function TelaoClient({
             left: '50%',
             transform: 'translateX(-50%)',
             color: titleColor ?? '#0A2540',
-            fontFamily: config.fontFamily,
+            fontFamily: resolveTelaoFont(config.fontFamily),
             fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
             fontWeight: 700,
             textAlign: 'center',
@@ -529,7 +530,7 @@ export function TelaoClient({
         ...positionStyle,
         width: `${config.widthPct}%`,
         maxWidth: '100vw',
-        fontFamily: config.fontFamily,
+        fontFamily: resolveTelaoFont(config.fontFamily),
         cursor: preview ? (dragRef.current ? 'grabbing' : 'grab') : undefined,
         userSelect: preview ? 'none' : undefined,
         touchAction: preview ? 'none' : undefined,

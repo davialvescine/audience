@@ -27,6 +27,7 @@ import type {
   TelaoShadow,
   TelaoTransitionMode,
 } from '@/lib/telao/config';
+import { resolveTelaoFont, TELAO_FONTS } from '@/lib/telao/fonts';
 
 type Props = {
   slide: Slide<'comments'>;
@@ -285,16 +286,25 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
           </div>
         </Section>
 
-        <Section title="Forma e estilo">
-          <Slider
-            label="Tamanho da fonte"
-            suffix="px"
-            min={18}
-            max={96}
-            value={config.fontSizePx}
-            onChange={(v) => setConfig((c) => ({ ...c, fontSizePx: v }))}
+        <Section title="Tipografia">
+          <FontPicker
+            value={config.fontFamily}
+            onChange={(v) => setConfig((c) => ({ ...c, fontFamily: v }))}
           />
           <div className="mt-3">
+            <Slider
+              label="Tamanho da fonte"
+              suffix="px"
+              min={18}
+              max={96}
+              value={config.fontSizePx}
+              onChange={(v) => setConfig((c) => ({ ...c, fontSizePx: v }))}
+            />
+          </div>
+        </Section>
+
+        <Section title="Forma e estilo">
+          <div className="mt-0">
             <Slider
               label="Largura do card"
               suffix="%"
@@ -429,6 +439,49 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
             </Button>
           </div>
         </Section>
+      </div>
+    </div>
+  );
+}
+
+function FontPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const resolved = resolveTelaoFont(value);
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-ink/60 mb-2">Fonte</p>
+      <div className="grid grid-cols-2 gap-1.5">
+        {TELAO_FONTS.map((f) => {
+          const selected = resolved === f.value;
+          return (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => onChange(f.value)}
+              className={`h-12 rounded-md border text-left px-3 transition relative ${
+                selected
+                  ? 'border-accent ring-1 ring-accent/40 bg-accent/[0.04]'
+                  : 'border-ink/15 hover:border-accent bg-paper'
+              }`}
+              title={f.label}
+            >
+              <span
+                className="block text-[15px] leading-tight truncate text-ink"
+                style={{ fontFamily: f.value, fontWeight: 600 }}
+              >
+                {f.label}
+              </span>
+              <span className="block text-[9px] uppercase tracking-wider text-ink/45 mt-0.5">
+                {f.category === 'sans' ? 'Sem serifa' : f.category === 'serif' ? 'Serifa' : 'Display'}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

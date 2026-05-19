@@ -8,6 +8,7 @@ import { backgroundStyle, WordCloudDisplay } from '@/components/telao/WordCloudD
 import type { WordcloudConfig } from '@/hooks/useWordcloudActive';
 import type { CommentsConfig, OpenEndedConfig, PollConfig, Slide } from '@/lib/slides/types';
 import { customPositionStyles, positionStyles, shadowStyle } from '@/lib/telao/config';
+import { resolveTelaoFont } from '@/lib/telao/fonts';
 import type { WordEntry } from '@/lib/wordcloud/types';
 
 const SAMPLE_WORDS: WordEntry[] = [
@@ -249,7 +250,7 @@ function CommentsThumb({ config }: { config: CommentsConfig }) {
             left: '50%',
             transform: 'translateX(-50%)',
             color: config.cardText,
-            fontFamily: config.fontFamily,
+            fontFamily: resolveTelaoFont(config.fontFamily),
             fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
             fontWeight: 700,
             textAlign: 'center',
@@ -263,7 +264,7 @@ function CommentsThumb({ config }: { config: CommentsConfig }) {
         style={{
           ...positionStyle,
           width: `${config.widthPct}%`,
-          fontFamily: config.fontFamily,
+          fontFamily: resolveTelaoFont(config.fontFamily),
         }}
       >
         <div
