@@ -1,14 +1,13 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
+import { CommentCard } from '@/components/telao/CommentCard';
 import {
-  animationVariants,
   customPositionStyles,
   DEFAULT_TELAO_CONFIG,
   positionStyles,
-  shadowStyle,
   type TelaoConfig,
 } from '@/lib/telao/config';
 import { resolveTelaoFont } from '@/lib/telao/fonts';
@@ -398,7 +397,6 @@ export function TelaoClient({
     }
   }, [config.maxConcurrent, visible]);
 
-  const variants = animationVariants(config.animation);
   // Altura efetiva do card. Slider controla 100% — sem fallback pra
   // auto. Configs legadas com heightPx=0 caem em 240px (Pequeno).
   const effectiveHeight = config.heightPx > 0 ? config.heightPx : 240;
@@ -582,110 +580,16 @@ export function TelaoClient({
                   }
             }
           >
-            {/* mode="wait" no caso 1-card: força exit terminar antes
-                do enter começar. Sem sobreposição de texto, sem layout
-                shift, sem crossfade — só fade out completo → fade in.
-                Pra maxConcurrent>1 usa "sync" (cards convivem). */}
-            <AnimatePresence mode={stackedSingle ? 'wait' : 'sync'} initial={false}>
+            <AnimatePresence mode="sync" initial={false}>
               {renderList.map((m) => (
-                <motion.div
+                <CommentCard
                   key={m.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    // Em mode=wait, cada metade (out + in) = 0.6s → 1.2s total.
-                    // Em sync, duration completa do crossfade = 1.2s.
-                    duration: stackedSingle ? 0.6 : 1.2,
-                    ease: 'easeInOut',
-                  }}
-            style={{
-              // showCardBackground vive em CommentsConfig (subtype). Cast inline
-              // pra ler de TelaoConfig sem afetar wordcloud/open_ended.
-              background:
-                (config as { showCardBackground?: boolean }).showCardBackground === false
-                  ? 'transparent'
-                  : config.cardBg,
-              color: config.cardText,
-              borderRadius: `${config.borderRadius}px`,
-              boxShadow:
-                (config as { showCardBackground?: boolean }).showCardBackground === false
-                  ? 'none'
-                  : shadowStyle(config.shadow),
-              backdropFilter:
-                (config as { showCardBackground?: boolean }).showCardBackground !== false &&
-                config.backdropBlur > 0
-                  ? `blur(${config.backdropBlur}px)`
-                  : undefined,
-              WebkitBackdropFilter:
-                (config as { showCardBackground?: boolean }).showCardBackground !== false &&
-                config.backdropBlur > 0
-                  ? `blur(${config.backdropBlur}px)`
-                  : undefined,
-              padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
-              fontSize: `${config.fontSizePx}px`,
-              lineHeight: 1.3,
-              // Altura controlada 100% pelo slider — sempre fixa.
-              // Card tem display flex pra centralizar verticalmente.
-              // overflow:hidden evita estourar quando texto é gigante.
-              height: `${effectiveHeight}px`,
-              display: 'flex',
-              flexDirection: 'column' as const,
-              justifyContent: 'center',
-              overflow: 'hidden',
-              // Grid stacking: todos os cards na MESMA célula (1/1).
-              // Como agora altura é fixa, não há layout shift.
-              ...(stackedSingle ? { gridArea: '1 / 1' } : {}),
-            }}
-          >
-            <div
-              style={{
-                fontSize: `${Math.round(config.fontSizePx * 0.55)}px`,
-                opacity: 0.75,
-                fontWeight: 600,
-                letterSpacing: '0.02em',
-                marginBottom: '0.25em',
-              }}
-            >
-              {config.showEventName && eventName ? (
-                <span style={{ marginRight: 8 }}>{eventName} ·</span>
-              ) : null}
-              {config.showAvatar !== false ? m.name : null}
-              {config.showTimestamp ? (
-                <span style={{ marginLeft: 8, opacity: 0.6 }} suppressHydrationWarning>
-                  {new Date(m.created_at).toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              ) : null}
-            </div>
-            <div
-              style={{
-                fontWeight: 500,
-                wordBreak: 'break-word',
-                // Auto-shrink: comentário longo reduz proporcionalmente
-                // pra caber sem estourar o card. Slido/Menti fazem isso.
-                // Curva escalonada:
-                //   ≤80 chars  → 1.00 (tamanho cheio)
-                //   ≤160 chars → 0.82
-                //   ≤280 chars → 0.66
-                //   >280 chars → 0.52
-                fontSize: `${Math.round(
-                  config.fontSizePx *
-                    (m.comment.length <= 80
-                      ? 1
-                      : m.comment.length <= 160
-                        ? 0.82
-                        : m.comment.length <= 280
-                          ? 0.66
-                          : 0.52),
-                )}px`,
-              }}
-            >
-              {m.comment}
-            </div>
-                </motion.div>
+                  m={m}
+                  config={config}
+                  eventName={eventName}
+                  effectiveHeight={effectiveHeight}
+                  stackedSingle={stackedSingle}
+                />
               ))}
             </AnimatePresence>
           </div>
