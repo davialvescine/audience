@@ -296,7 +296,7 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
               label="Tamanho da fonte"
               suffix="px"
               min={18}
-              max={96}
+              max={240}
               value={config.fontSizePx}
               onChange={(v) => setConfig((c) => ({ ...c, fontSizePx: v }))}
             />
