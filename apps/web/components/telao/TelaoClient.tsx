@@ -537,30 +537,26 @@ export function TelaoClient({
         touchAction: preview ? 'none' : undefined,
       }}
     >
-      {/* popLayout = card que está saindo é tirado do fluxo de layout
-          imediatamente quando começa o exit. Sem isso, o card que sai
-          continua ocupando espaço durante a animação (opacity 1 → 0),
-          e o próximo card monta logo abaixo. Quando o card velho some
-          do DOM, o novo "salta" pra cima preencher o espaço — esse era
-          o efeito jumpy que o usuário viu. Com popLayout, o card que sai
-          some do layout flow no início do exit, então o novo já mounta
-          na posição final. */}
-      <AnimatePresence mode="popLayout">
+      {/* ANIMAÇÃO SIMPLIFICADA — cross-fade puro pra eliminar o "pulo".
+          Antes combinava slide-up/down/left/right + scale + bounce com
+          layout="position" + popLayout. Y deltas no enter+exit competiam
+          com a remoção do DOM, gerando saltos visíveis.
+
+          Agora: fade puro em ambos lados (ignora config.animation por
+          enquanto pra eliminar a fonte do bug). popLayout retira o card
+          que sai do flow imediatamente, o novo já mounta na posição
+          final. Sem layout="position" porque com keys diferentes ele
+          não tenta animar entre velho/novo. */}
+      <AnimatePresence mode="popLayout" initial={false}>
         {renderList.map((m) => (
           <motion.div
-            // Key estável — IDENTIDADE só pela mensagem. Antes incluía
-            // config.fontSizePx/cardBg/etc, então qualquer autosave do
-            // operador trocava o key → remount → re-animava entry/exit.
             key={m.id}
-            layout
-            initial={variants.initial}
-            animate={variants.animate}
-            exit={variants.exit}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{
-              duration: 0.6,
+              duration: 0.5,
               ease: [0.22, 1, 0.36, 1],
-              layout: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-              opacity: { duration: 0.5 },
             }}
             className="mb-3"
             style={{
