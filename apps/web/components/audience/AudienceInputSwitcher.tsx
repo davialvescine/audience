@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { OpenEndedInput } from '@/components/audience/OpenEndedInput';
 import { PollInput } from '@/components/audience/PollInput';
@@ -78,6 +79,20 @@ export function AudienceInputSwitcher({
     initialActiveConfig: ssrInitialConfig,
     channel: slidesChannel,
   });
+
+  // Quando o operador troca o slide ativo (ex: comments → wordcloud), o
+  // input troca via state interno aqui. Mas o PublicEventShell (Server
+  // Component) tem heroSubtitle e footer text que dependem do TIPO do
+  // slide — esses só atualizam com router.refresh() porque vêm do SSR.
+  // router.refresh() re-executa o RSC sem recarregar a página inteira.
+  const router = useRouter();
+  const lastSlideRef = useRef<string | null>(initialActiveSlideId);
+  useEffect(() => {
+    if (activeSlideId !== lastSlideRef.current) {
+      lastSlideRef.current = activeSlideId;
+      router.refresh();
+    }
+  }, [activeSlideId, router]);
 
   const active = activeSlideId != null;
   const wcConfig = activeType === 'wordcloud' ? (slideConfig as WordcloudConfig | null) : null;
