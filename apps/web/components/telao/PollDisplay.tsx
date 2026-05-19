@@ -204,7 +204,7 @@ export function PollDisplay({
         >
           <p className="text-4xl font-semibold text-ink/70">Aponte a câmera</p>
           <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
-            <QRCodeSVG value={joinUrl} size={520} level="M" />
+            <QRCodeSVG value={joinUrl} size={760} level="M" />
           </div>
           <p className="text-3xl font-semibold text-ink">{joinHost}</p>
         </div>

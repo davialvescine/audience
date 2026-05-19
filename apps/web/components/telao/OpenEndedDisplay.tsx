@@ -104,7 +104,7 @@ export function OpenEndedDisplay({
               <p className="text-2xl text-ink/55">e participe agora</p>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
-              <QRCodeSVG value={joinUrl} size={520} level="M" />
+              <QRCodeSVG value={joinUrl} size={760} level="M" />
             </div>
             <div className="text-center">
               <p className="text-3xl font-semibold text-ink">{joinHost}</p>
