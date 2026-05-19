@@ -564,7 +564,11 @@ export function TelaoClient({
                 : { display: 'flex', flexDirection: 'column', gap: '12px' }
             }
           >
-            <AnimatePresence mode="sync" initial={false}>
+            {/* mode="wait" no caso 1-card: força exit terminar antes
+                do enter começar. Sem sobreposição de texto, sem layout
+                shift, sem crossfade — só fade out completo → fade in.
+                Pra maxConcurrent>1 usa "sync" (cards convivem). */}
+            <AnimatePresence mode={stackedSingle ? 'wait' : 'sync'} initial={false}>
               {renderList.map((m) => (
                 <motion.div
                   key={m.id}
@@ -572,7 +576,9 @@ export function TelaoClient({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{
-                    duration: 1.2,
+                    // Em mode=wait, cada metade (out + in) = 0.6s → 1.2s total.
+                    // Em sync, duration completa do crossfade = 1.2s.
+                    duration: stackedSingle ? 0.6 : 1.2,
                     ease: 'easeInOut',
                   }}
             style={{
