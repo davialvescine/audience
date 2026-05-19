@@ -130,3 +130,43 @@ export async function resetAllEventSlides(
     },
   };
 }
+
+/**
+ * Reset TOTAL do evento — apaga TUDO gerado pela audiência: comentários,
+ * palavras, votos, respostas abertas. Owner-only.
+ */
+export async function resetEventAll(eventId: string): Promise<
+  Result<{
+    submissions_deleted: number;
+    words_deleted: number;
+    votes_deleted: number;
+    responses_deleted: number;
+  }>
+> {
+  const sb = await getSupabaseServerClient();
+  const { data, error } = await (sb.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{
+    data: {
+      submissions_deleted: number;
+      words_deleted: number;
+      votes_deleted: number;
+      responses_deleted: number;
+    } | null;
+    error: { message: string } | null;
+  }>)('reset_event_all', { p_event_id: eventId });
+  if (error) return mapError(error.message);
+  revalidatePath('/admin/events/[slug]', 'page');
+  revalidatePath('/telao/[slug]', 'page');
+  return {
+    ok: true,
+    data:
+      data ?? {
+        submissions_deleted: 0,
+        words_deleted: 0,
+        votes_deleted: 0,
+        responses_deleted: 0,
+      },
+  };
+}

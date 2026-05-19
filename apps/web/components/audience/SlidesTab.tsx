@@ -19,7 +19,7 @@ import {
   createSlide,
   deleteSlide,
   reorderSlides,
-  resetAllEventSlides,
+  resetEventAll,
   setActiveSlide,
   updateSlide,
 } from '@/server-actions/slides';
@@ -316,33 +316,36 @@ export function SlidesTab({
           <button
             type="button"
             onClick={async () => {
-              if (
-                !window.confirm(
-                  'Apaga TODAS as palavras, votos e respostas de teste deste evento.\n\nIsto NÃO mexe nos comentários moderados nem nos slides em si — só limpa o que a audiência enviou durante testes.\n\nQuer continuar?',
-                )
-              )
-                return;
-              const r = await resetAllEventSlides(eventId);
+              const c1 = window.confirm(
+                'Zerar TUDO do evento:\n• comentários (todos)\n• palavras da nuvem\n• votos das enquetes\n• respostas abertas\n\nNÃO mexe nos slides nem nas configs. Não pode ser desfeito.\n\nContinuar?',
+              );
+              if (!c1) return;
+              const c2 = window.confirm('Tem certeza? Última chance.');
+              if (!c2) return;
+              const r = await resetEventAll(eventId);
               if (!r.ok) {
                 window.alert(`Erro ao resetar: ${r.error}`);
                 return;
               }
               const total =
-                r.data.words_deleted + r.data.votes_deleted + r.data.responses_deleted;
+                r.data.submissions_deleted +
+                r.data.words_deleted +
+                r.data.votes_deleted +
+                r.data.responses_deleted;
               window.alert(
                 total === 0
-                  ? '✓ Nada pra resetar — já estava vazio.'
-                  : `✓ Reset feito: ${r.data.words_deleted} palavras, ${r.data.votes_deleted} votos, ${r.data.responses_deleted} respostas apagadas.`,
+                  ? '✓ Nada pra zerar — já estava vazio.'
+                  : `✓ Zerado:\n• ${r.data.submissions_deleted} comentário(s)\n• ${r.data.words_deleted} palavra(s)\n• ${r.data.votes_deleted} voto(s)\n• ${r.data.responses_deleted} resposta(s) aberta(s)`,
               );
             }}
             disabled={slides.length === 0}
             className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm text-ink/65 hover:text-danger hover:bg-danger/[0.06] transition disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Apaga palavras/votos/respostas de teste — não mexe nos slides nem nos comentários moderados"
+            title="Apaga TUDO gerado pela audiência (comentários, palavras, votos, respostas). Não toca nos slides nem nas configs."
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" />
             </svg>
-            <span>Resetar dados de teste</span>
+            <span>Zerar tudo</span>
           </button>
           <button
             type="button"
