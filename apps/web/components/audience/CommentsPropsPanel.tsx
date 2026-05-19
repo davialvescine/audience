@@ -309,7 +309,7 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
               label="Largura do card"
               suffix="%"
               min={30}
-              max={100}
+              max={200}
               value={config.widthPct}
               onChange={(v) => setConfig((c) => ({ ...c, widthPct: v }))}
             />

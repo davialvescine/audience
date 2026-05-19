@@ -529,33 +529,38 @@ export function TelaoClient({
       style={{
         ...positionStyle,
         width: `${config.widthPct}%`,
-        maxWidth: '100vw',
+        // Antes era 100vw e cortava card quando widthPct > 100 no admin.
+        // Agora deixa crescer livre — slider já vai até 200%.
         fontFamily: resolveTelaoFont(config.fontFamily),
         cursor: preview ? (dragRef.current ? 'grabbing' : 'grab') : undefined,
         userSelect: preview ? 'none' : undefined,
         touchAction: preview ? 'none' : undefined,
       }}
     >
-      <AnimatePresence>
+      {/* popLayout = card que está saindo é tirado do fluxo de layout
+          imediatamente quando começa o exit. Sem isso, o card que sai
+          continua ocupando espaço durante a animação (opacity 1 → 0),
+          e o próximo card monta logo abaixo. Quando o card velho some
+          do DOM, o novo "salta" pra cima preencher o espaço — esse era
+          o efeito jumpy que o usuário viu. Com popLayout, o card que sai
+          some do layout flow no início do exit, então o novo já mounta
+          na posição final. */}
+      <AnimatePresence mode="popLayout">
         {renderList.map((m) => (
           <motion.div
             // Key estável — IDENTIDADE só pela mensagem. Antes incluía
             // config.fontSizePx/cardBg/etc, então qualquer autosave do
-            // operador trocava o key → remount → re-animava entry/exit
-            // → parecia "saltando". Style muda via re-render normal,
-            // sem remount.
+            // operador trocava o key → remount → re-animava entry/exit.
             key={m.id}
-            layout="position"
+            layout
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
             transition={{
-              duration: 0.55,
+              duration: 0.6,
               ease: [0.22, 1, 0.36, 1],
-              // Layout (movimento entre cards) usa transition mais suave
-              // pra não competir com fade/slide do entry.
-              layout: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-              opacity: { duration: 0.4 },
+              layout: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+              opacity: { duration: 0.5 },
             }}
             className="mb-3"
             style={{
