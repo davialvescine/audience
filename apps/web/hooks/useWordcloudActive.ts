@@ -11,7 +11,11 @@ export type WordcloudBackground =
 
 export type WordcloudConfig = {
   question: string;
-  maxWordsPerSubmission: 1 | 2 | 3;
+  /** Quantas palavras o participante pode enviar por slide.
+   *  - 1..5: número fixo de campos visíveis na audiência.
+   *  - 'unlimited': mostra 3 campos iniciais + audiência pode enviar
+   *    quantas quiser repetindo o envio. */
+  maxWordsPerSubmission: 1 | 2 | 3 | 4 | 5 | 'unlimited';
   filterStopwords: boolean;
   filterProfanity: boolean;
   palette: string[];

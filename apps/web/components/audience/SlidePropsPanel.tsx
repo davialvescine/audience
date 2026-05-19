@@ -161,20 +161,31 @@ export function SlidePropsPanel({ slide, onChange, onLiveChange, onApplyToAll }:
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm text-ink">Palavras por envio</span>
           <select
-            value={config.maxWordsPerSubmission}
-            onChange={(e) =>
+            value={String(config.maxWordsPerSubmission ?? 1)}
+            onChange={(e) => {
+              const v = e.target.value;
               setConfig((c) => ({
                 ...c,
-                maxWordsPerSubmission: Number(e.target.value) as 1 | 2 | 3,
-              }))
-            }
+                maxWordsPerSubmission:
+                  v === 'unlimited'
+                    ? ('unlimited' as const)
+                    : (Number(v) as 1 | 2 | 3 | 4 | 5),
+              }));
+            }}
             className="h-9 rounded-md border border-ink/20 bg-paper text-sm px-2"
           >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="unlimited">Ilimitado</option>
           </select>
         </div>
+        <p className="text-[11px] text-ink/55 mt-2">
+          Ilimitado mostra 3 campos por envio — a audiência pode enviar quantas quiser
+          repetindo o formulário.
+        </p>
       </Section>
 
       <Section title="Mostrar respostas" live>

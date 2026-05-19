@@ -25,22 +25,27 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function WordCloudInput({ slug, config }: Props) {
-  const maxWords = config.maxWordsPerSubmission ?? 1;
+  const rawMax = config.maxWordsPerSubmission;
+  const isUnlimited = rawMax === 'unlimited';
+  // Quando ilimitado: 3 campos iniciais + audiência reseta o form e
+  // envia quantas quiser. Quando número fixo: usa o número direto.
+  const visibleFields = isUnlimited ? 3 : ((rawMax as number | undefined) ?? 1);
   const [pending, start] = useTransition();
   const [outcome, setOutcome] = useState<Outcome>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [words, setWords] = useState<string[]>(() => Array(maxWords).fill(''));
+  const [words, setWords] = useState<string[]>(() => Array(visibleFields).fill(''));
 
-  // Sincroniza tamanho do array com maxWords quando operador muda 1↔2↔3
-  // em tempo real. Preserva o que o user já digitou nos índices comuns.
+  // Sincroniza tamanho do array com visibleFields quando operador muda
+  // a config em tempo real. Preserva o que o user digitou nos índices comuns.
   useEffect(() => {
     setWords((prev) => {
-      if (prev.length === maxWords) return prev;
-      const next = Array(maxWords).fill('');
-      for (let i = 0; i < Math.min(prev.length, maxWords); i += 1) next[i] = prev[i] ?? '';
+      if (prev.length === visibleFields) return prev;
+      const next = Array(visibleFields).fill('');
+      for (let i = 0; i < Math.min(prev.length, visibleFields); i += 1)
+        next[i] = prev[i] ?? '';
       return next;
     });
-  }, [maxWords]);
+  }, [visibleFields]);
 
   if (outcome === 'success') {
     return (
@@ -92,14 +97,14 @@ export function WordCloudInput({ slug, config }: Props) {
           Sua palavra entrou na nuvem. Acompanhe o telão!
         </motion.p>
         <Button
-          variant="ghost"
+          variant={isUnlimited ? 'accent' : 'ghost'}
           onClick={() => {
             setOutcome('idle');
-            setWords(Array(maxWords).fill(''));
+            setWords(Array(visibleFields).fill(''));
             setErrorMsg(null);
           }}
         >
-          Mandar outra
+          {isUnlimited ? '+ Mandar mais palavras' : 'Mandar outra'}
         </Button>
       </motion.div>
     );
@@ -129,7 +134,7 @@ export function WordCloudInput({ slug, config }: Props) {
         return;
       }
       setOutcome('success');
-      setWords(Array(maxWords).fill(''));
+      setWords(Array(visibleFields).fill(''));
     });
   };
 
@@ -145,10 +150,10 @@ export function WordCloudInput({ slug, config }: Props) {
       {words.map((w, i) => (
         <Input
           key={i}
-          label={maxWords === 1 ? 'Sua palavra' : `Palavra ${i + 1}`}
+          label={visibleFields === 1 ? 'Sua palavra' : `Palavra ${i + 1}`}
           id={`word-${i}`}
           required={i === 0}
-          maxLength={30}
+          maxLength={25}
           autoComplete="off"
           value={w}
           onChange={(e) =>
@@ -179,8 +184,13 @@ export function WordCloudInput({ slug, config }: Props) {
         disabled={pending || !hasAtLeastOne}
         className="w-full text-lg h-14"
       >
-        {maxWords > 1 ? 'Enviar palavras' : 'Enviar palavra'}
+        {visibleFields > 1 ? 'Enviar palavras' : 'Enviar palavra'}
       </Button>
+      {isUnlimited ? (
+        <p className="text-[11px] text-ink/55 text-center">
+          Envio ilimitado — após mandar, você pode enviar mais.
+        </p>
+      ) : null}
     </form>
   );
 }
