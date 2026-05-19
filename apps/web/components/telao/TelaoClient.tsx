@@ -542,29 +542,29 @@ export function TelaoClient({
         touchAction: preview ? 'none' : undefined,
       }}
     >
-      {/* ANIMAÇÃO — cross-fade puro com cards EMPILHADOS via absolute
-          quando maxConcurrent=1. Por que: popLayout faz o exit virar
-          position absolute, mas o container pai colapsa de altura por
-          frames até o enter expandir — daí o "salto" visual.
+      {/* ANIMAÇÃO — CSS Grid stack pra eliminar QUALQUER salto.
+          Estratégia: cada card é uma célula do grid, MAS todos compartilham
+          a MESMA grid-area (1/1). Ou seja, ficam empilhados perfeitamente
+          no mesmo ponto SEM precisar de position absolute.
 
-          Solução: quando maxConcurrent=1, ambos cards (saindo + entrando)
-          ficam absolute no mesmo ponto. O pai mantém altura controlada
-          via min-height. Cross-fade limpo, zero salto.
+          Vantagens vs position absolute:
+          - Altura do grid é a do MAIOR card visível (auto-fit) — não há
+            colapso quando um sai.
+          - Card que entra herda EXATAMENTE a mesma posição do que sai.
+          - Funciona com cards de tamanhos diferentes sem layout shift.
 
-          Quando maxConcurrent>1, mantemos flow normal pra cards
-          empilharem (mb-3). Nesse caso popLayout funciona melhor. */}
+          Pra maxConcurrent>1 usa flow normal com gap. */}
       {(() => {
         const stackedSingle = config.maxConcurrent <= 1;
         return (
           <div
-            style={{
-              position: 'relative',
-              minHeight: stackedSingle
-                ? `${Math.round(config.fontSizePx * 2.5)}px`
-                : undefined,
-            }}
+            style={
+              stackedSingle
+                ? { display: 'grid', gridTemplateColumns: '1fr' }
+                : { display: 'flex', flexDirection: 'column', gap: '12px' }
+            }
           >
-            <AnimatePresence mode={stackedSingle ? 'sync' : 'popLayout'} initial={false}>
+            <AnimatePresence mode="sync" initial={false}>
               {renderList.map((m) => (
                 <motion.div
                   key={m.id}
@@ -572,12 +572,9 @@ export function TelaoClient({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{
-                    // Fade bem suave (≈1.2s) com easeInOut — entrada/saída
-                    // longas pra audiência. Stagger evita "flash" do crossfade.
                     duration: 1.2,
                     ease: 'easeInOut',
                   }}
-                  className={stackedSingle ? '' : 'mb-3'}
             style={{
               // showCardBackground vive em CommentsConfig (subtype). Cast inline
               // pra ler de TelaoConfig sem afetar wordcloud/open_ended.
@@ -610,11 +607,10 @@ export function TelaoClient({
               display: config.heightPx > 0 ? 'flex' : undefined,
               flexDirection: config.heightPx > 0 ? 'column' : undefined,
               justifyContent: config.heightPx > 0 ? 'center' : undefined,
-              // Quando empilhado (maxConcurrent=1), todo card é position
-              // absolute no mesmo ponto pra cross-fade limpo sem salto.
-              ...(stackedSingle
-                ? { position: 'absolute', left: 0, right: 0, top: 0 }
-                : {}),
+              // Grid stacking: todos os cards ficam na MESMA célula
+              // (1/1), empilhados no mesmo ponto. Altura do grid é
+              // a do maior card visível — sem layout shift.
+              ...(stackedSingle ? { gridArea: '1 / 1' } : {}),
             }}
           >
             <div
