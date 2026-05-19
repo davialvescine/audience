@@ -502,6 +502,7 @@ function CommentsCanvas({
         titleColor={cfg.titleColor}
         titleFontFamily={cfg.titleFontFamily}
         titleShadow={cfg.titleShadow}
+        titleSizePx={cfg.titleSizePx}
         stageRef={stageRef}
         qrSidebarActive={qrOn && !qrFullscreenOn && !!joinUrl}
         onPositionChange={({ posXPct, posYPct }) => {

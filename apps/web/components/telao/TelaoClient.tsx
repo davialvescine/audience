@@ -43,6 +43,8 @@ type Props = {
   titleFontFamily?: string | undefined;
   /** Sombra do título — útil pra contrastar em fundos coloridos. */
   titleShadow?: 'none' | 'subtle' | 'medium' | 'strong' | undefined;
+  /** Tamanho da fonte do título em px. Undefined = config.fontSizePx * 1.4. */
+  titleSizePx?: number | undefined;
   /** Chamado no pointerup do drag em preview mode. Alternativa ao postMessage
    *  pra quando o TelaoClient está no mesmo doc (ex: SlideCanvas). */
   onPositionChange?: ((pos: { posXPct: number; posYPct: number }) => void) | undefined;
@@ -67,6 +69,7 @@ export function TelaoClient({
   titleColor,
   titleFontFamily,
   titleShadow,
+  titleSizePx,
   onPositionChange,
   stageRef,
   qrSidebarActive = false,
@@ -511,14 +514,19 @@ export function TelaoClient({
             transform: 'translateX(-50%)',
             color: titleColor ?? '#0A2540',
             fontFamily: resolveTelaoFont(titleFontFamily ?? config.fontFamily),
-            fontSize: `${Math.round(config.fontSizePx * 1.4)}px`,
+            fontSize: `${titleSizePx ?? Math.round(config.fontSizePx * 1.4)}px`,
             fontWeight: 700,
             textAlign: 'center',
             margin: 0,
             padding: 0,
             zIndex: 5,
-            maxWidth: '90%',
-            wordBreak: 'break-word',
+            // 96% pra cobrir quase toda largura do stage (1920px) e
+            // diminuir chance de quebrar em 2 linhas. whiteSpace nowrap
+            // + ellipsis quando passa do limite (preferível a 2 linhas).
+            maxWidth: '96%',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             textShadow:
               titleShadow === 'strong'
                 ? '0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.45)'

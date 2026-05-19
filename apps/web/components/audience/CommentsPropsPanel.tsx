@@ -182,6 +182,14 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
                   onChange={(v) => setConfig((c) => ({ ...c, titleFontFamily: v }))}
                 />
               </div>
+              <Slider
+                label="Tamanho do título"
+                suffix="px"
+                min={24}
+                max={180}
+                value={config.titleSizePx ?? Math.round(config.fontSizePx * 1.4)}
+                onChange={(v) => setConfig((c) => ({ ...c, titleSizePx: v }))}
+              />
               <ColorInput
                 label="Cor do título"
                 value={config.titleColor ?? '#0A2540'}

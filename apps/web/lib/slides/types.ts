@@ -62,6 +62,9 @@ export type CommentsConfig = TelaoConfig & {
   titleFontFamily?: string;
   /** Sombra do título — útil pra dar destaque em fundos coloridos. */
   titleShadow?: 'none' | 'subtle' | 'medium' | 'strong';
+  /** Tamanho da fonte do título em px. Quando undefined, calcula
+   *  como fontSizePx * 1.4 (legado). */
+  titleSizePx?: number;
   background?: WordcloudBackground;
   /** Quando false, o card flutua com texto puro (sem caixa de fundo). Útil
    *  pra overlay no OBS onde só os textos devem aparecer sobre a apresentação. */

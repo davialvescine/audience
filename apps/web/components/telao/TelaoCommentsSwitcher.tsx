@@ -148,6 +148,7 @@ export function TelaoCommentsSwitcher({
         titleColor={merged.titleColor}
         titleFontFamily={merged.titleFontFamily}
         titleShadow={merged.titleShadow}
+        titleSizePx={merged.titleSizePx}
         qrSidebarActive={showQr && !qrFullscreen}
       />
       {qrFullscreen && joinUrl ? (
