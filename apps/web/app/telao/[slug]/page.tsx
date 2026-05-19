@@ -215,6 +215,7 @@ export default async function TelaoPage({
         intervalSeconds={ev?.dispatch_interval_seconds ?? 3}
         showBackground={showWordcloudBackground}
         joinUrl={showWordcloudBackground ? joinUrl : undefined}
+        isOperator={isOperator}
       />
     );
   } else if (activeSlideType === 'poll' && activePollConfig && activeSlideId) {

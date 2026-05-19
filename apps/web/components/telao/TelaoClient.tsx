@@ -569,8 +569,10 @@ export function TelaoClient({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{
-              duration: 0.5,
-              ease: [0.22, 1, 0.36, 1],
+              // Fade bem suave (≈1.2s) com easeInOut clássico — entrada
+              // e saída longas pra não ser agressivo na audiência.
+              duration: 1.2,
+              ease: 'easeInOut',
             }}
             className="mb-3"
             style={{

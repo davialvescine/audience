@@ -26,6 +26,9 @@ type Props = {
   showBackground: boolean;
   joinUrl?: string | undefined;
   isOperator?: boolean | undefined;
+  /** Callback opcional pra reportar o total de votos ao parent — usado
+   *  pela StatsBadge do TelaoPollSwitcher. */
+  onTotalChange?: ((total: number) => void) | undefined;
 };
 
 export function PollDisplay({
@@ -37,9 +40,14 @@ export function PollDisplay({
   showBackground,
   joinUrl,
   isOperator: _isOperator,
+  onTotalChange,
 }: Props) {
   void _isOperator;
   const [counts, setCounts] = useState<number[]>(initialCounts);
+
+  useEffect(() => {
+    onTotalChange?.(counts.reduce((a, b) => a + b, 0));
+  }, [counts, onTotalChange]);
 
   // Realtime: escuta INSERT/UPDATE em poll_votes desse slide.
   useEffect(() => {

@@ -3,9 +3,12 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { FullscreenButton } from '@/components/telao/FullscreenButton';
+import { StatsBadge } from '@/components/telao/StatsBadge';
 import { TelaoClient } from '@/components/telao/TelaoClient';
 import { backgroundStyle } from '@/components/telao/WordCloudDisplay';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { getSupabaseRealtimeClient } from '@/lib/supabase/browser';
 import { DEFAULT_COMMENTS_CONFIG, type CommentsConfig } from '@/lib/slides/types';
 
@@ -25,6 +28,7 @@ type Props = {
   /** URL pública pra audiência escanear via QR. Quando undefined ou em modo
    *  browser_source (sem fundo), o QR não é exibido. */
   joinUrl?: string | undefined;
+  isOperator?: boolean | undefined;
 };
 
 /**
@@ -41,15 +45,24 @@ export function TelaoCommentsSwitcher({
   intervalSeconds,
   showBackground,
   joinUrl,
+  isOperator,
 }: Props) {
   const [channel, setChannel] = useState<ChannelLike | undefined>(undefined);
+  type PresenceChannel = NonNullable<Parameters<typeof useOnlinePresence>[0]['channel']>;
+  const [presenceChannel, setPresenceChannel] = useState<PresenceChannel | undefined>(undefined);
 
   useEffect(() => {
     const rt = getSupabaseRealtimeClient();
-    const ch = rt.channel(`telao:${eventId}:cmts:${Date.now()}`) as unknown as ChannelLike;
+    const ts = Date.now();
+    const ch = rt.channel(`telao:${eventId}:cmts:${ts}`) as unknown as ChannelLike;
+    const pres = rt.channel(`presence:event:${eventId}`, {
+      config: { presence: { key: '' } },
+    }) as unknown as PresenceChannel;
     setChannel(ch);
+    setPresenceChannel(pres);
     return () => {
       ch?.unsubscribe();
+      pres?.unsubscribe();
     };
   }, [eventId]);
 
@@ -131,6 +144,10 @@ export function TelaoCommentsSwitcher({
           ) : null}
         </div>
       ) : null}
+      {showBackground && presenceChannel ? (
+        <StatsBadge presenceChannel={presenceChannel} color={merged.cardText} />
+      ) : null}
+      {showBackground && isOperator ? <FullscreenButton /> : null}
       {showQr && !qrFullscreen && joinUrl ? (
         <div
           className="absolute right-12 top-1/2 -translate-y-1/2 z-20 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl"
