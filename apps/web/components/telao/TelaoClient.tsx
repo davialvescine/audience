@@ -637,14 +637,21 @@ export function TelaoClient({
                   ? `blur(${config.backdropBlur}px)`
                   : undefined,
               padding: `${Math.round(config.fontSizePx * 0.6)}px ${Math.round(config.fontSizePx * 0.85)}px`,
-              // fontSize do CARD = base. Comentário (linha 630) tem scale
-              // por char count pra texto longo não estourar a tela.
               fontSize: `${config.fontSizePx}px`,
               lineHeight: 1.3,
-              minHeight: config.heightPx > 0 ? `${config.heightPx}px` : undefined,
-              display: config.heightPx > 0 ? 'flex' : undefined,
-              flexDirection: config.heightPx > 0 ? 'column' : undefined,
-              justifyContent: config.heightPx > 0 ? 'center' : undefined,
+              // heightPx > 0 = altura FIXA (não só mínima). Texto é
+              // centralizado verticalmente via flex. Antes era minHeight,
+              // mas o usuário queria controle total — agora o slider
+              // determina exatamente a altura do card.
+              ...(config.heightPx > 0
+                ? {
+                    height: `${config.heightPx}px`,
+                    display: 'flex',
+                    flexDirection: 'column' as const,
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }
+                : {}),
               // Grid stacking: todos os cards ficam na MESMA célula
               // (1/1), empilhados no mesmo ponto. Altura do grid é
               // a do maior card visível — sem layout shift.

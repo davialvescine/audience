@@ -236,14 +236,6 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <input
-              type="color"
-              aria-label="Cor sólida"
-              value={bg.type === 'color' ? bg.value : '#FFFFFF'}
-              onChange={(e) => setBg({ type: 'color', value: e.target.value })}
-              className="h-9 w-9 rounded cursor-pointer"
-              title="Cor sólida"
-            />
             <BgImageUploader
               eventId={slide.event_id}
               current={bg.type === 'image' ? bg.url : null}
@@ -252,6 +244,16 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
               }
               onClear={() => setBg({ type: 'none' })}
               label={bg.type === 'image' ? 'Trocar imagem' : 'Subir imagem 16:9'}
+            />
+          </div>
+
+          {/* Cor sólida do fundo do telão com hex code + opacidade.
+              Quando bg.type !== 'color', usa fallback transparente. */}
+          <div className="mt-3">
+            <ColorWithOpacity
+              label="Cor sólida do fundo"
+              value={bg.type === 'color' ? bg.value : 'rgba(255, 255, 255, 1)'}
+              onChange={(v) => setBg({ type: 'color', value: v })}
             />
           </div>
         </Section>
@@ -301,15 +303,32 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
           </div>
           <div className="mt-3">
             <Slider
-              label="Altura do card (0 = automática)"
-              suffix="px"
+              label="Altura do card"
+              suffix={config.heightPx === 0 ? ' (auto)' : 'px'}
               min={0}
-              max={800}
+              max={1080}
               value={config.heightPx}
               onChange={(v) => setConfig((c) => ({ ...c, heightPx: v }))}
             />
-            <p className="text-[11px] text-ink/55 mt-1">
-              0 deixa o card crescer com o texto. Maior que 0 fixa a altura mínima — texto fica
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, heightPx: 0 }))}
+                className="text-[11px] text-primary hover:underline"
+              >
+                Auto (acompanha texto)
+              </button>
+              <span className="text-ink/30">·</span>
+              <button
+                type="button"
+                onClick={() => setConfig((c) => ({ ...c, heightPx: 1080 }))}
+                className="text-[11px] text-primary hover:underline"
+              >
+                Tela cheia (1080px)
+              </button>
+            </div>
+            <p className="text-[11px] text-ink/55 mt-1.5">
+              0 = altura automática (cresce com o texto). Maior que 0 = altura fixa, texto
               centralizado verticalmente.
             </p>
           </div>
