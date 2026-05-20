@@ -95,22 +95,32 @@ export function OpenEndedDisplay({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
-            style={{ background: '#FFFFFF' }}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={(backgroundStyle(config.background ?? { type: 'none' }) ?? { background: '#FFFFFF' }) as any}
           >
             <div className="text-center">
-              <p className="text-4xl font-semibold text-ink/70 mb-2">
+              <p
+                className="text-4xl font-semibold mb-2"
+                style={{ color: lightBg || config.background?.type === 'none' || !config.background ? 'rgba(10,37,64,0.7)' : 'rgba(255,255,255,0.85)' }}
+              >
                 Aponte a câmera do celular
               </p>
-              <p className="text-2xl text-ink/55">e participe agora</p>
+              <p
+                className="text-2xl"
+                style={{ color: lightBg || config.background?.type === 'none' || !config.background ? 'rgba(10,37,64,0.55)' : 'rgba(255,255,255,0.65)' }}
+              >e participe agora</p>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
               <QRCodeSVG value={joinUrl} size={760} level="M" />
             </div>
             <div className="text-center">
-              <p className="text-3xl font-semibold text-ink">{joinHost}</p>
               <p
-                className="text-6xl font-bold tracking-wider mt-2 tabular-nums text-ink"
-                style={{ letterSpacing: '0.08em' }}
+                className="text-3xl font-semibold"
+                style={{ color: lightBg || config.background?.type === 'none' || !config.background ? '#0A2540' : '#FFFFFF' }}
+              >{joinHost}</p>
+              <p
+                className="text-6xl font-bold tracking-wider mt-2 tabular-nums"
+                style={{ letterSpacing: '0.08em', color: lightBg || config.background?.type === 'none' || !config.background ? '#0A2540' : '#FFFFFF' }}
               >
                 {joinCode}
               </p>

@@ -3,7 +3,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { backgroundStyle } from '@/components/telao/WordCloudDisplay';
+import { backgroundStyle, isBackgroundLight } from '@/components/telao/WordCloudDisplay';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import type { PollConfig } from '@/lib/slides/types';
 
@@ -197,18 +197,26 @@ export function PollDisplay({
         </div>
       ) : null}
 
-      {qrFullscreen && joinUrl ? (
-        <div
-          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
-          style={{ background: '#FFFFFF' }}
-        >
-          <p className="text-4xl font-semibold text-ink/70">Aponte a câmera</p>
-          <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
-            <QRCodeSVG value={joinUrl} size={760} level="M" />
+      {qrFullscreen && joinUrl ? (() => {
+        const overlayBg = backgroundStyle(config.background ?? { type: 'none' }) ?? {
+          background: '#FFFFFF',
+        };
+        const dark = !isBackgroundLight(config.background) && config.background?.type !== 'none' && !!config.background;
+        const textColorMain = dark ? 'rgba(255,255,255,0.85)' : 'rgba(10,37,64,0.7)';
+        const textColorHost = dark ? '#FFFFFF' : '#0A2540';
+        return (
+          <div
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
+            style={overlayBg}
+          >
+            <p className="text-4xl font-semibold" style={{ color: textColorMain }}>Aponte a câmera</p>
+            <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
+              <QRCodeSVG value={joinUrl} size={760} level="M" />
+            </div>
+            <p className="text-3xl font-semibold" style={{ color: textColorHost }}>{joinHost}</p>
           </div>
-          <p className="text-3xl font-semibold text-ink">{joinHost}</p>
-        </div>
-      ) : null}
+        );
+      })() : null}
       {qrEnabled && !qrFullscreen && joinUrl ? (
         <div className="absolute right-12 bottom-12 z-20 rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl bg-white">
           <div className="bg-white p-2 rounded-lg">

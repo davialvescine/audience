@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FullscreenButton } from '@/components/telao/FullscreenButton';
 import { StatsBadge } from '@/components/telao/StatsBadge';
 import { TelaoClient } from '@/components/telao/TelaoClient';
-import { backgroundStyle } from '@/components/telao/WordCloudDisplay';
+import { backgroundStyle, isBackgroundLight } from '@/components/telao/WordCloudDisplay';
 import { useActiveSlideConfig } from '@/hooks/useActiveSlideConfig';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { getSupabaseBrowserClient, getSupabaseRealtimeClient } from '@/lib/supabase/browser';
@@ -151,25 +151,38 @@ export function TelaoCommentsSwitcher({
         titleSizePx={merged.titleSizePx}
         qrSidebarActive={showQr && !qrFullscreen}
       />
-      {qrFullscreen && joinUrl ? (
-        <div
-          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
-          style={{ background: '#FFFFFF' }}
-        >
-          <div className="text-center">
-            <p className="text-4xl font-semibold text-ink/70 mb-2">
-              Aponte a câmera do celular
-            </p>
-            <p className="text-2xl text-ink/55">e participe agora</p>
+      {qrFullscreen && joinUrl ? (() => {
+        // Overlay herda o fundo do slide (config.background). Quando 'none'
+        // ou undefined, fallback branco. Quando fundo é escuro, texto fica
+        // claro pra manter contraste; o card branco do miolo do QR não muda
+        // (QR precisa de contraste alto pra escanear).
+        const overlayBg = backgroundStyle(merged.background ?? { type: 'none' }) ?? {
+          background: '#FFFFFF',
+        };
+        const dark = !isBackgroundLight(merged.background) && merged.background?.type !== 'none' && !!merged.background;
+        const textColorMain = dark ? 'rgba(255,255,255,0.85)' : 'rgba(10,37,64,0.7)';
+        const textColorSub = dark ? 'rgba(255,255,255,0.65)' : 'rgba(10,37,64,0.55)';
+        const textColorHost = dark ? '#FFFFFF' : '#0A2540';
+        return (
+          <div
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
+            style={overlayBg}
+          >
+            <div className="text-center">
+              <p className="text-4xl font-semibold mb-2" style={{ color: textColorMain }}>
+                Aponte a câmera do celular
+              </p>
+              <p className="text-2xl" style={{ color: textColorSub }}>e participe agora</p>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
+              <QRCodeSVG value={joinUrl} size={760} level="M" />
+            </div>
+            {merged.showJoinUrl !== false ? (
+              <p className="text-3xl font-semibold" style={{ color: textColorHost }}>{joinHost}</p>
+            ) : null}
           </div>
-          <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
-            <QRCodeSVG value={joinUrl} size={760} level="M" />
-          </div>
-          {merged.showJoinUrl !== false ? (
-            <p className="text-3xl font-semibold text-ink">{joinHost}</p>
-          ) : null}
-        </div>
-      ) : null}
+        );
+      })() : null}
       {showBackground && presenceChannel ? (
         <StatsBadge
           presenceChannel={presenceChannel}

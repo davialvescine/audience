@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { OpenEndedDisplay } from '@/components/telao/OpenEndedDisplay';
 import { PollDisplay } from '@/components/telao/PollDisplay';
 import { TelaoClient } from '@/components/telao/TelaoClient';
-import { backgroundStyle, WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
+import { backgroundStyle, isBackgroundLight, WordCloudDisplay } from '@/components/telao/WordCloudDisplay';
 import type { CommentsConfig, PollConfig } from '@/lib/slides/types';
 import { updateSlide } from '@/server-actions/slides';
 import type { OpenEndedResponse } from '@/hooks/useOpenEndedResponses';
@@ -509,20 +509,27 @@ function CommentsCanvas({
           void updateSlide(slide.id, { ...cfg, posXPct, posYPct } as unknown as Record<string, unknown>);
         }}
       />
-      {qrFullscreenOn && joinUrl ? (
-        <div
-          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
-          style={{ background: '#FFFFFF' }}
-        >
-          <p className="text-4xl font-semibold text-ink/70">Aponte a câmera</p>
-          <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
-            <QRCodeSVG value={joinUrl} size={760} level="M" />
+      {qrFullscreenOn && joinUrl ? (() => {
+        const bg = cfg.background;
+        const overlayBg = backgroundStyle(bg ?? { type: 'none' }) ?? { background: '#FFFFFF' };
+        const dark = !!bg && bg.type !== 'none' && !isBackgroundLight(bg);
+        const textColorMain = dark ? 'rgba(255,255,255,0.85)' : 'rgba(10,37,64,0.7)';
+        const textColorHost = dark ? '#FFFFFF' : '#0A2540';
+        return (
+          <div
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-10"
+            style={overlayBg}
+          >
+            <p className="text-4xl font-semibold" style={{ color: textColorMain }}>Aponte a câmera</p>
+            <div className="bg-white p-6 rounded-2xl shadow-2xl border border-ink/10">
+              <QRCodeSVG value={joinUrl} size={760} level="M" />
+            </div>
+            {cfg.showJoinUrl !== false ? (
+              <p className="text-3xl font-semibold" style={{ color: textColorHost }}>{joinHost}</p>
+            ) : null}
           </div>
-          {cfg.showJoinUrl !== false ? (
-            <p className="text-3xl font-semibold text-ink">{joinHost}</p>
-          ) : null}
-        </div>
-      ) : null}
+        );
+      })() : null}
       {qrOn && !qrFullscreenOn && joinUrl ? (
         <div
           className="absolute right-12 top-1/2 -translate-y-1/2 z-20 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl"
