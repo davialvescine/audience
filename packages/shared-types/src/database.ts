@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       event_members: {
@@ -68,8 +43,44 @@ export type Database = {
           },
         ]
       }
+      event_sessions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          position?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          active_session_id: string | null
           active_slide_id: string | null
           auto_send_on_approve: boolean
           created_at: string
@@ -92,6 +103,7 @@ export type Database = {
           wordcloud_config: Json
         }
         Insert: {
+          active_session_id?: string | null
           active_slide_id?: string | null
           auto_send_on_approve?: boolean
           created_at?: string
@@ -114,6 +126,7 @@ export type Database = {
           wordcloud_config?: Json
         }
         Update: {
+          active_session_id?: string | null
           active_slide_id?: string | null
           auto_send_on_approve?: boolean
           created_at?: string
@@ -136,6 +149,13 @@ export type Database = {
           wordcloud_config?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "events_active_session_id_fkey"
+            columns: ["active_session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_active_slide_id_fkey"
             columns: ["active_slide_id"]
@@ -240,6 +260,7 @@ export type Database = {
           event_id: string
           id: string
           participant_fp: string
+          session_id: string
           slide_id: string
           text: string
           vote_count: number
@@ -250,6 +271,7 @@ export type Database = {
           event_id: string
           id?: string
           participant_fp: string
+          session_id: string
           slide_id: string
           text: string
           vote_count?: number
@@ -260,6 +282,7 @@ export type Database = {
           event_id?: string
           id?: string
           participant_fp?: string
+          session_id?: string
           slide_id?: string
           text?: string
           vote_count?: number
@@ -270,6 +293,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_ended_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -346,6 +376,7 @@ export type Database = {
           id: string
           option_index: number
           participant_fp: string
+          session_id: string
           slide_id: string
           updated_at: string
         }
@@ -355,6 +386,7 @@ export type Database = {
           id?: string
           option_index: number
           participant_fp: string
+          session_id: string
           slide_id: string
           updated_at?: string
         }
@@ -364,6 +396,7 @@ export type Database = {
           id?: string
           option_index?: number
           participant_fp?: string
+          session_id?: string
           slide_id?: string
           updated_at?: string
         }
@@ -373,6 +406,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -435,6 +475,7 @@ export type Database = {
           moderated_by: string | null
           name: string
           sent_at: string | null
+          session_id: string
           status: Database["public"]["Enums"]["submission_status"]
         }
         Insert: {
@@ -449,6 +490,7 @@ export type Database = {
           moderated_by?: string | null
           name: string
           sent_at?: string | null
+          session_id: string
           status?: Database["public"]["Enums"]["submission_status"]
         }
         Update: {
@@ -463,6 +505,7 @@ export type Database = {
           moderated_by?: string | null
           name?: string
           sent_at?: string | null
+          session_id?: string
           status?: Database["public"]["Enums"]["submission_status"]
         }
         Relationships: [
@@ -471,6 +514,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -505,6 +555,7 @@ export type Database = {
           event_id: string
           id: string
           ip_hash: string | null
+          session_id: string
           slide_id: string | null
           word: string
         }
@@ -513,6 +564,7 @@ export type Database = {
           event_id: string
           id?: string
           ip_hash?: string | null
+          session_id: string
           slide_id?: string | null
           word: string
         }
@@ -521,6 +573,7 @@ export type Database = {
           event_id?: string
           id?: string
           ip_hash?: string | null
+          session_id?: string
           slide_id?: string | null
           word?: string
         }
@@ -530,6 +583,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wordcloud_words_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -546,6 +606,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _has_event_access: { Args: { p_event_id: string }; Returns: boolean }
       add_event_member: {
         Args: { p_email: string; p_event_id: string }
         Returns: {
@@ -553,6 +614,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      archive_session: { Args: { p_session_id: string }; Returns: undefined }
       claim_submission_for_send: {
         Args: { p_submission_id: string }
         Returns: {
@@ -564,6 +626,14 @@ export type Database = {
           submission_id: string
           webhook_url: string
         }[]
+      }
+      count_event_sent_submissions: {
+        Args: { p_slug: string }
+        Returns: number
+      }
+      create_session: {
+        Args: { p_event_id: string; p_name: string }
+        Returns: string
       }
       create_slide: {
         Args: {
@@ -587,6 +657,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_session: { Args: { p_session_id: string }; Returns: undefined }
       delete_slide: { Args: { p_slide_id: string }; Returns: undefined }
       diag_rls_state: {
         Args: { p_user: string }
@@ -631,6 +702,15 @@ export type Database = {
       }
       get_pinned_submission: {
         Args: { p_slug: string }
+        Returns: {
+          comment: string
+          id: string
+          name: string
+          sent_at: string
+        }[]
+      }
+      get_pinned_via_token: {
+        Args: { p_token: string }
         Returns: {
           comment: string
           id: string
@@ -707,6 +787,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_sessions: {
+        Args: { p_event_id: string }
+        Returns: {
+          archived_at: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          responses_count: number
+          sort_order: number
+          submissions_count: number
+          votes_count: number
+          words_count: number
+        }[]
+      }
       list_slides: {
         Args: { p_event_id: string }
         Returns: {
@@ -758,21 +853,42 @@ export type Database = {
         Args: { p_event_id: string; p_user_id: string }
         Returns: undefined
       }
+      rename_session: {
+        Args: { p_name: string; p_session_id: string }
+        Returns: undefined
+      }
       reorder_slides: {
         Args: { p_event_id: string; p_slide_ids: string[] }
         Returns: undefined
       }
+      reset_all_event_slides: { Args: { p_event_id: string }; Returns: Json }
+      reset_event_all: { Args: { p_event_id: string }; Returns: Json }
+      reset_event_submissions: { Args: { p_event_id: string }; Returns: Json }
       reset_open_ended_slide: { Args: { p_slide_id: string }; Returns: Json }
       reset_poll_slide: { Args: { p_slide_id: string }; Returns: undefined }
+      reset_session: {
+        Args: { p_session_id: string }
+        Returns: {
+          responses_deleted: number
+          submissions_deleted: number
+          votes_deleted: number
+          words_deleted: number
+        }[]
+      }
       reset_slide_words: { Args: { p_slide_id: string }; Returns: undefined }
       reset_submission_for_retry: {
         Args: { p_submission_id: string }
         Returns: undefined
       }
       reset_wordcloud: { Args: { p_event_id: string }; Returns: undefined }
+      set_active_session: {
+        Args: { p_event_id: string; p_session_id: string }
+        Returns: undefined
+      }
       set_active_slide: {
         Args: { p_event_id: string; p_slide_id: string }
         Returns: {
+          active_session_id: string | null
           active_slide_id: string | null
           auto_send_on_approve: boolean
           created_at: string
@@ -804,6 +920,7 @@ export type Database = {
       set_wordcloud_active: {
         Args: { p_active: boolean; p_event_id: string }
         Returns: {
+          active_session_id: string | null
           active_slide_id: string | null
           auto_send_on_approve: boolean
           created_at: string
@@ -867,6 +984,7 @@ export type Database = {
         Args: { p_fp: string; p_response_id: string }
         Returns: Json
       }
+      touch_moderator_token: { Args: { p_token: string }; Returns: undefined }
       unpin_submission: { Args: { p_event_id: string }; Returns: undefined }
       update_slide: {
         Args: { p_config: Json; p_slide_id: string }
@@ -889,6 +1007,7 @@ export type Database = {
       update_wordcloud_config: {
         Args: { p_config: Json; p_event_id: string }
         Returns: {
+          active_session_id: string | null
           active_slide_id: string | null
           auto_send_on_approve: boolean
           created_at: string
@@ -1059,9 +1178,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       slide_type: [

@@ -6,6 +6,7 @@ import { CommentsPropsPanel } from '@/components/audience/CommentsPropsPanel';
 import { OpenEndedPropsPanel } from '@/components/audience/OpenEndedPropsPanel';
 import { PollPropsPanel } from '@/components/audience/PollPropsPanel';
 import { SlideCanvas } from '@/components/audience/SlideCanvas';
+import { SessionsMenu } from '@/components/audience/SessionsMenu';
 import { SlidePropsPanel } from '@/components/audience/SlidePropsPanel';
 import { SlideThumbnail } from '@/components/audience/SlideThumbnail';
 import { SlideTypePicker } from '@/components/audience/SlideTypePicker';
@@ -382,6 +383,7 @@ export function SlidesTab({
               </div>
             );
           })()}
+          <SessionsMenu eventId={eventId} />
           <button
             type="button"
             onClick={openTelao}
@@ -394,7 +396,7 @@ export function SlidesTab({
             type="button"
             onClick={async () => {
               const c1 = window.confirm(
-                'Zerar TUDO do evento:\n• comentários (todos)\n• palavras da nuvem\n• votos das enquetes\n• respostas abertas\n\nNÃO mexe nos slides nem nas configs. Não pode ser desfeito.\n\nContinuar?',
+                'Zerar TUDO do evento — TODAS as sessões:\n• comentários (todos)\n• palavras da nuvem\n• votos das enquetes\n• respostas abertas\n\nPra zerar só UMA sessão, use o botão "Sessão" ao lado. NÃO mexe nos slides nem nas configs. Não pode ser desfeito.\n\nContinuar?',
               );
               if (!c1) return;
               const c2 = window.confirm('Tem certeza? Última chance.');

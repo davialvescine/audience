@@ -20,10 +20,20 @@ export async function dispatchDiagnosticTest(eventId: string): Promise<Result> {
     minute: '2-digit',
     second: '2-digit',
   });
+  // F5: precisa do session_id ativo pra passar o NOT NULL constraint.
+  const { data: ev } = await supabase
+    .from('events')
+    .select('active_session_id')
+    .eq('id', eventId)
+    .maybeSingle();
+  const sessionId = (ev as { active_session_id?: string | null } | null)?.active_session_id;
+  if (!sessionId) return { ok: false, error: 'Evento sem sessão ativa.' };
+
   const { data, error } = await supabase
     .from('submissions')
     .insert({
       event_id: eventId,
+      session_id: sessionId,
       name: 'TESTE DE DIAGNÓSTICO',
       comment: `Telão funcionando — ${time}`,
       status: 'sent',

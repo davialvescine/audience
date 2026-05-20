@@ -6,8 +6,15 @@ describe('submissionSchema', () => {
   it('accepts valid input', () => {
     expect(submissionSchema.safeParse({ name: 'João', comment: 'Tudo bem!' }).success).toBe(true);
   });
-  it('rejects empty name', () => {
-    expect(submissionSchema.safeParse({ name: '', comment: 'x' }).success).toBe(false);
+  it('aceita nome vazio e converte pra "Anônimo"', () => {
+    const r = submissionSchema.safeParse({ name: '', comment: 'x' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.name).toBe('Anônimo');
+  });
+  it('converte nome com só whitespace pra "Anônimo"', () => {
+    const r = submissionSchema.safeParse({ name: '   ', comment: 'x' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.name).toBe('Anônimo');
   });
   it('rejects 281-char comment', () => {
     expect(submissionSchema.safeParse({ name: 'a', comment: 'a'.repeat(281) }).success).toBe(false);
