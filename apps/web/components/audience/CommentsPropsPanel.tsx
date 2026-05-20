@@ -51,6 +51,13 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
   });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNext = useRef(true);
+  // Dirty flag: true enquanto o usuário tem edição local pendente de
+  // autosave. Usado pra decidir se um update vindo via realtime
+  // (ex: toggle do operador no canvas, outra aba, moderador externo)
+  // pode sobrescrever o config local. Quando dirty=true, ignora resync
+  // pra não comer keystrokes (bug do commit 8465311). Quando dirty=false
+  // (idle), aceita resync — mantém panel sincronizado com DB.
+  const isDirtyRef = useRef(false);
   const [tab, setTab] = useState<'conteudo' | 'design' | 'avancado'>('conteudo');
   const [copied, setCopied] = useState(false);
 
@@ -65,6 +72,7 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
     }
     setConfig({ ...DEFAULT_COMMENTS_CONFIG, ...slide.config });
     skipNext.current = true;
+    isDirtyRef.current = false;
     // CRÍTICO: só re-sincroniza quando o SLIDE muda (slide.id diferente).
     // Antes dependia também de JSON.stringify(slide.config) — toda vez
     // que o autosave salvava no DB, o realtime devolvia o config novo,
@@ -75,15 +83,32 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slide.id]);
 
+  // F3 fix: re-sincroniza local config quando slide.config muda no DB
+  // via realtime, MAS só quando o panel está idle (sem edits pendentes).
+  // Resolve bug: toggle no canvas/outra aba não era refletido no panel,
+  // e o próximo autosave do panel sobrescrevia a mudança externa.
+  useEffect(() => {
+    if (isDirtyRef.current) return; // usuário editando, não clobber
+    if (debounceRef.current) return; // autosave debounce pendente
+    setConfig({ ...DEFAULT_COMMENTS_CONFIG, ...slide.config });
+    skipNext.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(slide.config)]);
+
   useEffect(() => {
     if (skipNext.current) {
       skipNext.current = false;
       return;
     }
+    isDirtyRef.current = true;
     onLiveChange?.(config);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onChange(config);
+      debounceRef.current = null;
+      // Limpa dirty depois do save — re-sync via realtime fica liberado
+      // (panel idle até o próximo edit do usuário).
+      isDirtyRef.current = false;
     }, DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
