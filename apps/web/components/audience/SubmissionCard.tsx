@@ -142,16 +142,16 @@ export function SubmissionCard({
             <Btn
               kind="primary"
               disabled={pending || (status === 'sent' && isPinned)}
-              title={isPinned ? 'Já está fixada' : 'Manda pro telão e fica ate clicar Tirar'}
+              title={isPinned ? 'Já está fixada' : "Fixa no telão e fica até clicar 'Tirar do telão'"}
               onClick={() =>
                 start(async () => {
                   const r = await pinSubmission(id);
                   if (r.ok) onPinChange?.(id);
-                  showFeedback(r.ok ? 'Mostrando no telão' : r.error);
+                  showFeedback(r.ok ? 'Fixada no telão' : r.error);
                 })
               }
             >
-              Mostrar no telão
+              Fixar no telão
             </Btn>
             <Btn
               kind="secondary"

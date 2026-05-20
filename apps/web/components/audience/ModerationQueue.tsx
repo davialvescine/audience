@@ -341,7 +341,7 @@ export function ModerationQueue({
                 </p>
                 <p className="text-xs text-ink/60 mt-1 leading-snug">
                   Aprovar deixa a mensagem em <strong>Na fila</strong>. Você precisa clicar
-                  em <strong>Mostrar no telão</strong> ou usar o botão <strong>Flush</strong>{' '}
+                  em <strong>Fixar no telão</strong> ou usar o botão <strong>Flush</strong>{' '}
                   pra exibir.
                 </p>
               </div>
@@ -457,7 +457,7 @@ export function ModerationQueue({
             configurado)
           </span>
           <span>
-            <strong className="text-ink/85">Mostrar no telão</strong> · fixa, fica até clicar Tirar
+            <strong className="text-ink/85">Fixar no telão</strong> · fica até clicar Tirar do telão
           </span>
           <span>
             <strong className="text-ink/85">Tirar do telão</strong> · remove agora, volta pra fila

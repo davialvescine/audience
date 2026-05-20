@@ -211,7 +211,7 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
         <Section title="Como funciona">
           <p className="text-[11px] text-ink/60 leading-relaxed">
             Audiência envia comentários pelo link público. Você modera na aba <strong>Comentários</strong> e
-            clica em <strong>"Mostrar no telão"</strong> — ele entra na rotação automática deste slide
+            clica em <strong>"Fixar no telão"</strong> — ele entra na rotação automática deste slide
             pelo tempo configurado em "Avançado".
           </p>
         </Section>

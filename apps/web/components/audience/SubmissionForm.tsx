@@ -97,14 +97,13 @@ export function SubmissionForm({ slug }: Props) {
       className="space-y-4"
     >
       <Input
-        label="Seu nome"
+        label="Seu nome (opcional)"
         id="name"
         name="name"
-        required
         maxLength={60}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Como você quer aparecer no telão"
+        placeholder="Deixe em branco pra enviar como Anônimo"
         autoComplete="given-name"
       />
       <Textarea
@@ -136,6 +135,31 @@ export function SubmissionForm({ slug }: Props) {
         className="w-full text-lg h-14"
       >
         Enviar mensagem
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="md"
+        disabled={pending || comment.trim().length === 0}
+        onClick={() => {
+          setError(null);
+          start(async () => {
+            const fd = new FormData();
+            fd.set('name', ''); // validator converte vazio → 'Anônimo'
+            fd.set('comment', comment);
+            const result = await submitComment(slug, fd);
+            if (!result.ok) setError(result.error);
+            else {
+              setSuccess(true);
+              setName('');
+              setComment('');
+            }
+          });
+        }}
+        className="w-full"
+        title="Envia a mensagem com nome 'Anônimo'"
+      >
+        Enviar como Anônimo
       </Button>
     </form>
   );

@@ -31,7 +31,7 @@ async function deliverToH2R(
   options: { autoMarkSent?: boolean } = {},
 ): Promise<'sent' | 'queued' | 'failed'> {
   // Sem webhook H2R: padrao e deixar em 'approved' (operador dispara
-  // manualmente via "Mostrar no telão"). Mas no flush em batch passa
+  // manualmente via "Fixar no telão"). Mas no flush em batch passa
   // autoMarkSent=true pra disparar a fila respeitando o intervalo.
   if (!data.webhook_url) {
     if (options.autoMarkSent) {

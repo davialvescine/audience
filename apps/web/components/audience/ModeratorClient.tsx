@@ -289,7 +289,7 @@ function Card({
               onClick={() => onModerate(item.id, 'send')}
               disabled={pending}
             >
-              ▶ Mostrar no telão
+              ▶ Fixar no telão
             </ActionBtn>
             <ActionBtn
               variant="ghost"

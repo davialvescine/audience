@@ -9,12 +9,12 @@ export function sanitizeText(input: string): string {
 }
 
 export const submissionSchema = z.object({
+  // Nome é opcional. Se vazio (ou só whitespace após limpeza), vira 'Anônimo'.
   name: z
     .string()
-    .min(1, 'Nome obrigatório')
     .max(60, 'Máximo 60 caracteres')
     .transform(sanitizeText)
-    .refine((v) => v.length >= 1, 'Nome obrigatório após limpeza'),
+    .transform((v) => (v.length === 0 ? 'Anônimo' : v)),
   comment: z
     .string()
     .min(1, 'Comentário obrigatório')
