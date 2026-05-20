@@ -4,6 +4,10 @@ import type { SubmissionStatus } from '@audience/shared-types';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
+import {
+  getActiveSlideQrStateViaToken,
+  setQrViaToken,
+} from '@/server-actions/moderatorControls';
 
 type Item = {
   id: string;
@@ -31,6 +35,13 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Estado dos toggles de QR — polling a cada 2.5s junto com submissions.
+  // isCommentsActive = false → esconde o card de Controles (slide ativo
+  // não é de comentários, então QR não faz sentido).
+  const [isCommentsActive, setIsCommentsActive] = useState(false);
+  const [qrShow, setQrShow] = useState(false);
+  const [qrFullscreen, setQrFullscreen] = useState(false);
+  const [qrBusy, setQrBusy] = useState(false);
 
   // Polling. RPCs em paralelo MAS com try/catch isolado — falha de uma
   // (ex.: get_pinned_via_token não criada ainda em algum env) NÃO derruba
@@ -75,14 +86,45 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
       }
     };
 
+    const fetchQrState = async () => {
+      try {
+        const r = await getActiveSlideQrStateViaToken(token);
+        if (!r.ok) return;
+        setIsCommentsActive(r.isComments);
+        if (!qrBusy) {
+          setQrShow(r.showQr);
+          setQrFullscreen(r.qrFullscreen);
+        }
+      } catch {
+        /* noop */
+      }
+    };
+
     void fetchItems();
     void fetchPinned();
+    void fetchQrState();
     const t = setInterval(() => {
       void fetchItems();
       void fetchPinned();
+      void fetchQrState();
     }, 2500);
     return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const toggleQr = async (field: 'showQr' | 'qrFullscreen', next: boolean) => {
+    setQrBusy(true);
+    if (field === 'showQr') setQrShow(next);
+    else setQrFullscreen(next);
+    const r = await setQrViaToken(token, { [field]: next });
+    setQrBusy(false);
+    if (!r.ok) {
+      // rollback
+      if (field === 'showQr') setQrShow(!next);
+      else setQrFullscreen(!next);
+      setError(r.error);
+    }
+  };
 
   const counts = useMemo(
     () => ({
@@ -175,6 +217,46 @@ export function ModeratorClient({ token, eventName, moderatorName, initial }: Pr
       <main className="max-w-2xl mx-auto px-4 py-4 space-y-3">
         {error ? (
           <div className="p-3 rounded-md bg-danger/10 text-danger text-sm">{error}</div>
+        ) : null}
+
+        {isCommentsActive ? (
+          <div className="rounded-lg border border-primary/30 bg-primary/[0.04] p-3">
+            <p className="text-xs uppercase tracking-wide text-primary/70 font-bold mb-2">
+              Controles do telão
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => void toggleQr('showQr', !qrShow)}
+                disabled={qrBusy}
+                className={`text-sm rounded-md border-2 p-3 transition disabled:opacity-60 ${
+                  qrShow
+                    ? 'border-primary bg-primary text-paper'
+                    : 'border-ink/15 bg-paper text-ink hover:border-ink/30'
+                }`}
+              >
+                <span className="text-lg">📱</span>
+                <p className="font-semibold mt-1">QR lateral</p>
+                <p className="text-[10px] opacity-80 mt-0.5">{qrShow ? 'Aparecendo' : 'Oculto'}</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => void toggleQr('qrFullscreen', !qrFullscreen)}
+                disabled={qrBusy}
+                className={`text-sm rounded-md border-2 p-3 transition disabled:opacity-60 ${
+                  qrFullscreen
+                    ? 'border-accent bg-accent text-ink'
+                    : 'border-ink/15 bg-paper text-ink hover:border-ink/30'
+                }`}
+              >
+                <span className="text-lg">🔍</span>
+                <p className="font-semibold mt-1">QR tela cheia</p>
+                <p className="text-[10px] opacity-80 mt-0.5">
+                  {qrFullscreen ? 'Aparecendo' : 'Oculto'}
+                </p>
+              </button>
+            </div>
+          </div>
         ) : null}
         {visible.length === 0 ? (
           <div className="text-center py-12 text-ink/55">
