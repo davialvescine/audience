@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react';
 import {
   approveSubmission,
   dispatchToTelao,
+  editSubmission,
   pinSubmission,
   rejectSubmission,
   removeFromTelao,
@@ -51,6 +52,32 @@ export function SubmissionCard({
 }: Props) {
   const [pending, start] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftName, setDraftName] = useState(name);
+  const [draftComment, setDraftComment] = useState(comment);
+  const canEdit = status === 'pending' || status === 'approved';
+
+  const startEdit = () => {
+    setDraftName(name);
+    setDraftComment(comment);
+    setIsEditing(true);
+  };
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setDraftName(name);
+    setDraftComment(comment);
+  };
+  const saveEdit = () => {
+    start(async () => {
+      const r = await editSubmission(id, { name: draftName, comment: draftComment });
+      if (r.ok) {
+        setIsEditing(false);
+        showFeedback('Editado');
+      } else {
+        showFeedback(r.error);
+      }
+    });
+  };
 
   const showFeedback = (msg: string) => {
     setFeedback(msg);
@@ -81,7 +108,18 @@ export function SubmissionCard({
       className={`group rounded-md border px-3 py-2.5 transition hover:border-ink/30 ${cardCls}`}
     >
       <div className="flex items-baseline gap-2 mb-0.5">
-        <span className="text-sm font-medium text-ink truncate">{name}</span>
+        {isEditing ? (
+          <input
+            type="text"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            maxLength={60}
+            placeholder="Nome (vazio = Anônimo)"
+            className="text-sm font-medium text-ink bg-paper border border-ink/20 rounded px-1.5 py-0.5 flex-1 focus:border-primary focus:outline-none"
+          />
+        ) : (
+          <span className="text-sm font-medium text-ink truncate">{name}</span>
+        )}
         <span className="text-[10px] text-ink/40 tabular-nums" suppressHydrationWarning>
           {relativeTime(createdAt)}
         </span>
@@ -96,11 +134,32 @@ export function SubmissionCard({
           {displayCount > 0 ? <span className="text-ink/45">×{displayCount}</span> : null}
         </div>
       </div>
-      <p className="text-sm text-ink/85 break-words leading-snug">{comment}</p>
+      {isEditing ? (
+        <textarea
+          value={draftComment}
+          onChange={(e) => setDraftComment(e.target.value)}
+          maxLength={150}
+          rows={3}
+          className="w-full text-sm text-ink/85 bg-paper border border-ink/20 rounded px-2 py-1.5 leading-snug focus:border-primary focus:outline-none"
+        />
+      ) : (
+        <p className="text-sm text-ink/85 break-words leading-snug">{comment}</p>
+      )}
       {errorMessage ? <p className="mt-1.5 text-[11px] text-danger">⚠ {errorMessage}</p> : null}
 
       <div className="mt-2.5 flex gap-1.5 flex-wrap">
-        {status === 'pending' ? (
+        {isEditing ? (
+          <>
+            <Btn kind="primary" disabled={pending || draftComment.trim().length === 0} onClick={saveEdit}>
+              Salvar
+            </Btn>
+            <Btn kind="ghost" disabled={pending} onClick={cancelEdit}>
+              Cancelar
+            </Btn>
+          </>
+        ) : null}
+
+        {!isEditing && status === 'pending' ? (
           <>
             <Btn
               kind="primary"
@@ -119,7 +178,7 @@ export function SubmissionCard({
           </>
         ) : null}
 
-        {status === 'approved' || status === 'sent' ? (
+        {!isEditing && (status === 'approved' || status === 'sent') ? (
           <>
             <Btn
               kind="secondary"
@@ -183,7 +242,18 @@ export function SubmissionCard({
           </>
         ) : null}
 
-        {status === 'failed' ? (
+        {!isEditing && canEdit ? (
+          <Btn
+            kind="ghost"
+            disabled={pending}
+            title="Editar nome e comentário"
+            onClick={startEdit}
+          >
+            ✎ Editar
+          </Btn>
+        ) : null}
+
+        {!isEditing && status === 'failed' ? (
           <Btn
             kind="primary"
             disabled={pending}

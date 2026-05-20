@@ -152,6 +152,41 @@ export async function rejectSubmission(submissionId: string): Promise<Result> {
   return { ok: true, status: 'sent' };
 }
 
+// Editar nome/comentário de uma submission. Permitido só em pending|approved
+// (depois de sent, usar Reexibir pra voltar pra pending → editar lá).
+// RLS submissions_owner_all garante que só owner edita.
+export async function editSubmission(
+  submissionId: string,
+  fields: { name: string; comment: string },
+): Promise<Result> {
+  await requireUser();
+  const supabase = await getSupabaseServerClient();
+  // Sanitização básica: trim + limite. Vazio em name vira "Anônimo".
+  const cleanName =
+    (fields.name ?? '').toString().replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 60) ||
+    'Anônimo';
+  const cleanComment =
+    (fields.comment ?? '')
+      .toString()
+      .replace(/<[^>]*>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 150);
+  if (cleanComment.length === 0) return { ok: false, error: 'Comentário não pode ficar vazio.' };
+  const { data, error } = await supabase
+    .from('submissions')
+    .update({ name: cleanName, comment: cleanComment })
+    .eq('id', submissionId)
+    .in('status', ['pending', 'approved'])
+    .select('id, event_id, events!inner(slug)')
+    .maybeSingle();
+  if (error) return { ok: false, error: 'Falha ao salvar edição.' };
+  if (!data) return { ok: false, error: 'Não dá pra editar essa mensagem (já exibida ou rejeitada).' };
+  const slug = (data as unknown as { events?: { slug: string } } | null)?.events?.slug;
+  if (slug) revalidatePath(`/admin/events/${slug}`);
+  return { ok: true, status: 'sent' };
+}
+
 // Reverts a moderation action by flipping the row back to 'pending'.
 // Reversible from approved/rejected/sent. RLS (submissions_owner_all)
 // enforces ownership.
