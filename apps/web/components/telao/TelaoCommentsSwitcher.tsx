@@ -192,22 +192,39 @@ export function TelaoCommentsSwitcher({
         />
       ) : null}
       {showBackground && isOperator ? <FullscreenButton /> : null}
-      {showQr && !qrFullscreen && joinUrl ? (
-        <div
-          className="absolute right-12 top-1/2 -translate-y-1/2 z-20 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl"
-          style={{ background: '#F5F5F0', color: '#0A1834', minWidth: 280 }}
-        >
-          <div className="bg-white p-3 rounded-lg">
-            <QRCodeSVG value={joinUrl} size={220} level="M" />
-          </div>
-          {merged.showJoinUrl !== false ? (
-            <div className="text-center">
-              <p className="text-lg font-semibold">{joinHost}</p>
-              <p className="text-sm opacity-70 mt-1">Aponte sua câmera</p>
+      {showQr && !qrFullscreen && joinUrl ? (() => {
+        // Posição configurável. Default 'middle-right' (comportamento legado).
+        // Cada posição mapeia em coordenadas CSS absolutas dentro do stage.
+        const pos = merged.qrPosition ?? 'middle-right';
+        const posMap: Record<string, React.CSSProperties> = {
+          'top-left':      { top: 32, left: 32 },
+          'top-center':    { top: 32, left: '50%', transform: 'translateX(-50%)' },
+          'top-right':     { top: 32, right: 32 },
+          'middle-left':   { top: '50%', left: 32, transform: 'translateY(-50%)' },
+          'center':        { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+          'middle-right':  { top: '50%', right: 32, transform: 'translateY(-50%)' },
+          'bottom-left':   { bottom: 32, left: 32 },
+          'bottom-center': { bottom: 32, left: '50%', transform: 'translateX(-50%)' },
+          'bottom-right':  { bottom: 32, right: 32 },
+        };
+        const positionStyle = posMap[pos] ?? posMap['middle-right']!;
+        return (
+          <div
+            className="absolute z-20 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl"
+            style={{ ...positionStyle, background: '#F5F5F0', color: '#0A1834', minWidth: 280 }}
+          >
+            <div className="bg-white p-3 rounded-lg">
+              <QRCodeSVG value={joinUrl} size={220} level="M" />
             </div>
-          ) : null}
-        </div>
-      ) : null}
+            {merged.showJoinUrl !== false ? (
+              <div className="text-center">
+                <p className="text-lg font-semibold">{joinHost}</p>
+                <p className="text-sm opacity-70 mt-1">Aponte sua câmera</p>
+              </div>
+            ) : null}
+          </div>
+        );
+      })() : null}
     </div>
   );
 }

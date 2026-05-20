@@ -75,6 +75,17 @@ export type CommentsConfig = TelaoConfig & {
   qrFullscreen?: boolean;
   /** Quando false, omite o host/URL abaixo do QR — útil pra slide mais clean. */
   showJoinUrl?: boolean;
+  /** Posição do QR lateral (não-fullscreen). Default 'middle-right'. */
+  qrPosition?:
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'middle-left'
+    | 'center'
+    | 'middle-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
   /** Pausa a rotação automática dos cards no telão (útil pra dar tempo de ler). */
   paused?: boolean;
 };

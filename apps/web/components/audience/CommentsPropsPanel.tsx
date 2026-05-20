@@ -476,6 +476,26 @@ export function CommentsPropsPanel({ slide, slug, onChange, onLiveChange }: Prop
             checked={config.showJoinUrl !== false}
             onChange={(v) => setConfig((c) => ({ ...c, showJoinUrl: v }))}
           />
+          {config.showQr && !config.qrFullscreen ? (
+            <div className="mt-3">
+              <PresetGroup
+                label="Posição do QR lateral"
+                options={[
+                  'top-left',
+                  'top-center',
+                  'top-right',
+                  'middle-left',
+                  'center',
+                  'middle-right',
+                  'bottom-left',
+                  'bottom-center',
+                  'bottom-right',
+                ] as const}
+                value={config.qrPosition ?? 'middle-right'}
+                onChange={(v) => setConfig((c) => ({ ...c, qrPosition: v }))}
+              />
+            </div>
+          ) : null}
           <p className="text-[11px] text-ink/55 mt-1">
             QR + URL ficam ocultos automaticamente no modo OBS (transparente).
           </p>
